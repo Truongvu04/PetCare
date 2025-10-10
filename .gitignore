@@ -4,3 +4,5 @@ node_modules/
 logs/
 *.log
 package-lock.json
+backend/.cursorignore
+frontend/pet-app/pet-care.code-workspace
