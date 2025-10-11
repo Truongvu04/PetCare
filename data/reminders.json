@@ -1,0 +1,13 @@
+{
+  "reminders": [
+    {
+      "id": "b3b5c01a-4617-4e54-8d4d-8e51a27f07a7",
+      "title": "Test",
+      "message": "Hello",
+      "time": "2025-10-11T12:00:00.000Z",
+      "createdAt": "2025-10-11T11:20:25.326Z",
+      "sent": false,
+      "sentAt": null
+    }
+  ]
+}
