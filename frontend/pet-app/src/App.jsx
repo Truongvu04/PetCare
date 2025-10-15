@@ -5,6 +5,7 @@ import PetOwnerDashboard from './components/DashBoard/PetOwnerDashBoard.jsx';
 import HealthActivity from "./components/HealthyActivity/HealthyActivity.jsx";
 import LoginForm from './components/Auth/LoginForm';
 import VetMap from './components/Map/VetMap';
+import VeterinaryAutoLocateMapPage from './components/Map/VeterinaryAutoLocateMapPage';
 import PetList from './components/Pets/PetList';
 import PetProfile from './components/Pets/PetProfile';
 import ReminderList from './components/Reminders/ReminderList';
@@ -18,7 +19,9 @@ function App() {
         null,
         React.createElement(Route, { path: '/', element: React.createElement(HomePage) }),
         React.createElement(Route, { path: '/login', element: React.createElement(LoginForm) }),
-        React.createElement(Route, { path: '/vet-map', element: React.createElement(VetMap) }),
+        React.createElement(Route, { path: '/vet-map', element: React.createElement(VeterinaryAutoLocateMapPage) }),
+        React.createElement(Route, { path: '/vet-map-old', element: React.createElement(VetMap) }),
+        React.createElement(Route, { path: '/vet-map/:clinicId', element: React.createElement(VeterinaryAutoLocateMapPage) }),
         React.createElement(Route, { path: '/pets', element: React.createElement(PetList) }),
         React.createElement(Route, { path: '/dashboard', element: React.createElement(PetOwnerDashboard) }),
         React.createElement(Route, { path: '/petprofile', element: React.createElement(PetProfile) }),

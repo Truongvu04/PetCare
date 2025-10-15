@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import "./style.css";
 import {
   LayoutDashboard,
@@ -12,6 +12,7 @@ import {
   MapPin,
   PawPrint,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   LineChart,
   Line,
@@ -31,6 +32,12 @@ const data = [
 ];
 
 const HealthActivity = () => {
+  const navigate = useNavigate();
+
+  const handleOpenMap = () => {
+    navigate('/vet-map');
+  };
+
   return (
     <div className="min-h-screen bg-[#fafafa] flex justify-center">
       <div className="w-full max-w-[1280px] bg-white flex">
@@ -75,7 +82,10 @@ const HealthActivity = () => {
             </nav>
           </div>
 
-          <button className="flex items-center space-x-2 text-gray-900 hover:text-green-700">
+          <button 
+            onClick={handleOpenMap}
+            className="flex items-center space-x-2 text-gray-900 hover:text-green-700 transition-colors"
+          >
             <MapPin size={18} />
             <span>Veterinary clinic map</span>
           </button>
@@ -206,6 +216,7 @@ const HealthActivity = () => {
           </section>
         </main>
       </div>
+      
     </div>
   );
 };
