@@ -2,6 +2,7 @@ import React from "react";
 import "./style.css";
 import {
   LayoutDashboard,
+  Home,
   Dog,
   Bell,
   Heart,
@@ -12,6 +13,7 @@ import {
   MapPin,
   PawPrint,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   LineChart,
   Line,
@@ -31,6 +33,7 @@ const data = [
 ];
 
 const HealthActivity = () => {
+const navigate = useNavigate()
   return (
     <div className="min-h-screen bg-[#fafafa] flex justify-center">
       <div className="w-full max-w-[1280px] bg-white flex">
@@ -51,9 +54,9 @@ const HealthActivity = () => {
 
             <nav className="flex flex-col space-y-2">
               {[
-                { name: "Dashboard", icon: <LayoutDashboard size={18} /> },
-                { name: "Pets", icon: <PawPrint size={18} /> },
-                { name: "Reminders", icon: <Bell size={18} /> },
+                { name: "Dashboard", icon: <Home size={18} />, path: "/Dashboard" },
+                { name: "My Pets", icon: <PawPrint size={18} />, path: "/mypets"},
+                { name: "Reminders", icon: <Bell size={18} />, path: "/reminder" },
                 { name: "Health & Activity", icon: <Heart size={18} /> },
                 { name: "Expenses", icon: <DollarSign size={18} /> },
                 { name: "Calendar", icon: <Calendar size={18} /> },
@@ -62,6 +65,9 @@ const HealthActivity = () => {
               ].map((item, i) => (
                 <button
                   key={i}
+                  onClick={() => {
+                    if (item.path) navigate(item.path); // 👈 chuyển trang nếu có path
+                  }}
                   className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-left ${
                     item.name === "Health & Activity"
                       ? "bg-green-100 text-green-800 font-medium"
