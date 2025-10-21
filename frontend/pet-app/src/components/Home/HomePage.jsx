@@ -1,5 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import LoginForm from "../Auth/LoginForm";
+//import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+//import LoginForm from "./LoginForm";
+
+
 // --- Constants (Thay thế các đường dẫn file ảnh cục bộ bằng Placeholder URL) ---
 const PLACEHOLDERS = {
   AVATAR: 'https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg',
@@ -563,7 +568,7 @@ const Header = () => {
             alt="User"
             className="profile-avatar"
             onClick={handleAvatarClick}
-            style={{ cursor: 'pointer' }} 
+            style={{ cursor: 'pointer' }}
           />
         </div>
       </div>
@@ -575,9 +580,9 @@ const Header = () => {
 const HeroSection = () => (
   <section className="hero-section">
     <div className="hero-card">
-      <img 
-        src={PLACEHOLDERS.HERO} 
-        alt="Dog and Cat" 
+      <img
+        src={PLACEHOLDERS.HERO}
+        alt="Dog and Cat"
         className="hero-image"
         onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/1200x500/1ec714/ffffff?text=Pet+Care+Hero'; }}
       />
@@ -686,16 +691,18 @@ const Footer = () => (
 
 // --- Main App Component ---
 
-const App = () => { 
+const App = () => {
+  const [showLogin, setShowLogin] = useState(true); // 👈 trạng thái hiển thị popup
+
   return (
-    // Fragment để bao gồm Font Awesome và Styles
     <>
-      {/* 1. Font Awesome CDN (bắt buộc để hiển thị icons) */}
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-      {/* 2. Custom CSS Styles */}
+      {/* Font Awesome */}
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      />
       <style>{CSS_STYLES}</style>
 
-      {/* 3. HTML Structure (Đã chuyển đổi sang JSX) */}
       <div className="container">
         <Header />
         <main className="content">
@@ -706,6 +713,9 @@ const App = () => {
         </main>
         <Footer />
       </div>
+
+      {/* Hiển thị popup đăng nhập */}
+      {showLogin && <LoginForm onClose={() => setShowLogin(false)} />}
     </>
   );
 };
