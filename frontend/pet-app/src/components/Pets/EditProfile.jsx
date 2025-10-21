@@ -23,6 +23,7 @@ const EditProfile = () => {
     weight: "",
     breed: "",
     medical_history: "",
+    description: "",
   });
   const [previewImage, setPreviewImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -43,6 +44,7 @@ const EditProfile = () => {
           weight: data.weight || "",
           breed: data.breed || "",
           medical_history: data.medical_history || "",
+          description: data.description || "",
         });
         setPreviewImage(`http://localhost:5000${data.photo_url}`);
       } catch (err) {
@@ -117,7 +119,7 @@ const EditProfile = () => {
                 src="https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"
                 alt="User"
                 className="w-10 h-10 rounded-full object-cover"
-              />
+                onClick={() => navigate("/")}/>
               <div>
                 <h3 className="font-semibold text-gray-900">Emily Carter</h3>
                 <span className="text-sm text-green-600 block">Owner</span>
@@ -317,7 +319,21 @@ const EditProfile = () => {
                   onChange={handleChange}
                   rows="3"
                   className="w-full bg-[rgba(240,253,244,1)] rounded-xl p-3 text-gray-800 resize-none border border-green-300 
-                             focus:outline-none focus:border-green-300 focus:ring-1 focus:ring-green-500"
+                             focus:outline-none focus:border-green-300 focus:ring-1 focus:ring-green-500"/>
+              </div>
+              
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows="3"
+                  className="w-full bg-[rgba(240,253,244,1)] rounded-xl p-3 text-gray-800 resize-none border border-green-300 
+                            focus:outline-none focus:border-green-300 focus:ring-1 focus:ring-green-500"
                 />
               </div>
 

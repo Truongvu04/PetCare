@@ -68,7 +68,7 @@ const ViewProfile = () => {
                 src="https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"
                 alt="User"
                 className="w-10 h-10 rounded-full object-cover"
-              />
+                onClick={() => navigate("/")}/>
               <div>
                 <h3 className="font-semibold text-gray-900">Emily Carter</h3>
                 <span className="owner font-semibold text-gray-900">Owner</span>

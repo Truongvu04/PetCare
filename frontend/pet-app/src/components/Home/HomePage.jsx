@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
 // --- Constants (Thay thế các đường dẫn file ảnh cục bộ bằng Placeholder URL) ---
 const PLACEHOLDERS = {
   AVATAR: 'https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg',
@@ -542,6 +542,10 @@ const Header = () => {
     navigate('/dashBoard'); // Chuyển sang trang Dashboard
   };
 
+  const goToReminders = () => {
+    navigate("/dashboard", { state: { scrollTo: "reminders" } });
+  };
+
   return (
     <header className="header">
       <div className="logo">PetCare+</div>
@@ -556,15 +560,20 @@ const Header = () => {
           <i className="fa-solid fa-magnifying-glass"></i>
           <input type="text" placeholder="Tìm kiếm" />
         </div>
-        <i className="fa-regular fa-bell"></i>
+
+         {/* Nút chuông: chuyển sang Dashboard và cuộn tới Reminders */}
+        <i 
+          className="fa-regular fa-bell" 
+          onClick={goToReminders} 
+          style={{ cursor: 'pointer' }}
+        ></i>
         <div className="user-profile">
           <img
             src={PLACEHOLDERS.AVATAR}
             alt="User"
             className="profile-avatar"
             onClick={handleAvatarClick}
-            style={{ cursor: 'pointer' }} 
-          />
+            style={{ cursor: 'pointer' }}/>
         </div>
       </div>
     </header>
@@ -579,12 +588,17 @@ const HeroSection = () => (
         src={PLACEHOLDERS.HERO} 
         alt="Dog and Cat" 
         className="hero-image"
-        onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/1200x500/1ec714/ffffff?text=Pet+Care+Hero'; }}
-      />
+        onError={(e) => { 
+          e.target.onerror = null; 
+          e.target.src = 'https://placehold.co/1200x500/1ec714/ffffff?text=Pet+Care+Hero'; 
+        }}/>
+
       <div className="hero-overlay">
         <h1>Welcome to PetCare+</h1>
         <p>Your all-in-one platform for managing your pet's life and connecting with trusted vendors, vets, and products.</p>
-        <a href="#" className="btn btn-primary">Get Started</a>
+        <Link to="/mypets" className="btn btn-primary">
+          Get Started
+        </Link>
       </div>
     </div>
   </section>
@@ -686,7 +700,7 @@ const Footer = () => (
 
 // --- Main App Component ---
 
-const App = () => { 
+const HomePage = () => { 
   return (
     // Fragment để bao gồm Font Awesome và Styles
     <>
@@ -710,4 +724,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default HomePage;

@@ -103,7 +103,8 @@ const AddNewPet = () => {
               <img
                 src="https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"
                 alt="profile"
-                className="w-full h-full object-cover"/>
+                className="w-full h-full object-cover"
+                onClick={() => navigate("/")}/>
             </div>
             <div>
               <p className="font-semibold text-gray-900 leading-tight">

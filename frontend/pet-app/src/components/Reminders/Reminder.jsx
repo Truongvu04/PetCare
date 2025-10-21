@@ -28,10 +28,11 @@
               <div className="profile flex items-center space-x-3 mb-8">
                 <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center text-green-800 font-semibold">
                   <div className="avatar">
-                    <img src="https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg" alt="profile"/>
+                    <img src="https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg" alt="profile"
+                    onClick={() => navigate("/")}/>
                   </div>
                 </div>
-                <div>
+                <div>x
                   <p className="font-semibold text-gray-900">Emily Carter</p>
                   <p className="owner font-semibold text-gray-900">Owner</p>
                 </div>

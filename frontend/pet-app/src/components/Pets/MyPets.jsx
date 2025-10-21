@@ -75,7 +75,7 @@ const MyPets = () => {
                 src="https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"
                 alt="profile"
                 className="w-full h-full object-cover"
-              />
+                onClick={() => navigate("/")}/>
             </div>
             <div>
               <p className="font-semibold text-gray-900 leading-tight">
@@ -89,8 +89,7 @@ const MyPets = () => {
           <nav className="flex flex-col gap-2 text-gray-700">
             <button
               onClick={() => navigate("/dashboard")}
-              className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100"
-            >
+              className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100">
               <Home size={18} /> Dashboard
             </button>
             <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-green-100 text-green-800 font-semibold">
@@ -98,14 +97,12 @@ const MyPets = () => {
             </div>
             <button
               onClick={() => navigate("/reminder")}
-              className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100"
-            >
+              className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100">
               <Bell size={18} /> Reminders
             </button>
             <button
               onClick={() => navigate("/health")}
-              className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100"
-            >
+              className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100">
               <Heart size={18} /> Health & Activity
             </button>
             <button className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100">
@@ -129,8 +126,7 @@ const MyPets = () => {
             <h2 className="text-2xl font-bold text-gray-900">My Pets</h2>
             <button
               onClick={() => navigate("/addnewpets")}
-              className="bg-[#29a980] hover:bg-[#1d926d] text-white px-4 py-2 rounded-md transition-all"
-            >
+              className="bg-[#29a980] hover:bg-[#1d926d] text-white px-4 py-2 rounded-md transition-all">
               Add a Pet
             </button>
           </div>
@@ -138,13 +134,12 @@ const MyPets = () => {
           {/* Pet List */}
           <div className="space-y-6">
             {pets.length === 0 ? (
-              <p className="text-gray-500 text-center">No pets found.</p>
+              <p className="text-gray-500 text-center">Danh sách trống.</p>
             ) : (
               pets.map((pet) => (
                 <div
                   key={pet.id}
-                  className="flex justify-between items-start bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md p-4 transition-all"
-                >
+                  className="flex justify-between items-start bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md p-4 transition-all">
                   <div>
                     <h3 className="font-semibold text-gray-900 text-xl">
                       {pet.name}
@@ -158,14 +153,12 @@ const MyPets = () => {
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={() => navigate(`/viewprofile/${pet.id}`)}
-                        className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm"
-                      >
+                        className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">
                         View Profile
                       </button>
                       <button
                         onClick={() => handleDeletePet(pet.id)}
-                        className="flex items-center gap-1 px-4 py-1.5 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-sm"
-                      >
+                        className="flex items-center gap-1 px-4 py-1.5 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-sm">
                         <Trash2 size={14} /> Delete
                       </button>
                     </div>
@@ -186,8 +179,7 @@ const MyPets = () => {
                       onError={(e) => {
                         e.target.src =
                           "https://via.placeholder.com/292x155?text=No+Image";
-                      }}
-                    />
+                      }}/>
                   </div>
                 </div>
               ))

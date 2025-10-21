@@ -1,37 +1,39 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import HomePage from './components/Home/HomePage.jsx';
-import PetOwnerDashboard from './components/DashBoard/PetOwnerDashBoard.jsx';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import HomePage from "./components/Home/HomePage.jsx";
+import PetOwnerDashboard from "./components/DashBoard/PetOwnerDashBoard.jsx";
 import HealthActivity from "./components/HealthyActivity/HealthyActivity.jsx";
-import LoginForm from './components/Auth/LoginForm';
-import VetMap from './components/Map/VetMap';
-import PetList from './components/Pets/PetList';
-import ViewProfile from './components/Pets/ViewProfile.jsx';
-import EditProfile  from './components/Pets/EditProfile.jsx';
-import MyPets from "./components/Pets/MyPets.jsx";
+import LoginForm from "./components/Auth/LoginForm";
+import VetMap from "./components/Map/VetMap";
+import PetList from "./components/Pets/PetList";
+import ViewProfile from "./components/Pets/ViewProfile.jsx";
+import EditProfile from "./components/Pets/EditProfile.jsx";
+import MyPets from "./components/Pets/MyPets.jsx";  
 import AddNewPet from "./components/Pets/AddNewPet.jsx";
-import Reminders from './components/Reminders/Reminder.jsx';
+import Reminders from "./components/Reminders/Reminder.jsx";
+import Shop from "./components/Shop/Shop.jsx";
+import ProductDetail from "./components/Shop/ProductDetail.jsx";
 
 function App() {
-  return React.createElement(
-    Router, 
-    null,
-      React.createElement(
-        Routes, 
-        null,
-        React.createElement(Route, { path: '/', element: React.createElement(HomePage) }),
-        React.createElement(Route, { path: '/login', element: React.createElement(LoginForm) }),
-        React.createElement(Route, { path: '/vet-map', element: React.createElement(VetMap) }),
-        React.createElement(Route, { path: '/pets', element: React.createElement(PetList) }),
-        React.createElement(Route, { path: '/dashboard', element: React.createElement(PetOwnerDashboard) }),
-        React.createElement(Route, { path: '/viewprofile/:id', element: React.createElement(ViewProfile) }),
-        React.createElement(Route, { path: '/editprofile/:id', element: React.createElement(EditProfile) }),
-        React.createElement(Route, { path: '/mypets', element: React.createElement(MyPets) }),
-        React.createElement(Route, { path: '/addnewpets', element: React.createElement(AddNewPet) }),
-        React.createElement(Route, { path: '/health', element: React.createElement(HealthActivity) }),
-        React.createElement(Route, { path: '/reminder', element: React.createElement(Reminders) })
-      )
-    );
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginForm />} />
+        <Route path="/vet-map" element={<VetMap />} />
+        <Route path="/pets" element={<PetList />} />
+        <Route path="/dashboard" element={<PetOwnerDashboard />} />
+        <Route path="/viewprofile/:id" element={<ViewProfile />} />
+        <Route path="/editprofile/:id" element={<EditProfile />} />
+        <Route path="/mypets" element={<MyPets />} />
+        <Route path="/addnewpets" element={<AddNewPet />} />
+        <Route path="/health" element={<HealthActivity />} />
+        <Route path="/reminder" element={<Reminders />} />
+        <Route path="/shops" element={<Shop />} />
+        <Route path="/productdetails" element={<ProductDetail />} />
+      </Routes>
+    </Router>
+  );
 }
 
 export default App;

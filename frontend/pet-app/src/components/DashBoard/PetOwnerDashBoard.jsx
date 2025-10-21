@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState, useRef  } from "react";
 import {
   Home,
   PawPrint,
@@ -13,21 +13,33 @@ import {
   Syringe,
   MapPin,
 } from "lucide-react";
-import "./PetOwnerDashboard.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const PetOwnerDashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // 🔹 lấy state từ HomePage
+  const remindersRef = useRef(null); // 🔹 ref để scroll
+  const [highlight, setHighlight] = useState(false); // 🔹 trạng thái phát sáng
+
+  // 🔹 Khi nhận được scrollTo="reminders", cuộn xuống + làm sáng phần đó
+  useEffect(() => {
+    if (location.state?.scrollTo === "reminders" && remindersRef.current) {
+      remindersRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlight(true);
+      const timer = setTimeout(() => setHighlight(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [location]);
 
   const menuItems = [
     { name: "Dashboard", icon: <Home size={18} />, path: "/dashboard" },
     { name: "My Pets", icon: <PawPrint size={18} />, path: "/mypets" },
     { name: "Reminders", icon: <Bell size={18} />, path: "/reminder" },
     { name: "Health & Activity", icon: <Heart size={18} />, path: "/health" },
-    { name: "Expenses", icon: <DollarSign size={18} /> },
-    { name: "Calendar", icon: <Calendar size={18} /> },
-    { name: "Shop", icon: <ShoppingBag size={18} /> },
-    { name: "Settings", icon: <Settings size={18} /> },
+    { name: "Expenses", icon: <DollarSign size={18} />, path: "/expenses" },
+    { name: "Calendar", icon: <Calendar size={18} />, path: "/calendars" },
+    { name: "Shop", icon: <ShoppingBag size={18} />, path: "/shops" },
+    { name: "Settings", icon: <Settings size={18} />, path: "/settings" },
   ];
 
   const shops = [
@@ -70,7 +82,7 @@ const PetOwnerDashboard = () => {
                 src="https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"
                 alt="avatar"
                 className="w-10 h-10 rounded-full object-cover"
-              />
+                onClick={() => navigate("/")}/>
               <div>
                 <p className="text-gray-900 font-semibold">Emily Carter</p>
                 <p className="text-gray-500 text-sm">Owner</p>
@@ -87,8 +99,7 @@ const PetOwnerDashboard = () => {
                     item.name === "Dashboard"
                       ? "bg-green-100 text-green-800 font-medium"
                       : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
+                  }`}>
                   {item.icon}
                   <span>{item.name}</span>
                 </button>
@@ -108,39 +119,20 @@ const PetOwnerDashboard = () => {
             Dashboard
           </h2>
 
-          {/* My Pets */}
+          {/* My Pets (Lấy dữ liệu từ API) */}
           <section className="mb-10">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
               <span>My Pets</span>
             </h3>
-            <div className="flex space-x-10">
-              {[
-                {
-                  name: "Buddy",
-                  type: "Dog",
-                  img: "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg",
-                },
-                {
-                  name: "Whiskers",
-                  type: "Cat",
-                  img: "https://images.pexels.com/photos/320014/pexels-photo-320014.jpeg",
-                },
-              ].map((pet, i) => (
-                <div key={i} className="flex flex-col items-center">
-                  <img
-                    src={pet.img}
-                    alt={pet.name}
-                    className="w-24 h-24 rounded-full object-cover mb-2"
-                  />
-                  <p className="font-medium text-gray-800">{pet.name}</p>
-                  <p className="text-gray-500 text-sm">{pet.type}</p>
-                </div>
-              ))}
-            </div>
+            <MyPetsSection />
           </section>
 
           {/* Reminders */}
-          <section className="mb-10">
+          <section
+            ref={remindersRef}
+            className={`mb-10 transition-all duration-500 ${
+              highlight ? "ring-4 ring-green-300" : ""
+            }`}>
             <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center space-x-2">
               <span>Reminders</span>
             </h3>
@@ -183,8 +175,7 @@ const PetOwnerDashboard = () => {
               ].map((h, i) => (
                 <div
                   key={i}
-                  className="flex items-center space-x-3 bg-green-50 p-3 rounded-lg"
-                >
+                  className="flex items-center space-x-3 bg-green-50 p-3 rounded-lg">
                   <Heart className="text-green-700" size={18} />
                   <div>
                     <p className="font-medium text-gray-800">
@@ -211,8 +202,7 @@ const PetOwnerDashboard = () => {
               ].map((ex, i) => (
                 <div
                   key={i}
-                  className="flex items-center space-x-3 bg-green-50 p-3 rounded-lg"
-                >
+                  className="flex items-center space-x-3 bg-green-50 p-3 rounded-lg">
                   <DollarSign className="text-green-700" size={18} />
                   <div>
                     <p className="font-medium text-gray-800">
@@ -238,8 +228,7 @@ const PetOwnerDashboard = () => {
                   <img
                     src={item.img}
                     alt={item.name}
-                    className="rounded-lg mb-2"
-                  />
+                    className="rounded-lg mb-2"/>
                   <p className="font-medium text-gray-800">{item.name}</p>
                   <p className="text-gray-500 text-sm">{item.desc}</p>
                 </div>
@@ -256,8 +245,7 @@ const PetOwnerDashboard = () => {
               {clinics.map((clinic, i) => (
                 <div
                   key={i}
-                  className="flex items-center space-x-3 bg-green-50 p-3 rounded-lg"
-                >
+                  className="flex items-center space-x-3 bg-green-50 p-3 rounded-lg">
                   <MapPin className="text-green-700" size={18} />
                   <div>
                     <p className="font-medium text-gray-800">{clinic.name}</p>
@@ -269,6 +257,52 @@ const PetOwnerDashboard = () => {
           </section>
         </main>
       </div>
+    </div>
+  );
+};
+
+// ✅ Component phụ để hiển thị danh sách thú cưng thật từ API
+const MyPetsSection = () => {
+  const [pets, setPets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPets = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/pets");
+        if (!res.ok) throw new Error("Failed to fetch pets");
+        const data = await res.json();
+        setPets(data);
+      } catch (err) {
+        console.error("❌ Error fetching pets:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPets();
+  }, []);
+
+  if (loading) return <p className="text-gray-500">Loading pets...</p>;
+  if (pets.length === 0) return <p className="text-gray-500">Danh sách trống.</p>;
+
+  return (
+    <div className="flex flex-wrap gap-10">
+      {pets.map((pet) => (
+        <div key={pet.id} className="flex flex-col items-center">
+          <img
+            src={
+              pet.photo_url
+                ? pet.photo_url.startsWith("http")
+                  ? pet.photo_url
+                  : `http://localhost:5000${pet.photo_url}`
+                : "https://via.placeholder.com/120x120?text=No+Image"
+            }
+            alt={pet.name}
+            className="w-24 h-24 rounded-full object-cover mb-2"/>
+          <p className="font-medium text-gray-800">{pet.name}</p>
+          <p className="text-gray-500 text-sm">{pet.species || "Unknown"}</p>
+        </div>
+      ))}
     </div>
   );
 };
