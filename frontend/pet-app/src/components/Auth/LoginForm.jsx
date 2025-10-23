@@ -36,7 +36,8 @@ const inputClass = "w-full bg-gray-50 border border-transparent px-5 py-3 rounde
 // --- END ICONS & STYLES ---
 
 function LoginForm({ onClose }) {
-  const [isRegister, setIsRegister] = useState(true);
+  const [isRegister, setIsRegister] = useState(false);
+
   const [fullName, setFullName] = useState("");
   const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -118,7 +119,8 @@ function LoginForm({ onClose }) {
       });
       alert("Login success!");
       localStorage.setItem("token", res.data.token);
-      window.location.href = "/dashboard";
+
+      window.location.href = "/";
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || "Login failed");

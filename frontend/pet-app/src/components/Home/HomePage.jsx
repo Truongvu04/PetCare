@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LoginForm from "../Auth/LoginForm";
+
 //import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 //import LoginForm from "./LoginForm";
 
@@ -101,7 +101,6 @@ h4 { font-size: 1.2em; margin-top: 5px; }
 }
 
 /* --- HEADER (Thanh điều hướng) --- */
-/* Đã giữ lại style header và đặt nó vào một component riêng, nhưng sẽ không gọi component này trong App để giải quyết vấn đề 2 Header */
 .header {
     display: flex;
     justify-content: space-between;
@@ -128,10 +127,11 @@ h4 { font-size: 1.2em; margin-top: 5px; }
     color: var(--primary-color);
 }
 
+/* 🟢 SỬA LỖI: Đã loại bỏ margin-left và transform để đưa Navbar về đúng vị trí */
 .navbar {
     margin-top: 4px;
-    margin-left: -200px;
-    transform: translateX(-10%); 
+    margin-left: 30px; /* Thêm margin nhỏ để cách logo */
+    flex-grow: 1; /* Cho phép nó mở rộng để cân bằng không gian */
     display: flex;
     gap: 25px;
 }
@@ -152,6 +152,43 @@ h4 { font-size: 1.2em; margin-top: 5px; }
     display: flex;
     align-items: center;
     gap: 20px;
+}
+
+/* 🆕 Thêm style cho nút Đăng nhập / Đăng ký mới */
+.auth-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-login, .btn-register {
+  padding: 10px 22px;
+  border-radius: 30px;
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: 0.3s ease;
+  white-space: nowrap;
+}
+
+/* 🟢 ĐÃ SỬA: Đổi màu nền của nút Đăng nhập và Đăng ký để trùng với màu chủ đạo */
+.btn-login {
+  background: var(--primary-color); /* Sử dụng màu xanh lá cây chủ đạo */
+}
+
+.btn-login:hover {
+  background: #1d926dff; /* Màu hover tương tự btn-primary */
+}
+
+.btn-register {
+  background: var(--primary-color); /* Sử dụng màu xanh lá cây chủ đạo */
+}
+
+.btn-register:hover {
+  background: #1d926dff; /* Màu hover tương tự btn-primary */
+  box-shadow: 0 0 10px rgba(41, 169, 128, 0.5); /* Thay đổi màu bóng cho phù hợp */
 }
 
 /* Profile */
@@ -497,9 +534,17 @@ section p {
     .service-image {
         height: 150px;
     }
+    /* ⚠️ Đảm bảo các nút hiển thị tốt trên mobile */
+    .auth-buttons {
+      display: flex;
+    }
+    .btn-login, .btn-register {
+      padding: 8px 15px;
+      font-size: 12px;
+      border-radius: 20px;
+    }
 }
 `;
-
 
 // --- Reusable Components (Sử dụng các lớp CSS gốc) ---
 
@@ -556,7 +601,17 @@ const Header = () => {
         <NavLink href="#">Chính sách & Bảo mật</NavLink>
         <NavLink href="#">Liên hệ</NavLink>
       </nav>
+
+
+
       <div className="header-actions">
+        {/* 💥 Vị trí đặt nút Đăng nhập và Đăng ký đã đúng */}
+
+        {/* Container cho các nút Đăng ký/Đăng nhập */}
+        <div className="auth-buttons">
+          <a href="/login" className="btn-login">Đăng nhập</a>
+          <a href="/login" className="btn-register">Đăng ký</a>
+        </div>
         <div className="search-box">
           <i className="fa-solid fa-magnifying-glass"></i>
           <input type="text" placeholder="Tìm kiếm" />
@@ -574,7 +629,7 @@ const Header = () => {
       </div>
     </header>
   );
-};
+}; 5
 
 
 const HeroSection = () => (
@@ -714,8 +769,7 @@ const App = () => {
         <Footer />
       </div>
 
-      {/* Hiển thị popup đăng nhập */}
-      {showLogin && <LoginForm onClose={() => setShowLogin(false)} />}
+
     </>
   );
 };
