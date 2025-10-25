@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+
 //import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-//import LoginForm from "./LoginForm";
+import LoginForm from "../Auth/LoginForm";
+
 
 
 // --- Constants (Thay thế các đường dẫn file ảnh cục bộ bằng Placeholder URL) ---
@@ -587,9 +589,24 @@ const SupportCard = ({ iconClass, title, description }) => (
 // --- Layout Sections ---
 const Header = () => {
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // ✅ Kiểm tra trạng thái đăng nhập
+  React.useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setIsLoggedIn(true);
+    }
+  }, []);
 
   const handleAvatarClick = () => {
-    navigate('/dashBoard'); // Chuyển sang trang Dashboard
+    navigate('/dashBoard');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
+    navigate("/"); // Quay lại trang chủ
   };
 
   return (
@@ -602,34 +619,45 @@ const Header = () => {
         <NavLink href="#">Liên hệ</NavLink>
       </nav>
 
-
-
       <div className="header-actions">
-        {/* 💥 Vị trí đặt nút Đăng nhập và Đăng ký đã đúng */}
+        {/* 🟢 Nếu chưa đăng nhập → hiện nút đăng nhập / đăng ký */}
+        {!isLoggedIn ? (
+          <div className="auth-buttons">
+            <a href="/login" className="btn-login">Đăng nhập</a>
+            <a href="/login" className="btn-register">Đăng ký</a>
+          </div>
+        ) : (
+          <>
+            <button
+              onClick={handleLogout}
+              className="btn btn-secondary"
+              style={{ borderRadius: "20px", fontSize: "14px" }}
+            >
+              Đăng xuất
+            </button>
+            <div className="user-profile">
+              <img
+                src={PLACEHOLDERS.AVATAR}
+                alt="User"
+                className="profile-avatar"
+                onClick={handleAvatarClick}
+                style={{ cursor: 'pointer' }}
+              />
+            </div>
+          </>
+        )}
 
-        {/* Container cho các nút Đăng ký/Đăng nhập */}
-        <div className="auth-buttons">
-          <a href="/login" className="btn-login">Đăng nhập</a>
-          <a href="/login" className="btn-register">Đăng ký</a>
-        </div>
+        {/* Thanh tìm kiếm và chuông thông báo luôn hiển thị */}
         <div className="search-box">
           <i className="fa-solid fa-magnifying-glass"></i>
           <input type="text" placeholder="Tìm kiếm" />
         </div>
         <i className="fa-regular fa-bell"></i>
-        <div className="user-profile">
-          <img
-            src={PLACEHOLDERS.AVATAR}
-            alt="User"
-            className="profile-avatar"
-            onClick={handleAvatarClick}
-            style={{ cursor: 'pointer' }}
-          />
-        </div>
       </div>
     </header>
   );
-}; 5
+};
+
 
 
 const HeroSection = () => (
@@ -747,7 +775,7 @@ const Footer = () => (
 // --- Main App Component ---
 
 const App = () => {
-  const [showLogin, setShowLogin] = useState(true); // 👈 trạng thái hiển thị popup
+  //const [showLogin, setShowLogin] = useState(true); // 👈 trạng thái hiển thị popup
 
   return (
     <>
@@ -768,6 +796,7 @@ const App = () => {
         </main>
         <Footer />
       </div>
+      {/* {showLogin && <LoginForm onClose={() => setShowLogin(false)} />} */}
 
 
     </>

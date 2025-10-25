@@ -20,12 +20,28 @@ const transporter = nodemailer.createTransport({
 /* ------------------- Send OTP Email ------------------- */
 const sendOTPEmail = async (email, otp) => {
     await transporter.sendMail({
-        from: process.env.EMAIL_USER,
+        from: `"PetCare+ Support" <${process.env.EMAIL_USER}>`,
         to: email,
-        subject: "Your OTP Code",
-        text: `Your OTP code is ${otp}`,
+        subject: "🔐 Your PetCare+ OTP Verification Code",
+        html: `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <h2 style="color: #2e8b57;">🐾 PetCare+ Verification</h2>
+                <p>Hello <b>${email}</b>,</p>
+                <p>We received a request to verify your email for your PetCare+ account.</p>
+                <p style="font-size: 16px;">Please use the OTP code below to complete your verification:</p>
+                <h1 style="background: #2e8b57; color: white; padding: 10px 20px; display: inline-block; border-radius: 8px; letter-spacing: 4px;">
+                    ${otp}
+                </h1>
+                <p>This OTP is valid for <b>5 minutes</b>. Please do not share it with anyone for your account’s security.</p>
+                <br>
+                <p>Thanks,<br><b>The PetCare+ Team</b></p>
+                <hr style="border: none; border-top: 1px solid #ccc; margin-top: 20px;" />
+                <small>If you didn’t request this code, you can safely ignore this email.</small>
+            </div>
+        `,
     });
 };
+
 
 /* ------------------- REGISTER ------------------- */
 router.post("/register", async (req, res) => {

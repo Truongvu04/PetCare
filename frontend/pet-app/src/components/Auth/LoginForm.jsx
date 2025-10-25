@@ -37,6 +37,8 @@ const inputClass = "w-full bg-gray-50 border border-transparent px-5 py-3 rounde
 
 function LoginForm({ onClose }) {
   const [isRegister, setIsRegister] = useState(false);
+  //const [isRegister, setIsRegister] = useState(true);
+
 
   const [fullName, setFullName] = useState("");
   const [emailOrPhone, setEmailOrPhone] = useState("");
