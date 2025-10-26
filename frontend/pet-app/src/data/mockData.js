@@ -1,6 +1,6 @@
 export const pets = [
   {
-    id: 1,
+    id: "255e1dc40759",
     name: "Buddy",
     type: "Dog",
     breed: "Golden Retriever",
@@ -10,7 +10,7 @@ export const pets = [
     diet: "Balanced Plan"
   },
   {
-    id: 2,
+    id: "96c8d958935f",
     name: "Whiskers",
     type: "Cat",
     breed: "Siamese",
@@ -20,7 +20,7 @@ export const pets = [
     diet: "Indoor Cat Formula"
   },
   {
-    id: 3,
+    id: "c8866be165fc",
     name: "Chirpy",
     type: "Bird",
     breed: "Parakeet",
@@ -33,9 +33,9 @@ export const pets = [
 
 export const reminders = [
   {
-    id: 1,
-    petId: 1,
-    petName: "Buddy",
+    reminder_id: 1,
+    pet_id:"255e1dc40759",
+    name: "Buddy",
     type: "vaccination",
     title: "Vaccination for Fido",
     dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
@@ -43,9 +43,9 @@ export const reminders = [
     icon: "vaccines"
   },
   {
-    id: 2,
-    petId: 2,
-    petName: "Whiskers",
+    reminder_id: 2,
+    pet_id: "96c8d958935f",
+    name: "Whiskers",
     type: "checkup",
     title: "Regular Check-up for Whiskers",
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -53,9 +53,9 @@ export const reminders = [
     icon: "health_and_safety"
   },
   {
-    id: 3,
-    petId: 1,
-    petName: "Buddy",
+    reminder_id: 3,
+    pet_id: "255e1dc40759",
+    name: "Buddy",
     type: "feeding",
     title: "Feeding Schedule for Fido",
     dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
@@ -63,9 +63,9 @@ export const reminders = [
     icon: "restaurant"
   },
   {
-    id: 4,
-    petId: 2,
-    petName: "Whiskers",
+    reminder_id: 4,
+    pet_id: "96c8d958935f",
+    name: "Whiskers",
     type: "grooming",
     title: "Grooming Appointment for Whiskers",
     dueDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
@@ -104,7 +104,9 @@ export const vetClinics = [
 ];
 
 export const user = {
-  name: "Sarah",
+  user_id: 1,
+  full_name: "Sarah",
+  email:"Something@gmail.com",
   role: "Owner",
   avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBHuNyAbMF4mGjcrjf2PQ0T4V2nnvTwub7wlCiRtqB7uPRa3posUBrHCeDHkj6kefkk_SHHf-RZ35atzTIPbYZdxxXfz4HwyVtqmaYLvlEFDmxRcLN-2SMJGrxnm_mFPQpZlHAkq2MR2ER40eDJZS2WmuDr6TsAHCZNZnVfGNr6Mt2VC-UMrhzzAPY8AeRQ4hUJ5JKD98rSZcXxNr89zjmHZJJGEKteg1auRERfS5DAsljwL-zPm6EC7yuE2cSB4gGypYjt5ZRxtUsU"
 };

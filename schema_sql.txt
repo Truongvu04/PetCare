@@ -1,0 +1,77 @@
+CREATE TABLE `Users` (
+	`user_id` INTEGER NOT NULL AUTO_INCREMENT,
+	`full_name` VARCHAR(100),
+	`email` VARCHAR(100) UNIQUE,
+	`password_hash` VARCHAR(255),
+	`role` ENUM('owner', 'vendor', 'admin') DEFAULT 'owner',
+	`created_at ` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY(`user_id`)
+);
+
+
+CREATE TABLE pets (
+    id CHAR(12) PRIMARY KEY,                -- ID pet (dạng chuỗi ngắn)
+    user_id INT,                            -- ID người dùng (chủ sở hữu)
+    name VARCHAR(100) NOT NULL,             -- Tên thú cưng
+    species VARCHAR(50) NOT NULL,           -- Loài (Chó, Mèo, v.v.)
+    breed VARCHAR(100),                     -- Giống
+    age INT,                                -- Tuổi
+    weight DECIMAL(5,2),                    -- Cân nặng (VD: 12.35)
+    vaccination VARCHAR(100),               -- Tiêm chủng
+    medical_history TEXT,                   -- Lịch sử y tế
+    description TEXT,                       -- Mô tả thêm
+    photo_url VARCHAR(255),                 -- Ảnh
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Tự động ghi thời gian tạo
+);
+
+
+-- Xóa bảng cũ nếu tồn tại (cẩn thận khi chạy trên DB có dữ liệu)
+DROP TABLE IF EXISTS `reminders`;
+
+-- Tạo bảng reminders mới với cột is_read và end_date
+CREATE TABLE `reminders` (
+    `reminder_id` CHAR(12) NOT NULL,
+    `pet_id` CHAR(12),
+    `type` ENUM('vaccination', 'vet_visit', 'feeding', 'grooming', 'medication', 'other') NOT NULL,
+    `vaccination_type` VARCHAR(255) DEFAULT NULL,
+    `feeding_time` TIME DEFAULT NULL,
+    `reminder_date` DATE NOT NULL,
+    `frequency` ENUM('none','daily','weekly','monthly','yearly') DEFAULT 'none',
+    `frequency_interval` INTEGER DEFAULT 1,
+    `status` ENUM('pending', 'done') DEFAULT 'pending',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `is_read` BOOLEAN DEFAULT FALSE,
+    `end_date` DATE DEFAULT NULL,      -- ✅ Ngày kết thúc lặp lại (tùy chọn)
+    PRIMARY KEY(`reminder_id`),
+    FOREIGN KEY (`pet_id`) REFERENCES `pets`(`id`)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+-- Thêm index
+CREATE INDEX idx_reminders_pet_id ON reminders(pet_id);
+CREATE INDEX idx_reminders_reminder_date ON reminders(reminder_date);
+CREATE INDEX idx_reminders_created_at ON reminders(created_at);
+CREATE INDEX idx_reminders_is_read ON reminders(is_read);
+CREATE INDEX idx_reminders_frequency ON reminders(frequency); -- Thêm index cho frequency
+CREATE INDEX idx_reminders_end_date ON reminders(end_date);   -- Thêm index cho end_date
+
+CREATE TABLE `vet_clinics` (
+	`clinic_id` INTEGER NOT NULL AUTO_INCREMENT,
+	`name ` VARCHAR(150),
+	`address ` VARCHAR(255),
+	`latitude ` DECIMAL(10,7),
+	`longitude ` DECIMAL(10,7),
+	`phone ` VARCHAR(20),
+	`created_at ` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY(`clinic_id`)
+);
+
+
+ALTER TABLE `pets `
+ADD FOREIGN KEY(`user_id `) REFERENCES `Users`(`user_id`)
+ON UPDATE NO ACTION ON DELETE CASCADE;
+-- fix FK for reminders -> pets.id
+ALTER TABLE `reminders`
+DROP FOREIGN KEY IF EXISTS `reminders_ibfk_1`;
+ALTER TABLE `reminders`
+ADD FOREIGN KEY (`pet_id`) REFERENCES `pets`(`id`)
+ON UPDATE NO ACTION ON DELETE CASCADE;
