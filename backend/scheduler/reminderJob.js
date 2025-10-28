@@ -276,7 +276,26 @@ async function processRepeatingReminders_NewLogic() {
                                      // Gửi email cho reminder MỚI (W/M/Y)
                                      if (reminder.user_email) {
                                          const subject = `PetCare+ Reminder: ${reminder.pet_name}'s ${reminder.type} due on ${nextDateLocalStr}`;
-                                         const htmlContent = `...`; // Template HTML tương tự
+                                         // Template HTML cho W/M/Y tương tự daily nhưng thay đổi nội dung thông báo
+                                         const htmlContent = `
+                                         <!DOCTYPE html><html lang="en"><head>...</head><body>
+                                         <div class="container">
+                                             <div class="header"><h1>PetCare+ Reminder</h1></div>
+                                             <div class="content">
+                                                 <p>Hi Owner,</p>
+                                                 <p>Reminder for the next cycle for <strong>${reminder.pet_name}</strong>:</p>
+                                                 <div class="info-box">
+                                                     <p><strong>Reminder Type:</strong> ${reminder.type} ${reminder.vaccination_type ? `(${reminder.vaccination_type})` : ''}</p>
+                                                     <p><strong>Next Due Date:</strong> ${nextDateLocalStr}</p>
+                                                 </div>
+                                                 <p>Please prepare for the upcoming schedule!</p>
+                                             </div>
+                                             <div class="footer">
+                                                <em>This reminder was automatically generated for the next cycle.</em>
+                                                <p>&copy; ${new Date().getFullYear()} PetCare+. All rights reserved.</p>
+                                            </div>
+                                         </div>
+                                         </body></html>`;
                                          sendReminderEmail(reminder.user_email, subject, htmlContent)
                                              .catch(err => console.error(`   -> Failed to send ${reminder.frequency} reminder email for ${newId}:`, err));
                                      }
@@ -289,7 +308,6 @@ async function processRepeatingReminders_NewLogic() {
                                      }
                                  } else {
                                       console.error(`   -> FAILED to create next ${reminder.frequency} reminder for ${reminder.reminder_id}`);
-                                      // Cân nhắc không xóa cái cũ nếu không tạo được cái mới? Hoặc thử lại?
                                  }
                              } else {
                                   console.log(`   -> Skipping creation for W/M/Y ${reminder.reminder_id}, next reminder on ${nextDateLocalStr} already exists.`);
@@ -333,6 +351,7 @@ async function processRepeatingReminders_NewLogic() {
         console.error('❌ Error processing non-feeding repeating reminders (New Logic):', error);
     }
 }
+
 
 /**
  * Xử lý feeding reminders.
@@ -410,9 +429,55 @@ async function processFeedingReminders() {
                         } else {
                             console.log(`   -> [Feeding] Set is_read=FALSE for reminder ${reminder.reminder_id} (due at ${feedingTimeStr}, <1h away)`);
                             setUnreadCount++;
+                            // Gửi email khi chuyển thành unread
                             if (reminder.user_email) {
-                                const subject = `PetCare+ Feeding Reminder: ${reminder.pet_name} at ${feedingTimeStr.substring(0, 5)}`; // HH:MM
-                                const htmlContent = `...`; // Template HTML cho feeding
+                                const displayTime = feedingTimeStr && typeof feedingTimeStr === 'string'
+                                                    ? feedingTimeStr.substring(0, 5) // Chỉ lấy HH:MM
+                                                    : 'N/A'; // Giá trị dự phòng
+                                const subject = `PetCare+ Feeding Reminder: ${reminder.pet_name} at ${displayTime}`;
+                                const htmlContent = `
+                                <!DOCTYPE html>
+                                <html lang="en">
+                                <head>
+                                    <meta charset="UTF-8">
+                                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                    <title>PetCare+ Feeding Reminder</title>
+                                    <style>
+                                        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
+                                        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+                                        .header { background-color: #20df6c; color: #ffffff; padding: 20px; text-align: center; }
+                                        .header h1 { margin: 0; font-size: 24px; }
+                                        .content { padding: 30px; line-height: 1.6; color: #333333; }
+                                        .content strong { color: #1a9c56; }
+                                        .info-box { background-color: #e8f7f0; border-left: 5px solid #20df6c; padding: 15px; margin: 20px 0; border-radius: 4px; text-align: center; }
+                                        .info-box p { margin: 5px 0; }
+                                        .time-highlight { font-size: 28px; font-weight: bold; color: #1a9c56; margin: 10px 0; }
+                                        .footer { text-align: center; padding: 20px; font-size: 12px; color: #888888; background-color: #f4f4f4; }
+                                        .footer em { color: #666666;}
+                                    </style>
+                                </head>
+                                <body>
+                                    <div class="container">
+                                        <div class="header">
+                                            <h1>PetCare+ Feeding Reminder 🍲</h1>
+                                        </div>
+                                        <div class="content">
+                                            <p>Hi Owner,</p>
+                                            <p>It's almost time to feed <strong>${reminder.pet_name || 'your pet'}</strong>!</p>
+                                            <div class="info-box">
+                                                <p>Scheduled Time Today:</p>
+                                                <p class="time-highlight">${displayTime}</p> {/* Sử dụng displayTime đã kiểm tra */}
+                                            </div>
+                                            <p>Don't forget!</p>
+                                        </div>
+                                        <div class="footer">
+                                             <em>You are receiving this because a feeding reminder is approaching.</em>
+                                            <p>&copy; ${new Date().getFullYear()} PetCare+. All rights reserved.</p>
+                                        </div>
+                                    </div>
+                                </body>
+                                </html>
+                                `;
                                 sendReminderEmail(reminder.user_email, subject, htmlContent)
                                     .catch(err => console.error(`   -> Failed to send feeding reminder email for ${reminder.reminder_id}:`, err));
                             } else {
@@ -424,22 +489,91 @@ async function processFeedingReminders() {
             } catch(timeError) {
                 console.error(`   -> [Feeding] Error processing time ${feedingTimeStr} for managing is_read status on reminder ${reminder.reminder_id}:`, timeError);
             }
-        }
+        } // Kết thúc vòng lặp quản lý is_read
 
-        // --- 1. Tạo Feeding Reminder Instances ... ---
-         const baseFeedings = await db.query( /* ... */ );
+        // --- 1. Tạo Feeding Reminder Instances cho Hôm Nay ---
+         const baseFeedings = await db.query(
+             `SELECT reminder_id, pet_id, feeding_time, frequency, end_date
+              FROM reminders
+              WHERE type = 'feeding'
+                AND feeding_time IS NOT NULL
+                AND status = 'pending'
+                AND (frequency = 'daily' OR (frequency = 'none' AND reminder_date = ?))
+                AND (end_date IS NULL OR end_date >= ?)`,
+             [todayLocalStr, todayLocalStr]
+         );
+
          console.log(`   [Feeding] Found ${baseFeedings.length} base schedules to check for instance creation.`);
-         for (const baseReminder of baseFeedings) { /* ... Tạo instance nếu cần ... */ }
+
+         for (const baseReminder of baseFeedings) {
+            const feedingTimeStr = baseReminder.feeding_time;
+            if (!feedingTimeStr) continue;
+
+             try {
+                 const [hours, minutes, seconds] = feedingTimeStr.split(':').map(Number);
+                 if (isNaN(hours) || isNaN(minutes)) throw new Error("Invalid time format in DB");
+
+                 const reminderDateTimeLocalToday = new Date(nowLocal);
+                 reminderDateTimeLocalToday.setHours(hours, minutes, seconds || 0, 0);
+                 const oneHourBeforeLocal = new Date(reminderDateTimeLocalToday);
+                 oneHourBeforeLocal.setHours(oneHourBeforeLocal.getHours() - 1);
+
+                 if (nowLocal >= oneHourBeforeLocal && nowLocal <= reminderDateTimeLocalToday) {
+                     const existingInstance = await db.query(
+                         `SELECT reminder_id FROM reminders
+                          WHERE pet_id = ? AND type = 'feeding' AND reminder_date = ? AND feeding_time = ?
+                            AND frequency = 'none' AND status = 'pending'`,
+                         [baseReminder.pet_id, todayLocalStr, feedingTimeStr]
+                     );
+
+                      if (existingInstance.length === 0) {
+                          const newId = crypto.randomBytes(6).toString('hex');
+                          const insertResult = await db.execute(
+                              `INSERT INTO reminders (reminder_id, pet_id, type, feeding_time, reminder_date, frequency, status, is_read, created_at, end_date)
+                               VALUES (?, ?, 'feeding', ?, ?, 'none', 'pending', FALSE, NOW(), NULL)`,
+                              [newId, baseReminder.pet_id, feedingTimeStr, todayLocalStr]
+                          );
+                           if (insertResult.affectedRows > 0) {
+                              console.log(`   -> [Feeding] Created SPECIFIC instance ${newId} (initially unread) for pet ${baseReminder.pet_id} at ${feedingTimeStr}`);
+                              createdCount++;
+                           } else {
+                               console.error(`   -> [Feeding] FAILED to create instance for pet ${baseReminder.pet_id} at ${feedingTimeStr}`);
+                           }
+                      }
+                 }
+             } catch(timeError) {
+                  console.error(`   -> [Feeding] Error processing time ${feedingTimeStr} during instance creation for reminder ${baseReminder.reminder_id}:`, timeError);
+             }
+         } // Kết thúc vòng lặp tạo instance
 
         // --- 2. Xóa Instance Feeding của Hôm Nay nếu Quá Giờ ---
          console.log(`   [Feeding] Checking instances for deletion on ${todayLocalStr} where TIME('${currentTimeLocalStr}') > feeding_time`);
-         const deleteResult = await db.execute( /* ... */ );
-         if (deleteResult.affectedRows > 0) { /* ... */ }
+         const deleteResult = await db.execute(
+             `DELETE FROM reminders
+              WHERE type = 'feeding'
+                AND frequency = 'none'
+                AND reminder_date = ?
+                AND TIME(?) > feeding_time`,
+             [todayLocalStr, currentTimeLocalStr]
+         );
+         if (deleteResult.affectedRows > 0) {
+             console.log(`   -> [Feeding] Deleted ${deleteResult.affectedRows} past SPECIFIC feeding instances from today (${todayLocalStr}).`);
+             deletedSpecificTodayCount = deleteResult.affectedRows;
+         }
 
         // --- 3. Dọn Dẹp Instance Feeding của Ngày Hôm Qua ---
-        const yesterdayLocal = new Date(nowLocal); /* ... */
-        const deletedYesterdayResult = await db.execute( /* ... */ );
-        if(deletedYesterdayResult.affectedRows > 0){ /* ... */ }
+        const yesterdayLocal = new Date(nowLocal);
+        yesterdayLocal.setDate(yesterdayLocal.getDate() - 1);
+        const yesterdayLocalStr = yesterdayLocal.toLocaleDateString('sv');
+        const deletedYesterdayResult = await db.execute(
+            `DELETE FROM reminders
+             WHERE type = 'feeding' AND frequency = 'none' AND reminder_date = ?`,
+            [yesterdayLocalStr]
+        );
+        if(deletedYesterdayResult.affectedRows > 0){
+            console.log(`   -> [Feeding] Deleted ${deletedYesterdayResult.affectedRows} leftover 'none' instances from yesterday (${yesterdayLocalStr}).`);
+            deletedYesterdayNoneCount = deletedYesterdayResult.affectedRows;
+        }
 
         console.log(`[${jobStartTime.toISOString()}] Finished processFeedingReminders. SetRead: ${setReadCount}, SetUnread: ${setUnreadCount}, Created: ${createdCount}, Deleted Today: ${deletedSpecificTodayCount}, Deleted Yesterday: ${deletedYesterdayNoneCount}.`);
         console.log(`[${jobStartTime.toISOString()}] === 5-MINUTE JOB END ===\n`);
@@ -453,12 +587,12 @@ async function processFeedingReminders() {
 
 // --- Lên Lịch Cron Job ---
 // Job Hàng Ngày: Chạy lúc 00:01
-cron.schedule('1 0 * * *', async () => { 
+cron.schedule('1 0 * * *', async () => {
   console.log(`\n[${new Date().toISOString()}] === DAILY JOB START ===`);
   try {
     // Chỉ cần chạy hàm logic mới
     await processRepeatingReminders_NewLogic();
-    // await processExpiredNoneReminders(); // Hàm này không cần nữa
+    // Hàm processExpiredNoneReminders không còn cần thiết nữa
   } catch (e) {
     console.error("Error in DAILY cron job:", e);
   } finally {
