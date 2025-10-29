@@ -466,7 +466,7 @@ async function processFeedingReminders() {
                                             <p>It's almost time to feed <strong>${reminder.pet_name || 'your pet'}</strong>!</p>
                                             <div class="info-box">
                                                 <p>Scheduled Time Today:</p>
-                                                <p class="time-highlight">${displayTime}</p> {/* Sử dụng displayTime đã kiểm tra */}
+                                                <p class="time-highlight">${displayTime}</p> 
                                             </div>
                                             <p>Don't forget!</p>
                                         </div>
