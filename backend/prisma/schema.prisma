@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql" // ✅ Đã sửa: Khớp với file .env của bạn
+  url      = env("DATABASE_URL")
+}
+
+// ------ Bảng Enum (Từ logic cũ của bạn) ------
+enum Role {
+  owner
+  vendor
+  admin
+}
+
+enum ReminderFrequency {
+  none
+  daily
+  weekly
+  monthly
+  yearly
+}
+
+enum ReminderStatus {
+  pending
+  done
+}
+
+enum ReminderType {
+  vaccination
+  vet_visit
+  feeding
+  grooming
+  medication
+  other
+  checkup // Thêm "checkup" từ logic file reminders.js
+}
+
+// ------ Model Chính (Đã hợp nhất) ------
+
+model User {
+  user_id       Int      @id @default(autoincrement()) @map("user_id")
+  full_name     String   @map("full_name")
+  email         String   @unique @map("email")
+  password_hash String?  @map("password_hash")
+  phone         String?  @map("phone")
+  role          Role     @default(owner) @map("role")
+  googleId      String?  @unique
+  facebookId    String?  @unique
+  created_at    DateTime @default(now()) @map("created_at")
+
+  pets Pet[] // ✅ Đã thêm: 1 User có nhiều Pet
+
+  @@map("Users") // Khớp với schema cũ của bạn
+}
+
+model OTP {
+  id        Int      @id @default(autoincrement())
+  email     String?
+  phone     String?
+  code      String
+  createdAt DateTime @default(now())
+}
+
+// ------ Model Mới (Dịch từ petcare.sql.txt) ------
+
+model Pet {
+  id              String   @id @default(cuid()) // Dùng CUID (chuỗi) để khớp với file .sql (CHAR 12)
+  name            String
+  species         String
+  breed           String?
+  age             Int?
+  weight          Float? // Dùng Float cho DECIMAL(5,2)
+  vaccination     String?
+  medical_history String?  @db.Text
+  description     String?  @db.Text
+  photo_url       String?
+  created_at      DateTime @default(now())
+
+  // --- Liên kết ---
+  user_id Int // Khóa ngoại
+  owner   User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  reminders Reminder[] // 1 Pet có nhiều Reminder
+
+  @@map("pets") // Tên bảng trong MySQL (giống petcare.sql.txt)
+}
+
+model Reminder {
+  reminder_id String @id @default(cuid()) // Dùng CUID (chuỗi)
+
+  type             ReminderType
+  vaccination_type String?
+  feeding_time     DateTime? @db.Time // Dùng DateTime + @db.Time cho kiểu TIME
+  reminder_date    DateTime  @db.Date // Dùng DateTime + @db.Date cho kiểu DATE
+  frequency        ReminderFrequency @default(none)
+  status           ReminderStatus    @default(pending)
+  is_read          Boolean           @default(false)
+  end_date         DateTime?         @db.Date // Ngày kết thúc lặp lại
+
+  is_instance   Boolean           @default(false) // Đánh dấu đây là bản sao do cron job tạo
+  email_sent       Boolean           @default(false)
+  created_at    DateTime          @default(now())
+  updated_at    DateTime          @updatedAt
+
+  
+  // --- Liên kết ---
+  pet_id String // Khóa ngoại
+  pet    Pet    @relation(fields: [pet_id], references: [id], onDelete: Cascade)
+
+  @@index([pet_id])
+  @@index([reminder_date])
+  @@map("reminders") // Tên bảng trong MySQL (giống petcare.sql.txt)
+}
