@@ -476,7 +476,7 @@ cron.schedule('1 0 * * *', async () => {
 });
 
 
-cron.schedule('*/5 * * * *', async () => {
+cron.schedule('*/6 * * * *', async () => {
     try {
         await processFeedingReminders();
     } catch (e) { 
