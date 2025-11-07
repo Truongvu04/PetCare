@@ -301,11 +301,11 @@ async function processFeedingReminders() {
                 // Khai báo biến *bên trong* vòng lặp
                 const reminderTime = base.feeding_time; 
                 const reminderTimeNum = reminderTime.getTime();
-                const tenMinutesBeforeNum = reminderTimeNum - (10 * 60 * 1000);
+                const fifteenMinutesBeforeNum = reminderTimeNum - (15 * 60 * 1000);
                 // ==========================
 
-                // (Step 3: Check cửa sổ 10 phút)
-                if (timeNowNum >= tenMinutesBeforeNum && timeNowNum <= reminderTimeNum) {
+                // (Step 3: Check cửa sổ 15 phút)
+                if (timeNowNum >= fifteenMinutesBeforeNum && timeNowNum <= reminderTimeNum) {
                     
                     // === (SỬA LỖI SPAM V21: Quay lại "Check-then-Act") ===
                     
@@ -329,7 +329,7 @@ async function processFeedingReminders() {
                                 data: {
                                     pet_id: base.pet_id,
                                     type: 'feeding',
-                                    vaccination_type: base.vaccination_type, // (Giữ lại V20 fix)
+                                    vaccination_type: base.vaccination_type, 
                                     feeding_time: reminderTime,
                                     reminder_date: today, 
                                     frequency: 'none', 
@@ -395,10 +395,10 @@ async function processFeedingReminders() {
                  // Khai báo biến *bên trong* vòng lặp
                  const reminderTime = r.feeding_time; 
                  const reminderTimeNum = reminderTime.getTime();
-                 const tenMinutesBeforeNum = reminderTimeNum - (10 * 60 * 1000);
+                 const fifteenMinutesBeforeNum = reminderTimeNum - (15 * 60 * 1000);
                  // ==========================
                  
-                 if (timeNowNum >= tenMinutesBeforeNum && timeNowNum <= reminderTimeNum) {
+                 if (timeNowNum >= fifteenMinutesBeforeNum && timeNowNum <= reminderTimeNum) {
                      
                      if (r.email_sent === false) {
 
@@ -476,7 +476,7 @@ cron.schedule('1 0 * * *', async () => {
 });
 
 
-cron.schedule('*/10 * * * *', async () => {
+cron.schedule('*/5 * * * *', async () => {
     try {
         await processFeedingReminders();
     } catch (e) { 
