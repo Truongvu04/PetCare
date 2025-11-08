@@ -57,6 +57,7 @@ CREATE TABLE `reminders` (
     `is_read` BOOLEAN NOT NULL DEFAULT false,
     `end_date` DATE NULL,
     `is_instance` BOOLEAN NOT NULL DEFAULT false,
+    `email_sent` BOOLEAN NOT NULL DEFAULT false,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
     `pet_id` VARCHAR(191) NOT NULL,

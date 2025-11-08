@@ -15,36 +15,31 @@ const RemindersAuto = () => {
   const [pets, setPets] = useState([]);
 
   // --- States cho từng loại reminder ---
-  // (Giữ nguyên các state: vPet, vaccinationType, vDate, vFreq, cPet, cDate, ...)
-  // Vaccination
+  // (Giữ nguyên)
   const [vPet, setVPet] = useState("");
   const [vaccinationType, setVaccinationType] = useState("");
   const [vDate, setVDate] = useState("");
   const [vFreq, setVFreq] = useState("none");
-  // Check-Up
   const [cPet, setCPet] = useState("");
   const [cDate, setCDate] = useState("");
   const [cFreq, setCFreq] = useState("none");
-  // Feeding
   const [fPet, setFPet] = useState("");
   const [feedingTime, setFeedingTime] = useState("");
   const [fFreq, setFFreq] = useState("none");
   const [fEndDate, setFEndDate] = useState("");
-  // Grooming
   const [gPet, setGPet] = useState("");
   const [gDate, setGDate] = useState("");
   const [gFreq, setGFreq] = useState("none");
   // ------------------------------------
 
-  // useEffect fetch pets (Cập nhật)
+  // useEffect fetch pets (Giữ nguyên)
   useEffect(() => {
     async function loadPets() {
-      if (!user) { // 👈 Nếu chưa login, không làm gì cả
+      if (!user) { 
         setPets([]);
         return;
       }
       try {
-        // 👈 Dùng api.get('/pets'). Backend sẽ tự lọc pet dựa trên token
         const res = await api.get("/pets"); 
         
         if (Array.isArray(res.data)) {
@@ -59,7 +54,7 @@ const RemindersAuto = () => {
       }
     }
     loadPets();
-  }, [user]); // 👈 Thêm user vào dependency array
+  }, [user]); 
 
   // handleCancel (giữ nguyên)
   const handleCancel = (e) => {
@@ -67,7 +62,7 @@ const RemindersAuto = () => {
       navigate("/dashboard");
    };
 
-  // Hàm tính số ngày chênh lệch (giữ nguyên)
+  // (Các hàm helper: calculateDaysDiff, isFrequencyValid giữ nguyên)
   const calculateDaysDiff = (dateStr1, dateStr2) => {
       if (!dateStr1 || !dateStr2) return Infinity;
       const date1 = new Date(dateStr1 + 'T00:00:00Z');
@@ -76,8 +71,6 @@ const RemindersAuto = () => {
       const diffTime = Math.abs(date2.getTime() - date1.getTime());
       return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
-
-  // Hàm kiểm tra tính hợp lệ của frequency (giữ nguyên)
   const isFrequencyValid = (startDateStr, freq) => {
       if (!startDateStr || freq === 'none' || freq === 'daily') return true;
       const daysDiff = calculateDaysDiff(todayStr, startDateStr);
@@ -94,21 +87,49 @@ const RemindersAuto = () => {
     const toCreate = [];
     const isRepeating = (freq) => freq !== 'none';
 
-    // Hàm validation chung (giữ nguyên logic)
+    // Hàm validation chung
     const validateReminder = (pet, date, freq, endDate, typeName) => {
-        if (!pet || (!date && typeName !== 'Feeding') || (!feedingTime && typeName === 'Feeding') ) return null;
-        if (typeName !== 'Feeding' && !isFrequencyValid(date, freq)) {
-            alert(`${typeName} Error: Frequency '${freq}' is too short for the selected start date (${date}). Please choose 'None', 'Daily', or a later start date.`);
-            return false;
-        }
-        if (typeName === 'Feeding' && endDate) {
-            if (!isRepeating(freq)) {
-                 alert(`${typeName} Error: End date is only applicable for repeating reminders (Daily).`);
-                 return false;
-            }
-            if (new Date(endDate + 'T00:00:00Z') < new Date(todayStr + 'T00:00:00Z')) {
-                alert(`${typeName} Error: End date (${endDate}) must be on or after today (${todayStr}).`);
+        const time = (typeName === 'Feeding') ? feedingTime : null;
+        
+        if (!pet || (!date && typeName !== 'Feeding') || (!time && typeName === 'Feeding') ) return null;
+        
+        if (typeName !== 'Feeding') {
+             if (!isFrequencyValid(date, freq)) {
+                alert(`${typeName} Error: Frequency '${freq}' is too short for the selected start date (${date}). Please choose 'None', 'Daily', or a later start date.`);
                 return false;
+             }
+             if (new Date(date + 'T00:00:00Z') < new Date(todayStr + 'T00:00:00Z')) {
+                 alert(`${typeName} Error: Start date (${date}) cannot be in the past.`);
+                 return false;
+             }
+        }
+        
+        if (typeName === 'Feeding') {
+            // === SỬA LỖI (THEO YÊU CẦU MỚI): Chỉ kiểm tra thời gian quá khứ NẾU LÀ 'none' ===
+            // (date cho feeding luôn là 'todayStr' khi gọi hàm này)
+            if (freq === 'none') { // <-- Chỉ kiểm tra nếu là "Today Only"
+                const [hours, minutes] = time.split(':');
+                const now = new Date();
+                const selectedTime = new Date(); // Hôm nay
+                selectedTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+                // Thêm 1 phút đệm để tránh lỗi race condition nhỏ
+                if (selectedTime.getTime() < (now.getTime() - 60000)) { 
+                    alert(`Feeding Error: The selected time (${time}) has already passed today.`);
+                    return false;
+                }
+            }
+            // === HẾT SỬA LỖI ===
+
+            if (endDate) {
+                if (!isRepeating(freq)) {
+                     alert(`${typeName} Error: End date is only applicable for repeating reminders (Daily).`);
+                     return false;
+                }
+                if (new Date(endDate + 'T00:00:00Z') < new Date(todayStr + 'T00:00:00Z')) {
+                    alert(`${typeName} Error: End date (${endDate}) must be on or after today (${todayStr}).`);
+                    return false;
+                }
             }
         }
         return true;
@@ -141,7 +162,9 @@ const RemindersAuto = () => {
     if (isFValid === true) {
         toCreate.push({
             pet_id: fPet, type: "feeding", feeding_time: feedingTime,
-            reminder_date: todayStr,
+            // (Sửa lỗi nhỏ: backend sẽ tự gán reminder_date=today nếu là 'daily', 
+            // nhưng gán rõ ràng cho 'none' để validation backend hoạt động)
+            reminder_date: (fFreq === 'none') ? todayStr : null, 
             frequency: fFreq,
             end_date: isRepeating(fFreq) ? (fEndDate || null) : null,
         });
@@ -163,16 +186,13 @@ const RemindersAuto = () => {
        return;
      }
 
-    // Gửi API (👈 Cập nhật dùng api.post)
+    // Gửi API (Giữ nguyên)
     try {
         console.log("Creating reminders:", toCreate);
         const results = await Promise.all(
           toCreate.map(async (payload) => {
-            // 👈 Thay đổi fetch thành api.post
             const res = await api.post("/reminders", payload);
-            const responseData = res.data; // 👈 axios trả về data trong .data
-            
-            // 👈 axios ném lỗi nếu res.ok là false, nên không cần check !res.ok
+            const responseData = res.data; 
             return responseData;
           })
         );
@@ -181,11 +201,17 @@ const RemindersAuto = () => {
         navigate("/dashboard");
      } catch (err) {
          console.error("Failed to save reminders:", err);
-         // 👈 Lấy lỗi từ response của axios nếu có
          const errorMsg = err.response?.data?.error || err.message || `Failed to create reminder`;
          alert(`Failed to save reminders: ${errorMsg}`);
       }
   }
+
+  // === SỬA LỖI (THEO YÊU CẦU MỚI): Lấy thời gian hiện tại cho min time input ===
+  const now = new Date();
+  // Lùi lại 1 phút để tránh lỗi race condition
+  now.setMinutes(now.getMinutes() - 1); 
+  const currentLocalTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // Format HH:MM
+  // =============================================================
 
   // --- JSX Structure (Giữ nguyên) ---
   return (
@@ -259,7 +285,17 @@ const RemindersAuto = () => {
                  <h2 className="font-semibold text-gray-900 mb-4 border-b pb-2"> Feeding Reminders </h2>
                  <div className="space-y-4 mt-4">
                    <select value={fPet} onChange={(e) => setFPet(e.target.value)} className="w-full bg-green-50 rounded-lg p-3 text-sm text-gray-800 focus:ring-1 focus:ring-green-500 border border-gray-200 focus:outline-none focus:border-green-300"> <option value="">Select pet (Required if filling this section)</option> {pets.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))} </select>
-                   <input type="time" value={feedingTime} onChange={(e) => setFeedingTime(e.target.value)} className="w-full bg-green-50 rounded-lg p-3 text-sm text-gray-800 focus:ring-1 focus:ring-green-500 border border-gray-200 focus:outline-none focus:border-green-300" title="Feeding Time (Required if filling this section)" />
+                   {/* === SỬA LỖI (THEO YÊU CẦU MỚI): Thêm 'min' time nếu là 'Today Only' === */}
+                   <input 
+                       type="time" 
+                       value={feedingTime} 
+                       onChange={(e) => setFeedingTime(e.target.value)} 
+                       // Chỉ áp dụng 'min' nếu là "Today Only"
+                       min={fFreq === 'none' ? currentLocalTime : undefined} 
+                       className="w-full bg-green-50 rounded-lg p-3 text-sm text-gray-800 focus:ring-1 focus:ring-green-500 border border-gray-200 focus:outline-none focus:border-green-300" 
+                       title="Feeding Time (Required if filling this section)" 
+                   />
+                   {/* === HẾT SỬA LỖI === */}
                    <select value={fFreq} onChange={(e) => setFFreq(e.target.value)} className="w-full bg-green-50 rounded-lg p-3 text-sm text-gray-800 focus:ring-1 focus:ring-green-500 border border-gray-200 focus:outline-none focus:border-green-300" title="Frequency">
                      <option value="none">Today Only</option>
                      <option value="daily">Daily</option>

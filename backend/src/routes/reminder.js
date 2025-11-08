@@ -43,7 +43,7 @@ function humanizeType(dbType) {
 
 /**
  * Helper: Tính toán các trường hiển thị
- * (Giữ nguyên bản sửa lỗi "Overdue" từ lần trước)
+ * (Giữ nguyên từ bản vá trước)
  */
 function calculateDisplayFields(reminder) {
     const petName = reminder.pet?.name || 'Pet'; 
@@ -75,7 +75,10 @@ function calculateDisplayFields(reminder) {
             subtitle = `Due in ${diffDays} day${diffDays > 1 ? 's' : ''}`;
         } else { // Quá hạn
             const diffTime = todayUTC.getTime() - reminderUTCStart.getTime();
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays === 0 && reminder.type === 'feeding') {
+                diffDays = 1;
+            }
             subtitle = `Overdue by ${diffDays || 1} day${(diffDays || 1) > 1 ? 's' : ''}`;
         }
     }
@@ -90,9 +93,10 @@ function calculateDisplayFields(reminder) {
             displayTime = `${hours}:${minutes}`;
         }
         
-        // (Giữ nguyên bản sửa lỗi "Overdue")
         if (subtitle.startsWith("Due today")) {
              subtitle = `Due today at ${displayTime}`;
+        } else if (subtitle.startsWith("Overdue")) {
+             subtitle += ` (was at ${displayTime})`;
         } else if (reminder.frequency === 'daily') {
              subtitle = `Daily at ${displayTime}`;
         }
@@ -106,8 +110,7 @@ function calculateDisplayFields(reminder) {
         }
     }
     
-    // (Logic 'is_new_today' vẫn dựa trên 'is_read')
-    const is_new_today = (reminder.is_read === false && (reminderIsToday || reminderWasCreatedToday));
+    const is_new_today = (reminder.is_read === false && (reminderIsToday || reminderWasCreatedToday || subtitle.startsWith("Overdue")));
 
     return { 
         display_title, 
@@ -120,7 +123,7 @@ function calculateDisplayFields(reminder) {
 
 // --- 4. API Routes ---
 
-// (POST /api/reminders giữ nguyên)
+// (POST /api/reminders)
 router.post('/', verifyToken, async (req, res) => {
     try {
         const {
@@ -130,6 +133,7 @@ router.post('/', verifyToken, async (req, res) => {
         const userIdFromToken = req.user.user_id;
 
         // --- Validation ---
+        // (Validation pet, type, frequency giữ nguyên)
         if (!pet_id || !type) {
             return res.status(400).json({ error: 'Missing required fields (pet_id, type)' });
         }
@@ -154,7 +158,7 @@ router.post('/', verifyToken, async (req, res) => {
         todayUTC.setUTCHours(0, 0, 0, 0);
 
         // =============================================
-        // === LOGIC FEEDING VÀ NON-FEEDING (Giữ nguyên) ===
+        // === LOGIC FEEDING VÀ NON-FEEDING ===
         // =============================================
         if (type === 'feeding') {
             if (!isValidTimeString(feeding_time)) {
@@ -167,19 +171,35 @@ router.post('/', verifyToken, async (req, res) => {
             timeObj.setUTCHours(timeObj.getUTCHours() - VIETNAM_OFFSET_HOURS);
             feedingTimeObj = timeObj; 
             
-            // (Giữ nguyên logic 'reminder_date' cho feeding)
+            // Logic 'reminder_date' cho feeding
             if (frequency === 'none' && reminder_date) {
                  if (!isValidDateString(reminder_date)) {
                      return res.status(400).json({ error: 'reminder_date must be a valid date in YYYY-MM-DD format for one-time feeding' });
                  }
                  finalReminderDate = new Date(reminder_date + 'T00:00:00Z');
             } else if (frequency === 'none' && !reminder_date) {
+                // Mặc định là 'today' nếu là 'none' (Today Only)
                 finalReminderDate = todayUTC;
             } else {
+                // Mặc định là 'today' nếu là 'daily' (Bắt đầu từ hôm nay)
                 finalReminderDate = todayUTC;
             }
 
+            // === SỬA LỖI (THEO YÊU CẦU MỚI): Chỉ kiểm tra thời gian quá khứ NẾU LÀ 'none' ===
+            if (frequency === 'none' && finalReminderDate.getTime() === todayUTC.getTime()) {
+                const nowUTC = new Date();
+                // Lấy time-only (UTC) của hiện tại
+                const timeNowObj = new Date(Date.UTC(1970, 0, 1, nowUTC.getUTCHours(), nowUTC.getUTCMinutes()));
+
+                // feedingTimeObj là time-only (UTC) của thời gian đã chọn
+                if (feedingTimeObj.getTime() < timeNowObj.getTime()) {
+                    return res.status(400).json({ error: 'Invalid time: Feeding time has already passed for today (Today Only).' });
+                }
+            }
+            // === HẾT SỬA LỖI ===
+
         } else {
+            // Logic non-feeding
             if (!isValidDateString(reminder_date)) {
                 return res.status(400).json({ error: 'reminder_date must be a valid date in YYYY-MM-DD format' });
             }
@@ -187,6 +207,11 @@ router.post('/', verifyToken, async (req, res) => {
             feedingTimeObj = null; 
             if (type === 'vaccination' && vaccination_type) {
                 finalVaccinationType = vaccination_type;
+            }
+            
+            // (Giữ nguyên kiểm tra ngày quá khứ cho non-feeding)
+            if (finalReminderDate.getTime() < todayUTC.getTime()) {
+                 return res.status(400).json({ error: 'Invalid date: Reminder date cannot be in the past.' });
             }
         }
         
@@ -220,7 +245,7 @@ router.post('/', verifyToken, async (req, res) => {
                 end_date: validEndDate,
                 is_read: false, 
                 is_instance: false,
-                email_sent: false // Đặt giá trị mặc định khi tạo mới
+                email_sent: false 
             },
             include: {
                 pet: { select: { name: true } } 
@@ -241,14 +266,31 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 
-// (GET /api/reminders - Giữ nguyên sửa lỗi lọc trùng từ lần trước)
+// (GET /api/reminders - Giữ nguyên từ bản vá trước)
 router.get('/', verifyToken, async (req, res) => {
      try {
         const userIdFromToken = req.user.user_id;
+        
+        const todayUTC = new Date();
+        todayUTC.setUTCHours(0, 0, 0, 0);
+        const tomorrowUTC = new Date(todayUTC);
+        tomorrowUTC.setUTCDate(tomorrowUTC.getUTCDate() + 1);
+        
         const allReminders = await prisma.reminder.findMany({
             where: {
                 pet: { user_id: userIdFromToken },
-                status: ReminderStatus.pending 
+                status: ReminderStatus.pending,
+                OR: [
+                    { type: { not: 'feeding' } },
+                    { type: 'feeding', reminder_date: { gte: todayUTC } },
+                    { 
+                        type: 'feeding', 
+                        frequency: 'none', 
+                        is_instance: false,
+                        is_read: false,
+                        reminder_date: { lt: todayUTC } 
+                    }
+                ]
             },
             include: { pet: { select: { name: true } } },
             orderBy: [
@@ -257,11 +299,6 @@ router.get('/', verifyToken, async (req, res) => {
                 { created_at: 'desc' }
             ]
         });
-
-        const todayUTC = new Date();
-        todayUTC.setUTCHours(0, 0, 0, 0);
-        const tomorrowUTC = new Date(todayUTC);
-        tomorrowUTC.setUTCDate(tomorrowUTC.getUTCDate() + 1);
 
         const activeInstances = allReminders.filter(r => 
             r.is_instance === true &&
@@ -274,7 +311,6 @@ router.get('/', verifyToken, async (req, res) => {
         const filteredReminders = allReminders.filter(r => {
             if (r.is_instance === true) { return true; }
 
-            // 1. Kiểm tra Feeding (chỉ ẩn 'daily')
             if (r.type === 'feeding' && r.frequency === 'daily') {
                 const hasActiveInstance = activeInstances.some(inst => 
                     inst.pet_id === r.pet_id &&
@@ -284,13 +320,12 @@ router.get('/', verifyToken, async (req, res) => {
                 return !hasActiveInstance; 
             }
             
-            // 2. Kiểm tra Non-Feeding (ẩn 'daily', 'weekly', 'monthly'...)
-            // (Giữ nguyên sửa lỗi 'frequency !== 'none'')
             if (r.type !== 'feeding' && r.frequency !== 'none') { 
                  const hasActiveInstance = activeInstances.some(inst => 
                     inst.pet_id === r.pet_id &&
                     inst.type === r.type &&
-                    inst.vaccination_type === r.vaccination_type
+                    inst.vaccination_type === r.vaccination_type &&
+                    inst.reminder_date.getTime() === r.reminder_date.getTime()
                 );
                  return !hasActiveInstance;
             }
@@ -300,7 +335,6 @@ router.get('/', verifyToken, async (req, res) => {
         
         const enriched = filteredReminders.map(r => ({ ...r, ...calculateDisplayFields(r) }));
         
-        // (Logic sắp xếp giữ nguyên)
         enriched.sort((a, b) => {
              if (a.is_instance && b.is_instance && a.type !== 'feeding' && b.type !== 'feeding') {
                  return b.created_at.getTime() - a.created_at.getTime();
@@ -323,9 +357,7 @@ router.get('/', verifyToken, async (req, res) => {
 });
 
 
-// (PUT /api/reminders/:reminderId giữ nguyên)
-// (DELETE /api/reminders/:reminderId giữ nguyên)
-// ... (Bạn không cần thay đổi PUT và DELETE) ...
+// (PUT /api/reminders/:reminderId - Giữ nguyên)
 router.put('/:reminderId', verifyToken, async (req, res) => {
     try {
         const reminderId = req.params.reminderId;
@@ -340,7 +372,6 @@ router.put('/:reminderId', verifyToken, async (req, res) => {
         }
         
         const dataToUpdate = {};
-        // (Logic cập nhật giữ nguyên)
         if (vaccination_type !== undefined) { dataToUpdate.vaccination_type = vaccination_type || null; }
         if (feeding_time !== undefined) {
             if (feeding_time === null) { dataToUpdate.feeding_time = null; }
@@ -375,7 +406,6 @@ router.put('/:reminderId', verifyToken, async (req, res) => {
             else if (isValidDateString(end_date)) { dataToUpdate.end_date = new Date(end_date + 'T00:00:00Z'); }
             else { return res.status(400).json({ error: 'Invalid end_date format' }); }
         }
-        // (Không cho phép cập nhật email_sent qua API này)
 
         if (Object.keys(dataToUpdate).length === 0) {
             return res.status(400).json({ error: 'No valid fields provided to update' });
@@ -395,6 +425,8 @@ router.put('/:reminderId', verifyToken, async (req, res) => {
         return res.status(500).json({ error: 'Internal server error during update.' });
     }
 });
+
+// (DELETE /api/reminders/:reminderId - Giữ nguyên)
 router.delete('/:reminderId', verifyToken, async (req, res) => {
     try {
         const reminderId = req.params.reminderId;
@@ -413,7 +445,7 @@ router.delete('/:reminderId', verifyToken, async (req, res) => {
 });
 
 
-// (PUT /mark-read/today)
+// (PUT /mark-read/today - Giữ nguyên từ bản vá trước)
 router.put('/mark-read/today', verifyToken, async (req, res) => {
     try {
         const userIdFromToken = req.user.user_id;
@@ -429,18 +461,13 @@ router.put('/mark-read/today', verifyToken, async (req, res) => {
                 is_read: false,
                 status: ReminderStatus.pending, 
                 OR: [
-                    // 1. Đánh dấu các mục "due today"
                     { reminder_date: todayUTC },
-                    // 2. Đánh dấu các mục "created today"
-                    { created_at: { gte: todayUTC, lt: tomorrowUTC } }
+                    { created_at: { gte: todayUTC, lt: tomorrowUTC } },
+                    { reminder_date: { lt: todayUTC } }
                 ],
-                
-                // === (ĐÃ HOÀN TÁC/XÓA BỎ LỖI) ===
-                // KHÔNG còn khối 'NOT' ở đây.
-                // API này giờ được phép set is_read: true cho mọi loại reminder.
             },
             data: {
-                is_read: true // Chỉ cập nhật 'is_read'
+                is_read: true 
             }
         });
 
