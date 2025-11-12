@@ -1,47 +1,62 @@
-// VeterinaryMapView.jsx (phiên bản tối ưu thực tế)
-import React, { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
+// VeterinaryMapPage.jsx
+import React, { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import LocationFeedbackModal from './LocationFeedbackModal';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import 'leaflet-routing-machine';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 
-// Fix default markers
+// Fix Leaflet default markers
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconRetinaUrl: '/leaflet/marker-icon-2x.png',
+  iconUrl: '/leaflet/marker-icon.png',
+  shadowUrl: '/leaflet/marker-shadow.png',
 });
 
-// Custom icons
-const icons = {
-  user: new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34],
-  }),
-  fallbackUser: new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34],
-  }),
-  vet: new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34],
-  }),
-  selected: new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-    iconSize: [30, 49], iconAnchor: [15, 49], popupAnchor: [1, -34],
-  }),
-};
+// Custom Icons
+const userIcon = new L.Icon({
+  iconUrl: '/leaflet/marker-icon-2x-blue.png',
+  shadowUrl: '/leaflet/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
-// Map controller for smooth panning
+const fallbackUserIcon = new L.Icon({
+  iconUrl: '/leaflet/marker-icon-2x-yellow.png',
+  shadowUrl: '/leaflet/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const vetIcon = new L.Icon({
+  iconUrl: '/leaflet/marker-icon-2x-red.png',
+  shadowUrl: '/leaflet/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const selectedVetIcon = new L.Icon({
+  iconUrl: '/leaflet/marker-icon-2x-green.png',
+  shadowUrl: '/leaflet/marker-shadow.png',
+  iconSize: [30, 49],
+  iconAnchor: [15, 49],
+  popupAnchor: [1, -34],
+  shadowSize: [49, 49]
+});
+
+// Map controller
 function MapController({ center, zoom }) {
   const map = useMap();
   useEffect(() => {
-    if (center?.lat && center?.lng) {
+    if (center && center.lat && center.lng && map?._mapPane) {
       map.setView([center.lat, center.lng], zoom, { animate: true, duration: 0.5 });
     }
   }, [center, zoom, map]);
@@ -50,145 +65,267 @@ function MapController({ center, zoom }) {
 
 const VeterinaryMapView = ({
   clinics = [],
-  selectedClinic,
-  userLocation,
-  mapCenter,
+  selectedClinic = null,
+  userLocation = null,
+  mapCenter = null,
   zoomLevel = 13,
   onMarkerClick,
   onLocationRequest,
-  loading = false,
-  error = null,
-  onRetry = null
+  loading = false
 }) => {
-  const [feedbackModal, setFeedbackModal] = React.useState({ isOpen: false, clinic: null });
-  const mapRef = useRef(null);
+  const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, clinic: null });
+  const [mapInstance, setMapInstance] = useState(null);
+  const [routingControl, setRoutingControl] = useState(null);
+
   const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY || 'ddc30e8d91ed4bd0bf4d47a0e83bb315';
 
-  const getValidCenter = () => {
-    if (mapCenter?.lat && mapCenter?.lng) return [mapCenter.lat, mapCenter.lng];
-    if (userLocation?.latitude && userLocation?.longitude) return [userLocation.latitude, userLocation.longitude];
+  const validateCoordinates = (lat, lng) => {
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+    if (isNaN(latitude) || isNaN(longitude)) return null;
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
+    return { latitude, longitude };
+  };
+
+  const getValidMapCenter = () => {
+    if (mapCenter && mapCenter.lat && mapCenter.lng) {
+      const validated = validateCoordinates(mapCenter.lat, mapCenter.lng);
+      if (validated) return [validated.latitude, validated.longitude];
+    }
+    if (userLocation) {
+      const validated = validateCoordinates(userLocation.latitude, userLocation.longitude);
+      if (validated) return [validated.latitude, validated.longitude];
+    }
     return [15.6696, 108.2261]; // Default Da Nang
   };
 
-  const handleReportLocation = (clinic) => setFeedbackModal({ isOpen: true, clinic });
+  const position = getValidMapCenter();
 
-  const handleSubmitFeedback = (data) => {
-    const stored = JSON.parse(localStorage.getItem('location-feedbacks') || '[]');
-    stored.push(data);
-    localStorage.setItem('location-feedbacks', JSON.stringify(stored));
+  const handleReportLocation = (clinic) => {
+    setFeedbackModal({ isOpen: true, clinic });
   };
 
-  // Manual zoom controls
-  const handleZoom = (type) => {
-    const map = mapRef.current;
-    if (map) {
-      if (type === 'in') map.zoomIn();
-      else map.zoomOut();
+  const handleSubmitFeedback = async (feedbackData) => {
+    try {
+      const existingFeedbacks = JSON.parse(localStorage.getItem('location-feedbacks') || '[]');
+      existingFeedbacks.push(feedbackData);
+      localStorage.setItem('location-feedbacks', JSON.stringify(existingFeedbacks));
+      console.log('Feedback submitted:', feedbackData);
+    } catch (error) {
+      console.error('Error saving feedback:', error);
+      throw error;
+    }
+  };
+
+  // Cleanup routing on unmount
+  useEffect(() => {
+    return () => {
+      if (routingControl && mapInstance) mapInstance.removeControl(routingControl);
+    };
+  }, [routingControl, mapInstance]);
+
+  // Safe routing function
+  const addRouting = (from, to) => {
+    if (!mapInstance || !mapInstance._mapPane) return; // ✅ tránh lỗi _leaflet_pos
+    if (!mapInstance) return;
+    try {
+      if (routingControl) mapInstance.removeControl(routingControl);
+
+      const newRouting = L.Routing.control({
+        waypoints: [L.latLng(...from), L.latLng(...to)],
+        lineOptions: { styles: [{ color: 'blue', weight: 4, opacity: 0.6 }] },
+        addWaypoints: false,
+        draggableWaypoints: false,
+        routeWhileDragging: false,
+        show: false,
+      }).addTo(mapInstance);
+
+      setRoutingControl(newRouting);
+    } catch (err) {
+      console.warn('Routing error:', err);
     }
   };
 
   return (
     <div className="relative w-full h-full">
       <MapContainer
-        center={getValidCenter()}
+        center={position}
         zoom={zoomLevel}
-        whenCreated={(mapInstance) => (mapRef.current = mapInstance)}
         style={{ height: '100%', width: '100%' }}
+        className="z-0"
+        whenCreated={setMapInstance}
       >
         <MapController center={mapCenter} zoom={zoomLevel} />
 
         <TileLayer
           url={`https://maps.geoapify.com/v1/tile/osm-carto/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_API_KEY}`}
-          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> | Geoapify'
+          attribution='&copy; OpenStreetMap contributors | <a href="https://www.geoapify.com">Geoapify</a>'
         />
 
         {/* User Marker */}
-        {userLocation && (
-          <Marker
-            position={[userLocation.latitude, userLocation.longitude]}
-            icon={userLocation.isSearchLocation ? icons.fallbackUser : icons.user}
-          >
-            <Popup>📍 {userLocation.isSearchLocation ? 'Vị trí tìm kiếm' : 'Vị trí của bạn'}</Popup>
-          </Marker>
-        )}
+        {userLocation && (() => {
+          const validatedPos = validateCoordinates(userLocation.latitude, userLocation.longitude);
+          if (!validatedPos) return null;
+          return (
+            <Marker
+              position={[validatedPos.latitude, validatedPos.longitude]}
+              icon={userLocation.isFallback || userLocation.isSearchLocation ? fallbackUserIcon : userIcon}
+            >
+              <Popup>
+                <div className="text-center p-2">
+                  <strong className="text-sm">
+                    {userLocation.isSearchLocation
+                      ? 'Vị trí tìm kiếm'
+                      : userLocation.isFallback
+                        ? 'Vị trí mặc định'
+                        : 'Vị trí của bạn'}
+                  </strong>
+                  <br />
+                  <small className="text-xs text-gray-600">
+                    {userLocation.isFallback
+                      ? 'Vị trí ước tính - Cho phép truy cập vị trí để chính xác hơn'
+                      : userLocation.isSearchLocation
+                        ? 'Vị trí được chọn từ tìm kiếm'
+                        : `Độ chính xác: ${userLocation.accuracy?.toFixed(0)}m`}
+                  </small>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })()}
 
         {/* Clinic Markers */}
-        {clinics.map((clinic, i) => (
-          <Marker
-            key={clinic.id || i}
-            position={[clinic.coordinates?.lat, clinic.coordinates?.lng]}
-            icon={selectedClinic?.id === clinic.id ? icons.selected : icons.vet}
-            eventHandlers={{ click: () => onMarkerClick?.(clinic) }}
-          >
-            {/* Tooltip hiển thị tên rõ ràng */}
-            <Tooltip direction="top" offset={[0, -10]} opacity={0.9}>
-              {clinic.name}
-            </Tooltip>
-            <Popup maxWidth={320}>
-              <div className="p-3">
-                <h3 className="font-bold text-base text-gray-900">{clinic.name}</h3>
-                <p className="text-sm text-gray-600 mb-2">{clinic.address}</p>
-                {clinic.phone && <p className="text-sm text-blue-700">📞 {clinic.phone}</p>}
-                {clinic.rating && <p className="text-sm text-yellow-600">⭐ {clinic.rating}/5</p>}
-                <button
-                  onClick={() => handleReportLocation(clinic)}
-                  className="mt-3 w-full px-3 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-lg border border-yellow-300 transition-colors"
-                >
-                  🚩 Báo cáo vị trí sai
-                </button>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {clinics.map((clinic, index) => {
+          const validatedClinicPos = validateCoordinates(clinic.coordinates?.lat, clinic.coordinates?.lng);
+          if (!validatedClinicPos) {
+            console.warn(`Invalid coordinates for clinic: ${clinic.name}`, clinic.coordinates);
+            return null;
+          }
+          const isSelected = selectedClinic && selectedClinic.id === clinic.id;
+          const markerIcon = isSelected ? selectedVetIcon : vetIcon;
+
+          return (
+            <Marker
+              key={clinic.id || index}
+              position={[validatedClinicPos.latitude, validatedClinicPos.longitude]}
+              icon={markerIcon}
+              eventHandlers={{
+                click: () => {
+                  if (!mapInstance || !mapInstance._mapPane) return;
+                  if (onMarkerClick) onMarkerClick(clinic);
+                  if (userLocation) addRouting(
+                    [userLocation.latitude, userLocation.longitude],
+                    [validatedClinicPos.latitude, validatedClinicPos.longitude]
+                  );
+                }
+              }}>
+              <Popup maxWidth={320} maxHeight={400} autoPan keepInView>
+                <div className="p-3 max-w-sm">
+                  <h3 className="font-bold text-base mb-2 text-gray-900">{clinic.name}</h3>
+                  <p className="text-sm text-gray-600 mb-3 leading-relaxed">{clinic.address}</p>
+
+                  {clinic.rating > 0 && (
+                    <div className="flex items-center gap-2 mb-3 p-2 bg-yellow-50 rounded-lg">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <span
+                            key={i}
+                            className={`text-sm ${i < Math.floor(clinic.rating) ? 'text-yellow-500' : 'text-gray-300'}`}
+                          >★</span>
+                        ))}
+                      </div>
+                      <span className="font-semibold text-gray-800">{clinic.rating}</span>
+                      <span className="text-sm text-gray-500">({clinic.reviews} đánh giá)</span>
+                    </div>
+                  )}
+
+                  {clinic.phone && clinic.phone !== 'Chưa có thông tin' && (
+                    <div className="mb-3 p-2 bg-blue-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-blue-600 text-lg">phone</span>
+                        <span className="text-sm text-gray-800">{clinic.phone}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {clinic.openingHours && (
+                    <div className="mb-3 p-2 bg-green-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-green-600 text-lg">schedule</span>
+                        <span className="text-sm text-gray-800">{clinic.openingHours}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {clinic.services && clinic.services.length > 0 && (
+                    <div className="mb-3 p-2 bg-purple-50 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-purple-600 text-lg">medical_services</span>
+                        <div>
+                          <div className="text-sm font-medium text-purple-800 mb-1">Dịch vụ:</div>
+                          <div className="flex flex-wrap gap-1">
+                            {clinic.services.slice(0, 3).map((service, idx) => (
+                              <span key={idx} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">{service}</span>
+                            ))}
+                            {clinic.services.length > 3 && (
+                              <span className="text-xs text-purple-600">+{clinic.services.length - 3} khác</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-3 border-t border-gray-200">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleReportLocation(clinic); }}
+                      className="w-full px-3 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 text-sm rounded-lg transition-colors border border-yellow-300">
+                      🚩 Báo cáo vị trí sai
+                    </button>
+                    {clinic.source && (
+                      <div className="text-xs text-gray-500 text-center mt-2">
+                        Nguồn: {clinic.source}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
 
-      {/* Controls */}
+      {/* Map Controls */}
       <div className="absolute top-4 right-4 flex flex-col gap-3 z-10">
-        {/* Location Button */}
         <button
           onClick={onLocationRequest}
           disabled={loading}
-          className={`p-3 rounded-xl bg-white/90 shadow-lg hover:bg-white transition ${loading && 'opacity-50 cursor-not-allowed'}`}
-          title="Lấy vị trí hiện tại"
-        >
-          {loading
-            ? <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            : <span className="material-symbols-outlined text-blue-600">my_location</span>}
+          className={`group p-3 rounded-xl bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 border border-white/50 ${loading ? 'opacity-50 cursor-not-allowed' : 'transform hover:scale-105'}`}
+          title="Lấy vị trí hiện tại">
+          {loading ? (
+            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <span className="material-symbols-outlined text-blue-600 group-hover:text-blue-700">my_location</span>
+          )}
         </button>
 
-        {/* Zoom Controls */}
-        <div className="flex flex-col bg-white/90 rounded-xl shadow-lg border border-white/50">
-          <button onClick={() => handleZoom('in')} className="p-2 hover:bg-gray-100 border-b border-gray-200">
+        <div className="flex flex-col bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-white/50 overflow-hidden">
+          <button className="p-2 hover:bg-gray-100 transition-colors border-b border-gray-200" onClick={() => mapInstance?.zoomIn()}>
             <span className="material-symbols-outlined text-gray-600">add</span>
           </button>
-          <button onClick={() => handleZoom('out')} className="p-2 hover:bg-gray-100">
+          <button className="p-2 hover:bg-gray-100 transition-colors" onClick={() => mapInstance?.zoomOut()}>
             <span className="material-symbols-outlined text-gray-600">remove</span>
           </button>
         </div>
       </div>
 
-      {/* Retry Overlay */}
-      {error && (
-        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-20 text-center p-6">
-          <span className="material-symbols-outlined text-6xl text-red-500 mb-3">error</span>
-          <p className="text-gray-800 font-semibold mb-2">Không thể tải phòng khám</p>
-          <p className="text-gray-600 text-sm mb-4">{error}</p>
-          <button
-            onClick={onRetry}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-          >
-            Thử lại
-          </button>
-        </div>
-      )}
-
       {/* Loading Overlay */}
       {loading && (
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm flex items-center justify-center z-20">
-          <div className="bg-white/95 p-6 rounded-2xl shadow-2xl flex items-center gap-4">
+          <div className="bg-white/95 backdrop-blur-sm p-6 rounded-2xl shadow-2xl flex items-center gap-4 border border-white/50">
             <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             <div>
-              <div className="font-semibold text-gray-800">Đang tải bản đồ...</div>
+              <div className="font-semibold text-gray-800">Đang tìm vị trí...</div>
               <div className="text-sm text-gray-600">Vui lòng đợi trong giây lát</div>
             </div>
           </div>
@@ -200,8 +337,7 @@ const VeterinaryMapView = ({
         isOpen={feedbackModal.isOpen}
         clinic={feedbackModal.clinic}
         onClose={() => setFeedbackModal({ isOpen: false, clinic: null })}
-        onSubmitFeedback={handleSubmitFeedback}
-      />
+        onSubmitFeedback={handleSubmitFeedback}/>
     </div>
   );
 };

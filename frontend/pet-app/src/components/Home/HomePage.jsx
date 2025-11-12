@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react"; // Sửa: Thêm useEffect
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
 import api from "../../api/axiosConfig.js";
+import LoginForm from "../Auth/LoginForm";
 
 // --- Constants (Thay thế các đường dẫn file ảnh cục bộ bằng Placeholder URL) ---
 const PLACEHOLDERS = {
@@ -430,7 +431,7 @@ const SupportCard = ({ iconClass, title, description }) => (
 );
 
 // --- HEADER ---
-const Header = () => {
+const Header = ({ onLoginClick }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth(); // ✅ lấy thông tin từ context
   const [menuOpen, setMenuOpen] = useState(false);
@@ -529,7 +530,7 @@ const Header = () => {
         {/* Auth */}
         {!user ? (
           <button
-            onClick={() => navigate("/login")}
+            onClick={onLoginClick} // 👈 Gọi hàm mở modal
             className="px-[15px] py-[9px] rounded-[12px] font-bold text-[14px] bg-[#29a980] text-white hover:bg-[#1d926d]">
             Đăng nhập
           </button>
@@ -695,6 +696,8 @@ const Footer = () => (
 // --- Main App Component ---
 
 const HomePage = () => {
+  const [showLogin, setShowLogin] = useState(false);
+
   return (
     <>
       <link
@@ -702,17 +705,33 @@ const HomePage = () => {
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
       <style>{CSS_STYLES}</style>
 
-      <div className="container">
-        <Header />
+      <div className="container relative">
+        {/* Header truyền setShowLogin xuống để mở modal */}
+        <Header onLoginClick={() => setShowLogin(true)} />
+
         <main className="content">
           <HeroSection />
           <ExploreSection />
           <CareSection />
           <SupportSection />
-          {/* ✅ Có thể chèn LoginForm vào nếu muốn hiển thị trên homepage */}
-          {/* <LoginForm /> */}
         </main>
+
         <Footer />
+
+        {/* ✅ Modal Login */}
+        {showLogin && (
+          <div
+            // className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+            onClick={() => setShowLogin(false)} // click ra ngoài để tắt
+          >
+            <div
+              onClick={(e) => e.stopPropagation()} // chặn tắt khi click trong modal
+            >
+              <LoginForm
+                onClose={() => setShowLogin(false)}/>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

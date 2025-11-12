@@ -154,7 +154,7 @@ router.post('/', verifyToken, async (req, res) => {
         todayUTC.setUTCHours(0, 0, 0, 0);
 
         // =============================================
-        // === LOGIC FEEDING VÀ NON-FEEDING (Giữ nguyên) ===
+        // === LOGIC FEEDING VÀ NON-FEEDING ===
         // =============================================
         if (type === 'feeding') {
             if (!isValidTimeString(feeding_time)) {
@@ -167,7 +167,7 @@ router.post('/', verifyToken, async (req, res) => {
             timeObj.setUTCHours(timeObj.getUTCHours() - VIETNAM_OFFSET_HOURS);
             feedingTimeObj = timeObj; 
             
-            // (Giữ nguyên logic 'reminder_date' cho feeding)
+            // (logic 'reminder_date' cho feeding)
             if (frequency === 'none' && reminder_date) {
                  if (!isValidDateString(reminder_date)) {
                      return res.status(400).json({ error: 'reminder_date must be a valid date in YYYY-MM-DD format for one-time feeding' });

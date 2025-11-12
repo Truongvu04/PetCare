@@ -116,13 +116,14 @@ const AddNewPet = () => {
               <img
                 src={user?.avatar_url || "https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"}
                 alt="profile"
+                onClick={() => navigate("/")}
                 className="w-full h-full object-cover"/>
             </div>
             <div>
               <p className="font-semibold text-gray-900 leading-tight">
                 {user?.full_name || "Emily Carter"}
               </p>
-              <span className="owner font-semibold text-gray-900">{user?.role || "Owner"}</span>
+              {/* <span className="owner font-semibold text-gray-900">{user?.role || "Owner"}</span> */}
             </div>
           </div>
 
@@ -153,7 +154,9 @@ const AddNewPet = () => {
             <a className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100">
               <Calendar size={18} /> Calendar
             </a>
-            <a className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100">
+            <a 
+              onClick={() => navigate("/shops")}
+              className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100">
               <ShoppingBag size={18} /> Shop
             </a>
             <a className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100">
@@ -164,7 +167,7 @@ const AddNewPet = () => {
 
         {/* Main content (Giữ nguyên) */}
         <main className="flex-1 bg-white rounded-2xl shadow-sm p-10">
-          <h2 className="text-2xl font-semibold mb-8">Add New Pet</h2>
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Add New Pet</h2>
 
           <div className="flex justify-between items-start gap-10">
             <form className="flex-1 flex flex-col gap-5" onSubmit={handleAddPet}>

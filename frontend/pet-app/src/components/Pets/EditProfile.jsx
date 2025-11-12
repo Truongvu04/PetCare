@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth.js";
 import {
   Home,
   PawPrint,
@@ -10,11 +12,11 @@ import {
   Settings,
   Camera,
 } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
 
 const EditProfile = () => {
   const navigate = useNavigate();
   const { id } = useParams(); // pet ID
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     species: "",
@@ -136,12 +138,11 @@ const EditProfile = () => {
               <img
                 src="https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"
                 alt="User"
-                className="w-10 h-10 rounded-full object-cover cursor-pointer"
-                onClick={() => navigate("/")}
-              />
+                className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-green-400 transition"
+                onClick={() => navigate("/")}/>
               <div>
-                <h3 className="font-semibold text-gray-900">Emily Carter</h3>
-                <span className="text-sm text-green-600 block">Owner</span>
+                <p className="font-semibold text-gray-900">{user?.full_name || 'Emily Carter'}</p>
+                {/* <span className="text-sm text-green-600 block">Owner</span> */}
               </div>
             </div>
             <nav className="space-y-2">
@@ -168,7 +169,7 @@ const EditProfile = () => {
         {/* Main content */}
         <main className="flex-1 bg-gray-50 p-12">
           <div className="max-w-3xl mx-auto">
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
               Edit {formData.name}’s Profile
             </h1>
             <p className="text-sm text-green-700 mb-8">

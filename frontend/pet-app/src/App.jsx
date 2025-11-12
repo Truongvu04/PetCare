@@ -5,12 +5,12 @@ import { AuthProvider } from "./context/AuthProvider.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 // Public components
-import LoginForm from "./components/Auth/LoginForm.jsx";
+// import LoginForm from "./components/Auth/LoginForm.jsx";
 import HomePage from "./components/Home/HomePage.jsx";
 import IntroPage from "./components/Home/IntroPage.jsx";
 import Shop from "./components/Shop/Shop.jsx";
 import ProductDetail from "./components/Shop/ProductDetail.jsx";
-// import VetMap from "./components/Map/VetMap.jsx";
+import VetMap from "./components/Map/VetMap.jsx";
 import VeterinaryAutoLocateMapPage from "./components/Map/VeterinaryAutoLocateMapPage.jsx";
 
 // Protected components
@@ -28,12 +28,12 @@ function App() {
       <Router>
         <Routes>
           {/* ---------- Public Routes ---------- */}
-          <Route path="/login" element={<LoginForm />} />
+          {/* <Route path="/login" element={<LoginForm />} /> */}
           <Route path="/intropage" element={<IntroPage />} />
           <Route path="/" element={<HomePage />} />
           <Route path="/shops" element={<Shop />} />
           <Route path="/productdetails" element={<ProductDetail />} />
-          {/* <Route path="/vet-map" element={<VetMap />} /> */}
+          <Route path="/vet-map" element={<VetMap />} />
           <Route path="/vet-map-auto" element={<VeterinaryAutoLocateMapPage />} />
           <Route path="/vet-map/:clinicId" element={<VeterinaryAutoLocateMapPage />} />
 

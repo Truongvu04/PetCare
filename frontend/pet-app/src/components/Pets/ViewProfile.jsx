@@ -84,11 +84,11 @@ const ViewProfile = () => {
               <img
                 src={user?.avatar_url || "https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"}
                 alt="User"
-                className="w-10 h-10 rounded-full object-cover"
+                className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-green-400 transition"
               />
               <div>
                 <h3 className="font-semibold text-gray-900">{user?.full_name || "Emily Carter"}</h3>
-                <span className="owner font-semibold text-gray-900">{user?.role || "Owner"}</span>
+                {/* <span className="owner font-semibold text-gray-900">{user?.role || "Owner"}</span> */}
               </div>
             </div>
 
@@ -147,7 +147,7 @@ const ViewProfile = () => {
             {/* Header */}
             <div className="flex justify-between items-center mb-8">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
                   {petData.name}’s Profile
                 </h1>
                 <p className="text-sm text-green-700 mt-1">

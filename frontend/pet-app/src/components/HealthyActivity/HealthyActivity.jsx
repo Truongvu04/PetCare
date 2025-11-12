@@ -1,4 +1,6 @@
 // import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth.js";
 import "./style.css";
 import {
   LayoutDashboard,
@@ -13,7 +15,6 @@ import {
   MapPin,
   PawPrint,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import {
   LineChart,
   Line,
@@ -34,6 +35,7 @@ const data = [
 
 const HealthActivity = () => {
 const navigate = useNavigate()
+const { user } = useAuth();
 const handleOpenMap = () => {
   navigate('/vet-map');
   };
@@ -51,8 +53,8 @@ const handleOpenMap = () => {
                 </div>
               </div>
               <div>
-                <p className="font-semibold text-gray-900">Emily Carter</p>
-                <p className="owner font-semibold text-gray-900">Owner</p>
+                <p className="font-semibold text-gray-900">{user?.full_name || 'Emily Carter'}</p>
+                {/* <p className="owner font-semibold text-gray-900">Owner</p> */}
               </div>
             </div>
 
@@ -64,7 +66,7 @@ const handleOpenMap = () => {
                 { name: "Health & Activity", icon: <Heart size={18} /> },
                 { name: "Expenses", icon: <DollarSign size={18} /> },
                 { name: "Calendar", icon: <Calendar size={18} /> },
-                { name: "Shop", icon: <ShoppingBag size={18} /> },
+                { name: "Shop", icon: <ShoppingBag size={18} />, path: "/shops"},
                 { name: "Settings", icon: <Settings size={18} /> },
               ].map((item, i) => (
                 <button
@@ -96,7 +98,7 @@ const handleOpenMap = () => {
 
         {/* Main content */}
         <main className="flex-1 p-10">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8">
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
             Health & Activity
           </h2>
 

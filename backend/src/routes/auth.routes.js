@@ -108,7 +108,7 @@ router.post("/login", async (req, res) => {
       {
         user_id: user.user_id,
         email: user.email,
-        role: user.role // 👈 thêm dòng này
+        role: user.role 
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
@@ -152,7 +152,7 @@ router.get("/me", async (req, res) => {
 
     const user = await prisma.user.findUnique({
       where: { email: decoded.email },
-      select: { user_id: true, full_name: true, email: true, role: true },
+      select: { user_id: true, full_name: true, email: true, role: true},
     });
 
     if (!user) {

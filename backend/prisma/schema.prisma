@@ -3,41 +3,19 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql" // ✅ Đã sửa: Khớp với file .env của bạn
+  provider = "mysql" 
   url      = env("DATABASE_URL")
 }
 
-// ------ Bảng Enum (Từ logic cũ của bạn) ------
 enum Role {
   owner
   vendor
   admin
 }
 
-enum ReminderFrequency {
-  none
-  daily
-  weekly
-  monthly
-  yearly
-}
+// ------ Bảng Enum  ------
 
-enum ReminderStatus {
-  pending
-  done
-}
-
-enum ReminderType {
-  vaccination
-  vet_visit
-  feeding
-  grooming
-  medication
-  other
-  checkup // Thêm "checkup" từ logic file reminders.js
-}
-
-// ------ Model Chính (Đã hợp nhất) ------
+// ----------------------- USER ----------------------
 
 model User {
   user_id       Int      @id @default(autoincrement()) @map("user_id")
@@ -55,6 +33,8 @@ model User {
   @@map("Users") // Khớp với schema cũ của bạn
 }
 
+// ----------------------- OTP ----------------------
+
 model OTP {
   id        Int      @id @default(autoincrement())
   email     String?
@@ -63,7 +43,7 @@ model OTP {
   createdAt DateTime @default(now())
 }
 
-// ------ Model Mới (Dịch từ petcare.sql.txt) ------
+// ----------------------- PETS ----------------------
 
 model Pet {
   id              String   @id @default(cuid()) // Dùng CUID (chuỗi) để khớp với file .sql (CHAR 12)
@@ -87,6 +67,9 @@ model Pet {
   @@map("pets") // Tên bảng trong MySQL (giống petcare.sql.txt)
 }
 
+
+
+// ------------------------- REMINDERS--------------------------
 model Reminder {
   reminder_id String @id @default(cuid()) // Dùng CUID (chuỗi)
 
@@ -112,4 +95,24 @@ model Reminder {
   @@index([pet_id])
   @@index([reminder_date])
   @@map("reminders") // Tên bảng trong MySQL (giống petcare.sql.txt)
+}
+
+enum ReminderFrequency {
+  none
+  daily
+  weekly
+  monthly
+  yearly
+}
+
+enum ReminderStatus {
+  pending
+  done
+}
+
+enum ReminderType {
+  vaccination
+  checkup
+  feeding
+  grooming
 }

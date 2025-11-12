@@ -1,136 +1,85 @@
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import LocationFeedbackModal from './LocationFeedbackModal';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap
+} from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import LocationFeedbackModal from "./LocationFeedbackModal";
 
-// Custom CSS cho popup - Approach mới cho Leaflet
-const popupStyles = `
-  .leaflet-popup-content-wrapper {
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-  }
-  .leaflet-popup-content {
-    margin: 0 !important;
-    line-height: 1.4;
-    max-height: none !important;
-    overflow: visible !important;
-  }
-  .leaflet-popup-scrolled {
-    overflow: auto !important;
-    border-bottom: 1px solid #ccc;
-    border-top: 1px solid #ccc;
-  }
-  .popup-container {
-    width: 300px;
-    max-height: 350px;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-  .popup-container::-webkit-scrollbar {
-    width: 8px;
-  }
-  .popup-container::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-  }
-  .popup-container::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 4px;
-  }
-  .popup-container::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-  }
-`;
-
+// --- Leaflet marker setup ---
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+  iconUrl: "/leaflet/marker-icon.png",
+  shadowUrl: "/leaflet/marker-shadow.png",
 });
 
-const userIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
+const iconBase = (color) =>
+  new L.Icon({
+    iconUrl: `/leaflet/marker-icon-2x-${color}.png`,
+    shadowUrl: "/leaflet/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
 
-const fallbackUserIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
+const icons = {
+  user: iconBase("blue"),
+  fallback: iconBase("yellow"),
+  vet: iconBase("red"),
+  selectedVet: new L.Icon({
+    iconUrl: "/leaflet/marker-icon-2x-green.png",
+    shadowUrl: "/leaflet/marker-shadow.png",
+    iconSize: [30, 49],
+    iconAnchor: [15, 49],
+    popupAnchor: [1, -34],
+    shadowSize: [49, 49]
+  })
+};
 
-const vetIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-const selectedVetIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [30, 49],
-  iconAnchor: [15, 49],
-  popupAnchor: [1, -34],
-  shadowSize: [49, 49]
-});
-
+// --- Helper components ---
 function ChangeView({ center, zoom }) {
   const map = useMap();
   useEffect(() => {
-    if (center) {
-      map.setView(center, zoom);
-    }
+    if (center) map.setView(center, zoom);
   }, [center, zoom, map]);
   return null;
 }
 
-function AutoFitBounds({ clinics, userLocation, autoFitBounds }) {
+function AutoFitBounds({ clinics, userLocation, enabled }) {
   const map = useMap();
-  
   useEffect(() => {
-    if (!autoFitBounds || !clinics || clinics.length === 0) return;
-    
+    if (!enabled || !clinics?.length || clinics.every(c => !c.coordinates)) return;
+
     const bounds = L.latLngBounds();
-    let hasValidBounds = false;
-    
-    if (userLocation && userLocation.latitude && userLocation.longitude) {
+    let valid = false;
+
+    if (userLocation?.latitude && userLocation?.longitude) {
       bounds.extend([userLocation.latitude, userLocation.longitude]);
-      hasValidBounds = true;
+      valid = true;
     }
-    
-    clinics.forEach(clinic => {
-      if (clinic.coordinates && clinic.coordinates.lat && clinic.coordinates.lng) {
-        bounds.extend([clinic.coordinates.lat, clinic.coordinates.lng]);
-        hasValidBounds = true;
+
+    clinics.forEach((c) => {
+      if (c.coordinates?.lat && c.coordinates?.lng) {
+        bounds.extend([c.coordinates.lat, c.coordinates.lng]);
+        valid = true;
       }
     });
-    
-    if (hasValidBounds) {
-      map.fitBounds(bounds, { 
-        padding: [20, 20],
-        maxZoom: 15
-      });
-    }
-  }, [clinics, userLocation, autoFitBounds, map]);
-  
+
+    if (valid) map.fitBounds(bounds, { padding: [20, 20], maxZoom: 15 });
+  }, [clinics, userLocation, enabled, map]);
   return null;
 }
 
-const GeoapifyMapComponent = ({ 
-  clinics = [], 
-  userLocation = null, 
+// --- Main Map Component ---
+const GeoapifyMapComponent = ({
+  clinics = [],
+  userLocation = null,
   zoomLevel = 13,
   onLocationRequest,
   loading = false,
@@ -141,232 +90,158 @@ const GeoapifyMapComponent = ({
   showUserMarker = true,
   autoFitBounds = false
 }) => {
-  const defaultPosition = [15.6696, 108.2261];
-  
-  // Validate và sanitize coordinates
+  const defaultCenter = [15.6696, 108.2261];
+  const GEOAPIFY_API_KEY =
+    import.meta.env.VITE_GEOAPIFY_API_KEY ||
+    "ddc30e8d91ed4bd0bf4d47a0e83bb315";
+
+  // --- Validate coordinate helper ---
   const validateCoordinates = (lat, lng) => {
-    const latitude = parseFloat(lat);
-    const longitude = parseFloat(lng);
-    
-    if (isNaN(latitude) || isNaN(longitude)) {
-      return null;
-    }
-    
-    // Kiểm tra phạm vi hợp lệ
-    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-      return null;
-    }
-    
-    return { latitude, longitude };
+    const la = parseFloat(lat),
+      lo = parseFloat(lng);
+    if (!lat || !lng || isNaN(la) || isNaN(lo)) return null;
+    if (la < -90 || la > 90 || lo < -180 || lo > 180) return null;
+    return { lat: la, lng: lo };
   };
 
-  const getValidPosition = () => {
-    if (userLocation) {
-      const validated = validateCoordinates(userLocation.latitude, userLocation.longitude);
-      if (validated) {
-        return [validated.latitude, validated.longitude];
-      }
-    }
-    return defaultPosition;
-  };
+  // --- Determine center position ---
+  const mapCenter = useMemo(() => {
+    const valid = userLocation
+      ? validateCoordinates(userLocation.latitude, userLocation.longitude)
+      : null;
+    return valid ? [valid.lat, valid.lng] : defaultCenter;
+  }, [userLocation]);
 
-  const position = getValidPosition();
+  // --- Handle feedback modal ---
   const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, clinic: null });
 
-  const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY || 'ddc30e8d91ed4bd0bf4d47a0e83bb315';
-
-  const handleReportLocation = (clinic) => {
+  const handleReportLocation = (clinic) =>
     setFeedbackModal({ isOpen: true, clinic });
-  };
 
-  const handleSubmitFeedback = async (feedbackData) => {
-    // Lưu feedback vào localStorage hoặc gửi lên server
+  const handleSubmitFeedback = async (feedback) => {
     try {
-      const existingFeedbacks = JSON.parse(localStorage.getItem('location-feedbacks') || '[]');
-      existingFeedbacks.push(feedbackData);
-      localStorage.setItem('location-feedbacks', JSON.stringify(existingFeedbacks));
-      
-      console.log('Feedback submitted:', feedbackData);
-      
-      // TODO: Gửi lên server khi có API
-      // await fetch('/api/feedback', { method: 'POST', body: JSON.stringify(feedbackData) });
-      
-    } catch (error) {
-      console.error('Error saving feedback:', error);
-      throw error;
+      const list = JSON.parse(localStorage.getItem("location-feedbacks") || "[]");
+      list.push(feedback);
+      localStorage.setItem("location-feedbacks", JSON.stringify(list));
+      console.log("Feedback saved:", feedback);
+    } catch (err) {
+      console.error("Feedback save error:", err);
     }
   };
+
+  // --- Filter valid clinics only ---
+  const validClinics = useMemo(() => {
+    const valid = clinics.filter((c) => {
+      const validCoords = validateCoordinates(
+        c.coordinates?.lat,
+        c.coordinates?.lng
+      );
+      return validCoords;
+    });
+    const invalidCount = clinics.length - valid.length;
+    if (invalidCount > 0)
+      console.debug(`[Map] Skipped ${invalidCount} clinics due to invalid coordinates.`);
+    return valid;
+  }, [clinics]);
 
   return (
     <div className="relative w-full h-full rounded-xl overflow-hidden">
-      <style>{popupStyles}</style>
-      <MapContainer 
-        center={position} 
-        zoom={zoomLevel} 
-        style={{ height: '100%', width: '100%' }}
-        className="z-0"
-      >
-        <ChangeView center={position} zoom={zoomLevel} />
-        <AutoFitBounds clinics={clinics} userLocation={userLocation} autoFitBounds={autoFitBounds} />
-        
+      <MapContainer
+        center={mapCenter}
+        zoom={zoomLevel}
+        style={{ height: "100%", width: "100%" }}>
+        <ChangeView center={mapCenter} zoom={zoomLevel} />
+        <AutoFitBounds
+          clinics={validClinics}
+          userLocation={userLocation}
+          enabled={autoFitBounds}/>
+
         <TileLayer
           url={`https://maps.geoapify.com/v1/tile/osm-carto/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_API_KEY}`}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | <a href="https://www.geoapify.com">Geoapify</a>'
-        />
-        
-         {showUserMarker && userLocation && (() => {
-           const validatedPos = validateCoordinates(userLocation.latitude, userLocation.longitude);
-           if (!validatedPos) return null;
-           
-           return (
-             <Marker 
-               position={[validatedPos.latitude, validatedPos.longitude]}
-               icon={userLocation.isFallback || userLocation.isSearchLocation ? fallbackUserIcon : userIcon}
-             >
-               <Popup>
-                 <div className="text-center">
-                   <strong>
-                     {userLocation.isSearchLocation 
-                       ? 'Vị trí tìm kiếm' 
-                       : userLocation.isFallback 
-                         ? 'Vị trí mặc định' 
-                         : 'Vị trí của bạn'
-                     }
-                   </strong>
-                   <br />
-                   <small>
-                     {userLocation.isFallback 
-                       ? 'Vị trí ước tính - Cho phép truy cập vị trí để chính xác hơn' 
-                       : userLocation.isSearchLocation
-                         ? 'Vị trí được chọn từ tìm kiếm'
-                         : `Độ chính xác: ${userLocation.accuracy?.toFixed(0)}m`
-                     }
-                   </small>
-                 </div>
-               </Popup>
-             </Marker>
-           );
-         })()}
-        
-        {clinics.map((clinic, index) => {
-          // Validate clinic coordinates
-          const validatedClinicPos = validateCoordinates(
-            clinic.coordinates?.lat, 
+          attribution='&copy; OpenStreetMap contributors | Geoapify'/>
+
+        {/* --- User Marker --- */}
+        {showUserMarker && userLocation && (() => {
+          const valid = validateCoordinates(userLocation.latitude, userLocation.longitude);
+          if (!valid) return null;
+          const icon = userLocation.isFallback
+            ? icons.fallback
+            : icons.user;
+
+          return (
+            <Marker position={[valid.lat, valid.lng]} icon={icon}>
+              <Popup>
+                <div className="text-center text-sm">
+                  <strong>
+                    {userLocation.isFallback
+                      ? "Vị trí mặc định"
+                      : userLocation.isSearchLocation
+                      ? "Vị trí tìm kiếm"
+                      : "Vị trí của bạn"}
+                  </strong>
+                  <br />
+                  <small>
+                    {userLocation.isFallback
+                      ? "Vui lòng bật truy cập vị trí để chính xác hơn"
+                      : `Độ chính xác: ${userLocation.accuracy?.toFixed(0)}m`}
+                  </small>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })()}
+
+        {/* --- Clinic Markers --- */}
+        {validClinics.map((clinic, idx) => {
+          const { lat, lng } = validateCoordinates(
+            clinic.coordinates?.lat,
             clinic.coordinates?.lng
           );
-          
-          if (!validatedClinicPos) {
-            console.warn(`Invalid coordinates for clinic: ${clinic.name}`, clinic.coordinates);
-            return null;
-          }
+          const isSelected = selectedClinic?.id === clinic.id;
 
-          const isSelected = selectedClinic && selectedClinic.id === clinic.id;
-          const markerIcon = isSelected ? selectedVetIcon : vetIcon;
-          
           return (
-            <Marker 
-              key={clinic.id || index} 
-              position={[validatedClinicPos.latitude, validatedClinicPos.longitude]}
-              icon={markerIcon}
+            <Marker
+              key={clinic.id || idx}
+              position={[lat, lng]}
+              icon={isSelected ? icons.selectedVet : icons.vet}
               eventHandlers={{
                 click: () => {
-                  if (onMarkerClick) {
-                    onMarkerClick(clinic);
-                  }
-                  if (onClinicSelect) {
-                    onClinicSelect(clinic);
-                  }
+                  onMarkerClick?.(clinic);
+                  onClinicSelect?.(clinic);
                 }
               }}
             >
               {showPopup && (
-                <Popup 
-                  maxWidth={320} 
-                  maxHeight={400}
-                  autoPan={true}
-                  keepInView={true}
-                >
-                  <div className="popup-container">
-                    <div style={{padding: '12px'}}>
-                      <h3 style={{fontWeight: 'bold', fontSize: '16px', marginBottom: '8px', color: '#1f2937'}}>{clinic.name}</h3>
-                      <p style={{fontSize: '14px', color: '#6b7280', marginBottom: '12px', lineHeight: '1.5'}}>{clinic.address}</p>
-                      
-                      {clinic.rating > 0 && (
-                        <div style={{display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '12px', padding: '8px', backgroundColor: '#fefce8', borderRadius: '8px'}}>
-                          <span>⭐</span>
-                          <span style={{fontWeight: '600', color: '#1f2937'}}>{clinic.rating}</span>
-                          <span style={{fontSize: '14px', color: '#6b7280'}}>({clinic.reviews} đánh giá)</span>
-                        </div>
-                      )}
-                      
-                      {clinic.phone && clinic.phone !== 'Chưa có thông tin' && (
-                        <div style={{marginBottom: '12px', padding: '8px', backgroundColor: '#eff6ff', borderRadius: '8px'}}>
-                          <p style={{fontSize: '14px', margin: 0}}>
-                            <strong style={{color: '#1d4ed8'}}>📞 SĐT:</strong> 
-                            <span style={{marginLeft: '4px', color: '#374151'}}>{clinic.phone}</span>
-                          </p>
-                        </div>
-                      )}
-                      
-                      {clinic.openingHours && (
-                        <div style={{marginBottom: '12px', padding: '8px', backgroundColor: '#f0fdf4', borderRadius: '8px'}}>
-                          <p style={{fontSize: '14px', margin: 0}}>
-                            <strong style={{color: '#15803d'}}>🕒 Giờ mở cửa:</strong> 
-                            <span style={{marginLeft: '4px', color: '#374151'}}>{clinic.openingHours}</span>
-                          </p>
-                        </div>
-                      )}
-                      
-                      {clinic.services && clinic.services.length > 0 && (
-                        <div style={{marginBottom: '12px', padding: '8px', backgroundColor: '#faf5ff', borderRadius: '8px'}}>
-                          <div style={{fontSize: '14px'}}>
-                            <strong style={{color: '#7c3aed'}}>🏥 Dịch vụ:</strong>
-                            <ul style={{listStyle: 'disc', paddingLeft: '20px', marginTop: '8px', margin: 0}}>
-                              {clinic.services.map((service, idx) => (
-                                <li key={idx} style={{fontSize: '12px', color: '#4b5563', marginBottom: '4px'}}>{service}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Report Location Button */}
-                      <div style={{marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #e5e7eb'}}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleReportLocation(clinic);
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '8px 12px',
-                            backgroundColor: '#fef3c7',
-                            color: '#92400e',
-                            border: '1px solid #fbbf24',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: '500',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            marginBottom: '8px'
-                          }}
-                          onMouseOver={(e) => {
-                            e.target.style.backgroundColor = '#fde68a';
-                          }}
-                          onMouseOut={(e) => {
-                            e.target.style.backgroundColor = '#fef3c7';
-                          }}
-                        >
-                          🚩 Báo cáo vị trí sai
-                        </button>
-                        
-                        {clinic.source && (
-                          <div style={{fontSize: '12px', color: '#9ca3af', textAlign: 'center'}}>
-                            Nguồn: {clinic.source}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                <Popup autoPan keepInView>
+                  <div style={{ padding: "10px", maxWidth: "250px" }}>
+                    <h3 className="font-bold text-gray-800 text-base mb-1">
+                      {clinic.name}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-2">
+                      {clinic.address || "Chưa có địa chỉ"}
+                    </p>
+
+                    {clinic.phone && (
+                      <p className="text-sm mb-1">
+                        📞 <b>{clinic.phone}</b>
+                      </p>
+                    )}
+
+                    {clinic.openingHours && (
+                      <p className="text-sm mb-1">
+                        🕒 {clinic.openingHours}
+                      </p>
+                    )}
+
+                    <button
+                      className="mt-2 w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border border-yellow-300 rounded-md text-xs p-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleReportLocation(clinic);
+                      }}
+                    >
+                      🚩 Báo cáo vị trí sai
+                    </button>
                   </div>
                 </Popup>
               )}
@@ -374,40 +249,37 @@ const GeoapifyMapComponent = ({
           );
         })}
       </MapContainer>
-      
-      <div className="absolute top-4 right-4 flex flex-col gap-3 z-10">
-        <button
-          onClick={onLocationRequest}
-          disabled={loading}
-          className={`group p-3 rounded-xl bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 border border-white/50 ${
-            loading ? 'opacity-50 cursor-not-allowed' : 'transform hover:scale-105'
-          }`}
-          title="Lấy vị trí hiện tại"
-        >
-          {loading ? (
-            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          ) : (
-            <svg className="w-5 h-5 text-blue-600 group-hover:text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          )}
-        </button>
-      </div>
-      
-      {loading && (
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm flex items-center justify-center z-20">
-          <div className="bg-white/95 backdrop-blur-sm p-6 rounded-2xl shadow-2xl flex items-center gap-4 border border-white/50">
-            <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <div>
-              <div className="font-semibold text-gray-800">Đang tìm vị trí...</div>
-              <div className="text-sm text-gray-600">Vui lòng đợi trong giây lát</div>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Location Feedback Modal */}
+      {/* --- Location Button --- */}
+      <button
+        onClick={onLocationRequest}
+        disabled={loading}
+        title="Lấy vị trí hiện tại"
+        className={`absolute top-4 right-4 z-10 p-3 rounded-lg shadow-md border bg-white/90 hover:bg-white transition ${
+          loading ? "opacity-50 cursor-not-allowed" : ""
+        }`}
+      >
+        {loading ? (
+          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <svg
+            className="w-5 h-5 text-blue-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"
+            />
+            <circle cx="12" cy="12" r="3" strokeWidth={2} />
+          </svg>
+        )}
+      </button>
+
+      {/* --- Feedback Modal --- */}
       <LocationFeedbackModal
         isOpen={feedbackModal.isOpen}
         clinic={feedbackModal.clinic}

@@ -203,8 +203,7 @@ const AutoLocateMapComponent = () => {
             const sidebar = document.querySelector('.lg\\:w-1\\/3');
             sidebar.classList.toggle('max-h-96');
             sidebar.classList.toggle('max-h-screen');
-          }}
-        >
+          }}>
           <span className="material-symbols-outlined text-gray-600">menu</span>
         </button>
       </div>

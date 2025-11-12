@@ -3,7 +3,6 @@ import {
   Home, PawPrint, Bell, Heart, DollarSign, Calendar, ShoppingBag, Settings,
   MessageCircle, Scissors, Syringe, MapPin, Stethoscope, Utensils, Activity,
 } from "lucide-react";
-import "./PetOwnerDashboard.css";
 // --- THAY ĐỔI 1: Import 'Link' ---
 import { useNavigate, Link } from "react-router-dom"; 
 // ----------------------------------
@@ -35,6 +34,10 @@ const PetOwnerDashboard = () => {
   const [loadingReminders, setLoadingReminders] = useState(true);
   const hasNewRemindersRef = useRef(false);
 
+  // 🟢 ADD: Fetch pets same as MyPets
+  const [pets, setPets] = useState([]);
+  const [loadingPets, setLoadingPets] = useState(true);
+
   // Hàm gọi API mark-read (Cập nhật dùng api.put)
   const markRemindersAsReadAPI = async () => {
       try {
@@ -46,6 +49,28 @@ const PetOwnerDashboard = () => {
       }
   };
 
+  useEffect(() => {
+    const fetchPets = async () => {
+      if (!user) {
+        setLoadingPets(false);
+        setPets([]);
+        return;
+      }
+      try {
+        setLoadingPets(true);
+        const res = await api.get("/pets");
+        const data = res.data;
+        if (Array.isArray(data)) setPets(data);
+        else setPets([]);
+      } catch (err) {
+        console.error("❌ Error fetching pets in Dashboard:", err);
+        setPets([]);
+      } finally {
+        setLoadingPets(false);
+      }
+    };
+    fetchPets();
+  }, [user]);
 
 // Fetch reminders khi component mount (Cập nhật dùng api.get)
   useEffect(() => {
@@ -106,7 +131,7 @@ const PetOwnerDashboard = () => {
     { name: "Health & Activity", icon: <Heart size={18} />, path: "/health" },
     { name: "Expenses", icon: <DollarSign size={18} /> },
     { name: "Calendar", icon: <Calendar size={18} /> },
-    { name: "Shop", icon: <ShoppingBag size={18} /> },
+    { name: "Shop", icon: <ShoppingBag size={18} />, path: "/shops" },
     { name: "Settings", icon: <Settings size={18} /> },
   ];
 
@@ -136,13 +161,13 @@ const PetOwnerDashboard = () => {
                  <img
                    src={user?.avatar_url || "https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"}
                    alt="avatar"
-                   className="w-10 h-10 rounded-full object-cover"
+                   className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-green-400 transition"
                  />
                </Link>
                {/* ------------------------------------------- */}
                <div>
-                 <p className="text-gray-900 font-semibold">{user?.full_name || "Emily Carter"}</p>
-                 <p className="text-gray-500 text-sm">{user?.role || "Owner"}</p>
+                 <p className="text-gray-900 font-semibold">{user?.full_name || "Khách"}</p>
+                 {/* <p className="text-gray-500 text-sm">{user?.role || "Owner"}</p> */}
                </div>
              </div>
              {/* Navigation (Giữ nguyên) */}
@@ -155,8 +180,7 @@ const PetOwnerDashboard = () => {
                      item.name === "Dashboard"
                        ? "bg-green-100 text-green-800 font-medium"
                        : "text-gray-700 hover:bg-gray-100"
-                   }`}
-                 >
+                   }`}>
                    {item.icon}
                    <span>{item.name}</span>
                  </button>
@@ -172,7 +196,7 @@ const PetOwnerDashboard = () => {
 
         {/* --- Main content --- */}
         <main className="flex-1 p-10 overflow-y-auto">
-          <h2 className="dashboard text-2xl font-bold text-gray-900 mb-8">
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-5">
             Dashboard
           </h2>
           
@@ -185,24 +209,46 @@ const PetOwnerDashboard = () => {
 
           {/* --- My Pets Section --- */}
           <section className="mb-10">
-            {/* ... (Giữ nguyên) ... */}
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-                 <PawPrint size={18} className="text-green-700" />
-                 <span>My Pets</span>
-             </h3>
-             <div className="flex space-x-10">
-               {[
-                 { name: "Buddy", type: "Dog", img: "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg" },
-                 { name: "Whiskers", type: "Cat", img: "https://images.pexels.com/photos/320014/pexels-photo-320014.jpeg" },
-               ].map((pet, i) => (
-                 <div key={i} className="flex flex-col items-center text-center">
-                   <img src={pet.img} alt={pet.name} className="w-24 h-24 rounded-full object-cover mb-2 shadow-sm border border-gray-100" />
-                   <p className="font-medium text-gray-800">{pet.name}</p>
-                   <p className="text-gray-500 text-sm">{pet.type}</p>
-                 </div>
-               ))}
-                <button onClick={() => navigate('/mypets')} className="self-center ml-auto text-sm text-green-600 hover:text-green-800 font-medium">View All</button>
-             </div>
+              <PawPrint size={18} className="text-green-700" />
+              <span>My Pets</span>
+            </h3>
+
+            {loadingPets ? (
+              <p className="text-gray-500 px-3 py-2">Loading pets...</p>
+            ) : !user ? (
+              <p className="text-gray-500 px-3 py-2">Login to see your pets.</p>
+            ) : pets.length === 0 ? (
+              <p className="text-gray-500 px-3 py-2">No pets found.</p>
+            ) : (
+              <div className="flex space-x-10">
+                {pets.slice(0, 2).map((pet, i) => (
+                  <div key={i} className="flex flex-col items-center text-center">
+                    <img
+                      src={
+                        pet.photo_url
+                          ? pet.photo_url.startsWith("http")
+                            ? pet.photo_url
+                            : `http://localhost:5000${pet.photo_url}`
+                          : "https://via.placeholder.com/100?text=No+Image"
+                      }
+                      alt={pet.name}
+                      className="w-24 h-24 rounded-full object-cover mb-2 shadow-sm border border-gray-100"
+                      onError={(e) =>
+                        (e.target.src =
+                          "https://via.placeholder.com/100?text=No+Image")
+                      }/>
+                    <p className="font-medium text-gray-800">{pet.name}</p>
+                    <p className="text-green-600 text-sm">{pet.species}</p>
+                  </div>
+                ))}
+                <button
+                  onClick={() => navigate("/mypets")}
+                  className="self-center ml-auto text-sm text-green-600 hover:text-green-800">
+                  View All
+                </button>
+              </div>
+            )}
           </section>
 
           {/* --- Reminders Section --- */}

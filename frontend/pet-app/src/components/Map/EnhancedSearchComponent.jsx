@@ -13,12 +13,7 @@ const EnhancedSearchComponent = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [searchHistory, setSearchHistory] = useState([]);
-  const [filters, setFilters] = useState({
-    open247: false,
-    vaccine: false,
-    emergency: false,
-    spa: false
-  });
+  const [filters, _setFilters] = useState({});
   const searchInputRef = useRef(null);
   const suggestionsRef = useRef(null);
 
@@ -55,15 +50,18 @@ const EnhancedSearchComponent = ({
         setShowSuggestions(false);
       }
     };
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const fetchSuggestions = async (query) => {
     if (!query || query.length < 3) return;
+
     setIsLoadingSuggestions(true);
     try {
       const result = await geoapifyService.geocodeAddress(query);
+      
       if (result.success && result.data) {
         let formattedSuggestions = result.data.slice(0, 8).map(item => ({
           id: item.properties.place_id || Math.random(),
@@ -83,12 +81,16 @@ const EnhancedSearchComponent = ({
             item.geometry.coordinates[0]
           ) : null
         }));
+
         if (userLocation) {
           formattedSuggestions = formattedSuggestions.sort((a, b) => {
-            if (a.distance && b.distance) return a.distance - b.distance;
+            if (a.distance && b.distance) {
+              return a.distance - b.distance;
+            }
             return 0;
           });
         }
+        
         setSuggestions(formattedSuggestions.slice(0, 5));
         setShowSuggestions(true);
       }
@@ -103,9 +105,11 @@ const EnhancedSearchComponent = ({
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
+    // Thêm vào search history
     const newHistory = [searchQuery, ...searchHistory.filter(h => h !== searchQuery)].slice(0, 10);
     setSearchHistory(newHistory);
     localStorage.setItem('vet-search-history', JSON.stringify(newHistory));
+
     setShowSuggestions(false);
 
     try {
@@ -114,7 +118,7 @@ const EnhancedSearchComponent = ({
         latitude: userLocation?.latitude,
         longitude: userLocation?.longitude,
         radius: searchRadius,
-        filters,
+        filters: filters,
         prioritizeLocal: true
       };
 
@@ -129,13 +133,16 @@ const EnhancedSearchComponent = ({
   const handleSuggestionClick = (suggestion) => {
     setSearchQuery(suggestion.text);
     setShowSuggestions(false);
+    
     if (onLocationSelect) {
       onLocationSelect(suggestion.coordinates, suggestion.text);
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter') handleSearch();
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
   };
 
   const clearSearch = () => {
@@ -147,10 +154,6 @@ const EnhancedSearchComponent = ({
   const handleHistoryClick = (historyItem) => {
     setSearchQuery(historyItem);
     setShowSuggestions(false);
-  };
-
-  const toggleFilter = (key) => {
-    setFilters(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   return (
@@ -174,6 +177,8 @@ const EnhancedSearchComponent = ({
                 if (suggestions.length > 0) setShowSuggestions(true);
               }}
             />
+            
+            {/* Clear button */}
             {searchQuery && (
               <button
                 onClick={clearSearch}
@@ -182,6 +187,8 @@ const EnhancedSearchComponent = ({
                 <span className="material-symbols-outlined text-lg">close</span>
               </button>
             )}
+
+            {/* Loading indicator */}
             {isLoadingSuggestions && (
               <div className="absolute right-12 top-1/2 -translate-y-1/2">
                 <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -195,24 +202,25 @@ const EnhancedSearchComponent = ({
               ref={suggestionsRef}
               className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
             >
+              {/* Suggestions */}
               {suggestions.length > 0 && (
                 <div>
-                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase border-b border-gray-100 dark:border-gray-700">
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100 dark:border-gray-700">
                     Gợi ý địa chỉ
                   </div>
-                  {suggestions.map((s) => (
+                  {suggestions.map((suggestion) => (
                     <button
-                      key={s.id}
-                      onClick={() => handleSuggestionClick(s)}
+                      key={suggestion.id}
+                      onClick={() => handleSuggestionClick(suggestion)}
                       className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-50 dark:border-gray-700 last:border-b-0 transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <span className="material-symbols-outlined text-gray-400 text-lg">location_on</span>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm text-gray-800 dark:text-gray-200 truncate">{s.text}</div>
-                          {s.distance && (
+                          <div className="text-sm text-gray-800 dark:text-gray-200 truncate">{suggestion.text}</div>
+                          {suggestion.distance && (
                             <div className="text-xs text-blue-600 mt-1">
-                              ~{s.distance.toFixed(1)}km từ vị trí hiện tại
+                              ~{suggestion.distance.toFixed(1)}km từ vị trí hiện tại
                             </div>
                           )}
                         </div>
@@ -221,20 +229,22 @@ const EnhancedSearchComponent = ({
                   ))}
                 </div>
               )}
+
+              {/* Search History */}
               {searchHistory.length > 0 && suggestions.length === 0 && searchQuery.length < 3 && (
                 <div>
-                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase border-b border-gray-100 dark:border-gray-700">
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100 dark:border-gray-700">
                     Tìm kiếm gần đây
                   </div>
-                  {searchHistory.slice(0, 5).map((h, i) => (
+                  {searchHistory.slice(0, 5).map((historyItem, index) => (
                     <button
-                      key={i}
-                      onClick={() => handleHistoryClick(h)}
+                      key={index}
+                      onClick={() => handleHistoryClick(historyItem)}
                       className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-50 dark:border-gray-700 last:border-b-0 transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <span className="material-symbols-outlined text-gray-400 text-lg">history</span>
-                        <span className="text-sm text-gray-800 dark:text-gray-200">{h}</span>
+                        <span className="text-sm text-gray-800 dark:text-gray-200">{historyItem}</span>
                       </div>
                     </button>
                   ))}
@@ -243,48 +253,29 @@ const EnhancedSearchComponent = ({
             </div>
           )}
         </div>
-
-        {/* Nút tìm kiếm */}
-        <button
-          onClick={handleSearch}
-          disabled={loading || !searchQuery.trim()}
-          className="px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-        >
-          {loading ? (
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>Đang tìm...</span>
-            </div>
-          ) : (
-            'Tìm kiếm'
-          )}
-        </button>
-      </div>
-
-      {/* Quick Filters */}
-      <div className="flex flex-wrap gap-2 mt-4">
-        {[
-          { key: 'open247', label: 'Mở 24/7', icon: 'schedule' },
-          { key: 'vaccine', label: 'Có tiêm vaccine', icon: 'vaccines' },
-          { key: 'emergency', label: 'Cấp cứu', icon: 'emergency' },
-          { key: 'spa', label: 'Spa/Chăm sóc', icon: 'content_cut' },
-        ].map(f => (
+        
+        {/* Quick Filters */}
+        <div className="flex gap-2 flex-wrap">
+                   
+          
+          
           <button
-            key={f.key}
-            onClick={() => toggleFilter(f.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-colors ${
-              filters[f.key]
-                ? 'bg-blue-100 border-blue-500 text-blue-700'
-                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-            }`}
+            onClick={handleSearch}
+            disabled={loading || !searchQuery.trim()}
+            className="px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
           >
-            <span className="material-symbols-outlined text-base">{f.icon}</span>
-            <span className="text-sm font-medium">{f.label}</span>
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Đang tìm...</span>
+              </div>
+            ) : (
+              'Tìm kiếm'
+            )}
           </button>
-        ))}
+        </div>
       </div>
     </div>
   );
 };
-
 export default EnhancedSearchComponent;

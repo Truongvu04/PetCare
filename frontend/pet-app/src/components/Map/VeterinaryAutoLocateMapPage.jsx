@@ -59,4 +59,3 @@ const VeterinaryAutoLocateMapPage = () => {
 };
 
 export default VeterinaryAutoLocateMapPage;
-

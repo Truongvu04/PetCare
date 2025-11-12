@@ -11,9 +11,12 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "animate.css": "^4.1.1",
     "axios": "^1.12.2",
+    "canvas-confetti": "^1.9.4",
     "firebase": "^12.4.0",
     "leaflet": "^1.9.4",
+    "leaflet-routing-machine": "^3.2.12",
     "lucide-react": "^0.546.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
@@ -21,7 +24,8 @@
     "react-leaflet": "^5.0.0",
     "react-modal": "^3.16.3",
     "react-router-dom": "^7.9.4",
-    "recharts": "^3.2.1"
+    "recharts": "^3.2.1",
+    "sweetalert2": "^11.26.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

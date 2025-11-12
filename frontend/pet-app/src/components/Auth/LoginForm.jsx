@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import api from "../../api/axiosConfig";
+import confetti from "canvas-confetti";
 
-// --- Simple toast notify ---
+// --- Toast notify ---
 const showToast = (msg, type = "info") => {
   const div = document.createElement("div");
   div.textContent = msg;
@@ -52,7 +53,7 @@ function LoginForm({ onClose }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showRePassword, setShowRePassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
-
+  const [loading, setLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
   // --- Real-time password validation ---
@@ -85,33 +86,45 @@ function LoginForm({ onClose }) {
     if (password !== rePassword) return showToast("Passwords do not match!", "error");
     if (passwordError) return showToast(passwordError, "error");
 
+    setLoading(true);
     try {
       await api.post("/auth/register", { fullName, email, password });
       await api.post("/auth/verify-otp", { email, otp });
       showToast("Registration successful! Please login.", "success");
+      confetti({ particleCount: 100, spread: 70 });
       setIsRegister(false);
     } catch (err) {
       showToast(err.response?.data?.message || "Registration failed", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // --- Login ---
+  // --- Login ---  
   const handleLogin = async () => {
     if (!email || !password) return showToast("Please fill all fields!", "error");
+    setLoading(true);
     try {
       const res = await api.post("/auth/login", { email, password });
       const { token, user } = res.data;
-      if (token && user) {
-        localStorage.setItem("token", token);
-        localStorage.setItem("userInfo", JSON.stringify(user));
-        login({ token, user });
-        showToast("Login successful!", "success");
-        setTimeout(() => (window.location.href = "/"), 800);
-      } else {
-        showToast("Invalid server response", "error");
-      }
+
+      if (!token || !user) return showToast("Invalid server response", "error");
+
+      login({ token });
+
+      showToast(`Welcome back, ${user.full_name || user.email}!`, "success");
+      confetti({ particleCount: 120, spread: 90 });
+
+      setTimeout(() => (window.location.href = "/"), 800);
     } catch (err) {
-      showToast(err.response?.data?.message || "Login failed", "error");
+      if (err.response?.status === 401) {
+        showToast(err.response?.data?.message || "Invalid email or password", "error");
+        setPassword("");
+      } else {
+        showToast(err.response?.data?.message || "Login failed", "error");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -123,7 +136,7 @@ function LoginForm({ onClose }) {
   // --- Close with animation ---
   const handleClose = () => {
     setIsClosing(true);
-    setTimeout(() => onClose(), 250); // đợi animation xong rồi mới xoá
+    setTimeout(() => onClose(), 250);
   };
 
   // --- Auto detect ?token=... from Google/Facebook redirect ---
@@ -139,6 +152,7 @@ function LoginForm({ onClose }) {
           localStorage.setItem("userInfo", JSON.stringify(user));
           login({ token, user });
           showToast(`Welcome back, ${user.full_name || user.email}!`, "success");
+          confetti({ particleCount: 100, spread: 70 });
           setTimeout(() => (window.location.href = "/"), 800);
         })
         .catch(() => showToast("Invalid Google login", "error"));
@@ -149,16 +163,17 @@ function LoginForm({ onClose }) {
     <div
       className={`fixed inset-0 flex justify-center items-center bg-gray-900/60 backdrop-blur-md p-4 z-50 font-sans
         transition-all duration-300 ${isClosing ? "opacity-0" : "opacity-100"}`}
+      onClick={handleClose}
     >
       <div
         className={`bg-white p-8 rounded-[2rem] w-full max-w-sm shadow-2xl relative transform transition-all duration-300
-        ${isClosing ? "scale-90 opacity-0" : "scale-100 opacity-100"}`}
+          ${isClosing ? "scale-90 opacity-0" : "scale-100 opacity-100"}`}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Close */}
         <button
           className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-          onClick={handleClose}
-        >
+          onClick={handleClose}>
           ✕
         </button>
 
@@ -168,9 +183,7 @@ function LoginForm({ onClose }) {
             PetCare+
           </div>
           <p className="text-sm text-gray-500 mt-1 text-center">
-            {isRegister
-              ? "Create an account to get started."
-              : "Welcome back! Sign in to continue."}
+            {isRegister ? "Create an account to get started." : "Welcome back! Sign in to continue."}
           </p>
         </div>
 
@@ -184,8 +197,7 @@ function LoginForm({ onClose }) {
                 (i === 0 && !isRegister) || (i === 1 && isRegister)
                   ? "bg-green-600 text-white"
                   : "text-gray-600 hover:text-green-600"
-              }`}
-            >
+              }`}>
               {t}
             </button>
           ))}
@@ -200,6 +212,7 @@ function LoginForm({ onClose }) {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className={inputClass}
+              disabled={loading}
             />
           )}
 
@@ -209,6 +222,7 @@ function LoginForm({ onClose }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
+            disabled={loading}
           />
 
           {/* Password */}
@@ -218,14 +232,12 @@ function LoginForm({ onClose }) {
               placeholder="Password"
               value={password}
               onChange={handlePasswordChange}
-              className={`${inputClass} pr-12 ${
-                passwordError && isRegister ? "border-red-400" : ""
-              }`}
+              className={`${inputClass} pr-12 ${passwordError && isRegister ? "border-red-400" : ""}`}
+              disabled={loading}
             />
             <span
               className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-green-600"
-              onClick={() => setShowPassword(!showPassword)}
-            >
+              onClick={() => setShowPassword(!showPassword)}>
               {showPassword ? <EyeOffIcon /> : <EyeIcon />}
             </span>
             {isRegister && passwordError && (
@@ -242,11 +254,11 @@ function LoginForm({ onClose }) {
                   value={rePassword}
                   onChange={(e) => setRePassword(e.target.value)}
                   className={`${inputClass} pr-12`}
+                  disabled={loading}
                 />
                 <span
                   className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-green-600"
-                  onClick={() => setShowRePassword(!showRePassword)}
-                >
+                  onClick={() => setShowRePassword(!showRePassword)}>
                   {showRePassword ? <EyeOffIcon /> : <EyeIcon />}
                 </span>
               </div>
@@ -258,12 +270,13 @@ function LoginForm({ onClose }) {
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                   className={`${inputClass} flex-grow`}
+                  disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={sendOTP}
                   className="px-4 py-3 rounded-2xl text-sm font-bold bg-green-100 text-green-700 hover:bg-green-200"
-                >
+                  disabled={loading}>
                   Send OTP
                 </button>
               </div>
@@ -272,9 +285,11 @@ function LoginForm({ onClose }) {
 
           <button
             type="submit"
-            className="bg-green-600 text-white py-3.5 rounded-2xl font-extrabold mt-4 text-lg hover:bg-green-700"
-          >
-            {isRegister ? "Register" : "Login"}
+            className={`bg-green-600 text-white py-3.5 rounded-2xl font-extrabold mt-4 text-lg hover:bg-green-700 ${
+              loading ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+            disabled={loading}>
+            {loading ? "Please wait..." : isRegister ? "Register" : "Login"}
           </button>
         </form>
 
@@ -289,14 +304,12 @@ function LoginForm({ onClose }) {
         <div className="flex justify-between gap-4">
           <a
             href="http://localhost:5000/auth/google"
-            className="flex items-center justify-center w-1/2 gap-2 bg-white border border-gray-200 px-4 py-3 rounded-2xl text-gray-700 hover:bg-gray-50"
-          >
+            className="flex items-center justify-center w-1/2 gap-2 bg-white border border-gray-200 px-4 py-3 rounded-2xl text-gray-700 hover:bg-gray-50">
             <GoogleIcon /> Google
           </a>
           <a
             href="http://localhost:5000/auth/facebook"
-            className="flex items-center justify-center w-1/2 gap-2 bg-white border border-gray-200 px-4 py-3 rounded-2xl text-gray-700 hover:bg-gray-50"
-          >
+            className="flex items-center justify-center w-1/2 gap-2 bg-white border border-gray-200 px-4 py-3 rounded-2xl text-gray-700 hover:bg-gray-50">
             <FacebookIcon /> Facebook
           </a>
         </div>
@@ -305,8 +318,7 @@ function LoginForm({ onClose }) {
           {isRegister ? "Already have an account? " : "Don't have an account? "}
           <span
             className="text-green-600 font-semibold cursor-pointer hover:text-green-700"
-            onClick={() => setIsRegister(!isRegister)}
-          >
+            onClick={() => setIsRegister(!isRegister)}>
             {isRegister ? "Login" : "Register"}
           </span>
         </p>
