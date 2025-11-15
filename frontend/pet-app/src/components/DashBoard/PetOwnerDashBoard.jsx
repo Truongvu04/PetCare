@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Home, PawPrint, Bell, Heart, DollarSign, Calendar, ShoppingBag, Settings,
-  MessageCircle, Scissors, Syringe, MapPin, Stethoscope, Utensils, Activity,
+  MessageCircle, Scissors, Syringe, MapPin, Stethoscope, Utensils, Activity, FileText,
 } from "lucide-react";
 // --- THAY ĐỔI 1: Import 'Link' ---
 import { useNavigate, Link } from "react-router-dom"; 
 // ----------------------------------
 import { useAuth } from "../../hooks/useAuth.js"; // 👈 Thêm
 import api from "../../api/axiosConfig.js"; // 👈 Thêm
+import QuickAccessCards from "./QuickAccessCards.jsx";
 
 // getReminderIcon function (Giữ nguyên)
 const getReminderIcon = (type) => {
@@ -129,8 +130,7 @@ const PetOwnerDashboard = () => {
     { name: "My Pets", icon: <PawPrint size={18} />, path: "/mypets" },
     { name: "Reminders", icon: <Bell size={18} />, path: "/reminder" },
     { name: "Health & Activity", icon: <Heart size={18} />, path: "/health" },
-    { name: "Expenses", icon: <DollarSign size={18} /> },
-    { name: "Calendar", icon: <Calendar size={18} /> },
+    { name: "My Orders", icon: <FileText size={18} />, path: "/orders" },
     { name: "Shop", icon: <ShoppingBag size={18} />, path: "/shops" },
     { name: "Settings", icon: <Settings size={18} /> },
   ];
@@ -196,6 +196,7 @@ const PetOwnerDashboard = () => {
 
         {/* --- Main content --- */}
         <main className="flex-1 p-10 overflow-y-auto">
+          <QuickAccessCards />
           <h2 className="text-3xl font-extrabold text-gray-900 mb-5">
             Dashboard
           </h2>

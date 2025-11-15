@@ -4,8 +4,8 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { prisma } from "../config/prisma.js"; // 👈 THAY ĐỔI: Import Prisma
-import { verifyToken } from "../middleware/authMiddleware.js"; // 👈 THAY ĐỔI: Import auth middleware
+import { prisma } from "../config/prisma.js";
+import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -32,12 +32,9 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// ------------------- Thêm thú cưng (Đã bảo mật) -------------------
-// POST /api/pets
 router.post("/", verifyToken, upload.single("photo_url"), async (req, res) => {
   try {
     const {
-      // user_id được lấy từ token, không phải body
       name,
       species,
       vaccination,
@@ -48,10 +45,9 @@ router.post("/", verifyToken, upload.single("photo_url"), async (req, res) => {
       description,
     } = req.body;
 
-    // 👈 BẢO MẬT: Lấy user_id từ token đã được xác thực
-    const userIdFromToken = req.user.user_id;
+    const user_id = req.user.user_id;
 
-    if (!userIdFromToken || !name || name.trim() === "") {
+    if (!user_id || !name || name.trim() === "") {
       return res.status(400).json({ message: "Missing required fields or authentication" });
     }
 
@@ -59,12 +55,10 @@ router.post("/", verifyToken, upload.single("photo_url"), async (req, res) => {
     const validWeight = weight ? parseFloat(weight) : null;
     const photoPath = req.file ? `/uploads/${req.file.filename}` : null;
 
-    // 👈 THAY ĐỔI: Dùng Prisma
     const newPet = await prisma.pet.create({
       data: {
-        // id: tự động tạo (nếu dùng CUID/UUID) hoặc dùng crypto nếu schema yêu cầu
-        id: crypto.randomBytes(6).toString("hex"), // Giữ logic cũ
-        user_id: userIdFromToken, // 👈 Lấy từ token
+        id: crypto.randomBytes(6).toString("hex"),
+        user_id,
         name,
         species,
         vaccination,
@@ -79,7 +73,7 @@ router.post("/", verifyToken, upload.single("photo_url"), async (req, res) => {
 
     res.status(201).json({
       message: "✅ Pet added successfully!",
-      pet_id: newPet.id, // Trả về ID
+      pet_id: newPet.id,
       photo_url: newPet.photo_url,
     });
   } catch (err) {
@@ -88,42 +82,35 @@ router.post("/", verifyToken, upload.single("photo_url"), async (req, res) => {
   }
 });
 
-// ------------------- Lấy danh sách thú cưng của user (Đã bảo mật) -------------------
-// GET /api/pets
 router.get("/", verifyToken, async (req, res) => {
   try {
-    // 👈 BẢO MẬT: Lấy user_id từ token
-    const userIdFromToken = req.user.user_id;
+    const user_id = req.user.user_id;
 
-    // 👈 THAY ĐỔI: Dùng Prisma và lọc theo user_id
     const pets = await prisma.pet.findMany({
       where: {
-        user_id: userIdFromToken, // Chỉ lấy pet của user đã đăng nhập
+        user_id,
       },
       orderBy: {
         created_at: "desc",
       },
     });
 
-    res.json(pets); // Prisma luôn trả về mảng
+    res.json(pets);
   } catch (err) {
     console.error("❌ Error fetching pets (Prisma):", err);
     res.status(500).json({ message: "Database error while fetching pets" });
   }
 });
 
-// ------------------- Lấy chi tiết thú cưng theo ID (Đã bảo mật) -------------------
-// GET /api/pets/:id
 router.get("/:id", verifyToken, async (req, res) => {
   try {
     const petId = req.params.id;
-    const userIdFromToken = req.user.user_id;
+    const user_id = req.user.user_id;
 
-    // 👈 THAY ĐỔI: Dùng Prisma và lọc cả petId và user_id
     const pet = await prisma.pet.findFirst({
       where: {
         id: petId,
-        user_id: userIdFromToken, // Đảm bảo pet này thuộc về user
+        user_id,
       },
     });
 
@@ -137,17 +124,14 @@ router.get("/:id", verifyToken, async (req, res) => {
   }
 });
 
-// ------------------- Cập nhật thú cưng (Đã bảo mật) -------------------
-// PUT /api/pets/:id
 router.put("/:id", verifyToken, upload.single("photo_url"), async (req, res) => {
   try {
     const petId = req.params.id;
-    const userIdFromToken = req.user.user_id;
+    const user_id = req.user.user_id;
     const { name, species, vaccination, age, weight, breed, medical_history, description } = req.body;
 
-    // 👈 BẢO MẬT: Kiểm tra xem pet có tồn tại và thuộc về user không
     const existingPet = await prisma.pet.findFirst({
-      where: { id: petId, user_id: userIdFromToken },
+      where: { id: petId, user_id },
       select: { photo_url: true },
     });
 
@@ -161,9 +145,8 @@ router.put("/:id", verifyToken, upload.single("photo_url"), async (req, res) => 
     const validAge = age ? parseInt(age) : null;
     const validWeight = weight ? parseFloat(weight) : null;
 
-    // 👈 THAY ĐỔI: Dùng Prisma Update
     const updatedPet = await prisma.pet.update({
-      where: { id: petId }, // update_many không cần thiết nếu ID là unique
+      where: { id: petId },
       data: {
         name: name || undefined,
         species: species || undefined,
@@ -184,19 +167,15 @@ router.put("/:id", verifyToken, upload.single("photo_url"), async (req, res) => 
   }
 });
 
-// ------------------- Xóa thú cưng (Đã bảo mật) -------------------
-// DELETE /api/pets/:id
 router.delete("/:id", verifyToken, async (req, res) => {
   try {
     const petId = req.params.id;
-    const userIdFromToken = req.user.user_id;
+    const user_id = req.user.user_id;
 
-    // 👈 THAY ĐỔI: Dùng Prisma deleteMany để xóa dựa trên cả 2 điều kiện
-    // Điều này ngăn user xóa pet của người khác
     const deleteResult = await prisma.pet.deleteMany({
       where: {
         id: petId,
-        user_id: userIdFromToken,
+        user_id,
       },
     });
 

@@ -54,8 +54,7 @@ const AddNewPet = () => {
   const handleAddPet = async (e) => {
     e.preventDefault();
     
-    // 👈 Kiểm tra user
-    if (!user || !user.user_id) {
+    if (!user) {
       alert("❌ Bạn phải đăng nhập để thêm thú cưng!");
       navigate("/login");
       return;
@@ -68,10 +67,7 @@ const AddNewPet = () => {
       const speciesValue =
         formData.species === "Other"
           ? formData.customSpecies.trim()
-          : formData.species;
-
-      // 👈 Thêm user_id từ context
-      formDataToSend.append("user_id", user.user_id.toString()); 
+          : formData.species; 
       formDataToSend.append("name", formData.name.trim());
       formDataToSend.append("species", speciesValue);
       formDataToSend.append("vaccination", formData.vaccination);

@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth.js"; 
+import { useAuth } from "../../hooks/useAuth.js";
+import api from "../../api/axiosConfig.js";
+import CartIcon from "./CartIcon.jsx";
 import {
   Home,
   PawPrint,
@@ -16,62 +18,29 @@ import {
 
 const Shop = () => {
   const navigate = useNavigate();
-  const { user } = useAuth(); // 👈 Lấy user
-  const products = [
-    {
-      name: "Premium Dog Food",
-      desc: "High-quality nutrition for your dog",
-      img: "https://images.unsplash.com/photo-1601758124513-241c2b3b4dba",
-    },
-    {
-      name: "Organic Dog Treats",
-      desc: "Healthy and delicious treats",
-      img: "https://images.unsplash.com/photo-1589927986089-35812388d1b3",
-    },
-    {
-      name: "Dog Leash",
-      desc: "Durable and stylish leash",
-      img: "https://images.unsplash.com/photo-1620331311521-2b31d44640ee",
-    },
-    {
-      name: "Dog Toy",
-      desc: "Interactive toy for your dog",
-      img: "https://images.unsplash.com/photo-1560807707-8cc77767d783",
-    },
-    {
-      name: "Dog Shampoo",
-      desc: "Gentle and effective shampoo",
-      img: "https://images.unsplash.com/photo-1599312691291-8aa9b6fce9f3",
-    },
-    {
-      name: "Dog Bed",
-      desc: "Comfortable bed for your dog",
-      img: "https://images.unsplash.com/photo-1619983081563-430f636027b1",
-    },
-    {
-      name: "Dog Collar",
-      desc: "Adjustable and safe collar",
-      img: "https://images.unsplash.com/photo-1574158622682-e40e69881006",
-    },
-    {
-      name: "Dog Bowl",
-      desc: "Non-slip bowl for food and water",
-      img: "https://images.unsplash.com/photo-1625758479638-406f0f7f0b84",
-    },
-    {
-      name: "Dog Training Book",
-      desc: "Guide to training your dog",
-      img: "https://images.unsplash.com/photo-1555685812-4b943f1cb0eb",
-    },
-    {
-      name: "Dog Carrier",
-      desc: "Safe and comfortable carrier",
-      img: "https://images.unsplash.com/photo-1555685812-84b7f642b7a3",
-    },
-  ];
+  const { user } = useAuth();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await api.get("/products");
+        setProducts(response.data);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   return (
-    <div className="flex bg-gray-50 min-h-screen justify-center">
+    <div className="flex bg-gray-50 min-h-screen justify-center relative">
+      {/* Floating Cart Button */}
+      <CartIcon showFloating={true} />
       <div className="flex w-full max-w-[1280px]">
         {/* Sidebar */}
         <div className="w-64 bg-white shadow-sm p-6 border-r border-gray-100">
@@ -123,12 +92,13 @@ const Shop = () => {
 
         {/* Main Content */}
         <div className="flex-1 px-8 py-6">
-          {/* Search Bar */}
-          <div className="mb-8">
+          <div className="mb-8 flex items-center gap-4">
             <div className="relative w-full max-w-xl">
               <input
                 type="text"
                 placeholder="Search for products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full rounded-full border border-gray-200 pl-12 pr-10 py-3 focus:ring-1 focus:ring-green-500 focus:outline-none"
               />
               <Search
@@ -136,6 +106,7 @@ const Shop = () => {
                 size={20}
               />
             </div>
+            <CartIcon className="ml-auto" />
           </div>
 
           {/* Category Filter */}
@@ -163,20 +134,65 @@ const Shop = () => {
             </div>
           </div>
 
-          {/* Products Grid */}
-          <div className="grid grid-cols-5 gap-6">
-            {products.map((p, i) => (
-              <div key={i} className="bg-white rounded-lg shadow-sm hover:shadow-md transition p-3">
-                <img
-                  src={p.img}
-                  alt={p.name}
-                  className="w-full h-40 object-cover rounded-md mb-3"
-                />
-                <h3 className="font-medium text-gray-800">{p.name}</h3>
-                <p className="text-sm text-green-600">{p.desc}</p>
-              </div>
-            ))}
-          </div>
+          {loading ? (
+            <div className="text-center py-12">Loading products...</div>
+          ) : (
+            <div className="grid grid-cols-5 gap-6">
+              {products
+                .filter((p) =>
+                  p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((product) => {
+                  // Find thumbnail (check for both true and 1)
+                  const thumbnail = product.product_images?.find(
+                    (img) => img.is_thumbnail === true || img.is_thumbnail === 1
+                  ) || product.product_images?.[0]; // Fallback to first image if no thumbnail
+                  
+                  // Build image URL with proper handling
+                  let imageUrl = "https://via.placeholder.com/200?text=No+Image";
+                  if (thumbnail?.image_url) {
+                    const url = thumbnail.image_url.trim();
+                    if (url.startsWith('http://') || url.startsWith('https://')) {
+                      imageUrl = url;
+                    } else if (url.startsWith('/')) {
+                      imageUrl = `http://localhost:5000${url}`;
+                    } else {
+                      imageUrl = `http://localhost:5000/uploads/${url}`;
+                    }
+                  }
+                  
+                  return (
+                    <div
+                      key={product.product_id}
+                      onClick={() => navigate(`/shop/${product.product_id}`)}
+                      className="bg-white rounded-lg shadow-sm hover:shadow-md transition p-3 cursor-pointer"
+                    >
+                      <div className="w-full h-40 bg-gray-100 rounded-md mb-3 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={imageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            if (e.target.src !== "https://via.placeholder.com/200?text=No+Image") {
+                              e.target.src = "https://via.placeholder.com/200?text=No+Image";
+                            }
+                          }}
+                        />
+                      </div>
+                      <h3 className="font-medium text-gray-800">
+                        {product.name}
+                      </h3>
+                      <p className="text-sm text-green-600">
+                        {product.vendors?.store_name || "PetCare Shop"}
+                      </p>
+                      <p className="text-sm font-semibold text-gray-700 mt-1">
+                        ${(product.price / 1000).toFixed(2)}
+                      </p>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
 
           {/* Pagination */}
           <div className="flex justify-center mt-8 space-x-3 text-sm">

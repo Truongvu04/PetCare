@@ -16,14 +16,14 @@ router.post("/register", async (req, res) => {
     return res.status(400).json({ message: "Full name, email, and password required" });
 
   try {
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.users.findUnique({ where: { email } });
     if (existing) {
       console.warn("⚠️ User already exists:", email);
       return res.status(400).json({ message: "User already exists" });
     }
 
     const hash = await bcrypt.hash(password, 10);
-    const newUser = await prisma.user.create({
+    const newUser = await prisma.users.create({
       data: { full_name: fullName, email, password_hash: hash },
     });
 
@@ -46,7 +46,7 @@ router.post("/send-otp", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     console.log("🔢 Generated OTP:", otp);
 
-    await prisma.oTP.create({ data: { email, code: otp } });
+    await prisma.otp.create({ data: { email, code: otp } });
     await sendOTPEmail(email, otp);
     console.log("📧 OTP sent to:", email);
     res.json({ message: "OTP sent successfully" });
@@ -64,7 +64,7 @@ router.post("/verify-otp", async (req, res) => {
   if (!email || !otp) return res.status(400).json({ message: "Email and OTP required" });
 
   try {
-    const record = await prisma.oTP.findFirst({
+    const record = await prisma.otp.findFirst({
       where: { email, code: otp },
       orderBy: { createdAt: "desc" },
     });
@@ -91,7 +91,7 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ message: "Email and password required" });
 
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.users.findUnique({ where: { email } });
     if (!user) {
       console.warn("⚠️ User not found:", email);
       return res.status(404).json({ message: "User not found" });
@@ -103,16 +103,20 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid password" });
     }
 
-    // ✅ FIXED: dùng "user_id" thay vì "userId"
     const token = jwt.sign(
       {
         user_id: user.user_id,
         email: user.email,
-        role: user.role 
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
+
+    const vendor = await prisma.vendors.findUnique({
+      where: { user_id: user.user_id },
+    });
+
+    const customer = vendor ? null : { customer_id: user.user_id };
 
     console.log("✅ Login successful:", email);
 
@@ -123,7 +127,9 @@ router.post("/login", async (req, res) => {
         user_id: user.user_id,
         full_name: user.full_name,
         email: user.email,
-        role: user.role,
+        avatar_url: user.avatar_url,
+        customer: customer,
+        vendor: vendor,
       },
     });
   } catch (err) {
@@ -132,7 +138,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-/* ------------------- USER INFO (JWT Token) ------------------- */
 router.get("/me", async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -141,27 +146,37 @@ router.get("/me", async (req, res) => {
       return res.status(401).json({ message: "No token provided" });
     }
 
-    // ✅ Log token và secret đang dùng
-    console.log("Incoming auth header:", authHeader);
-    console.log("Using secret:", process.env.JWT_SECRET);
-
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    console.log("🔍 Decoded token:", decoded);
-
-    const user = await prisma.user.findUnique({
-      where: { email: decoded.email },
-      select: { user_id: true, full_name: true, email: true, role: true},
+    const user = await prisma.users.findUnique({
+      where: { user_id: decoded.user_id },
+      select: { 
+        user_id: true, 
+        full_name: true, 
+        email: true, 
+        phone: true,
+        avatar_url: true 
+      },
     });
 
     if (!user) {
-      console.warn("⚠️ User not found in DB for email:", decoded.email);
+      console.warn("⚠️ User not found in DB for user_id:", decoded.user_id);
       return res.status(404).json({ message: "User not found" });
     }
 
+    const vendor = await prisma.vendors.findUnique({
+      where: { user_id: user.user_id },
+    });
+
+    const customer = vendor ? null : { customer_id: user.user_id };
+
     console.log("✅ Authenticated user:", user.email);
-    res.json(user);
+    res.json({
+      ...user,
+      customer: customer || null,
+      vendor: vendor || null,
+    });
   } catch (err) {
     console.error("❌ /me error:", err.message);
     res.status(401).json({ message: "Invalid or expired token" });

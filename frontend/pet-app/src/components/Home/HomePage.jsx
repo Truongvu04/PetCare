@@ -3,6 +3,8 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
 import api from "../../api/axiosConfig.js";
 import LoginForm from "../Auth/LoginForm";
+import CartIcon from "../Shop/CartIcon.jsx";
+import RoleBasedNavigation from "../Navigation/RoleBasedNavigation.jsx";
 
 // --- Constants (Thay thế các đường dẫn file ảnh cục bộ bằng Placeholder URL) ---
 const PLACEHOLDERS = {
@@ -433,7 +435,7 @@ const SupportCard = ({ iconClass, title, description }) => (
 // --- HEADER ---
 const Header = ({ onLoginClick }) => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth(); // ✅ lấy thông tin từ context
+  const { user, vendor, logout } = useAuth(); // ✅ lấy thông tin từ context bao gồm vendor
   const [menuOpen, setMenuOpen] = useState(false);
 
   // === YÊU CẦU 4: THÊM STATE VÀ LOGIC CHO CHUÔNG THÔNG BÁO ===
@@ -470,16 +472,16 @@ const Header = ({ onLoginClick }) => {
   // ==========================================================
 
   return (
-    <header className="flex items-center justify-between px-8 py-3 bg-white shadow-sm top-0 z-50">
+    <header className="flex items-center justify-between px-4 md:px-8 py-3 bg-white shadow-sm top-0 z-50 sticky overflow-visible w-full">
       {/* Logo */}
       <div
-        className="text-2xl font-bold text-[#29a980] text-[28px] cursor-pointer"
+        className="text-2xl font-bold text-[#29a980] text-[28px] cursor-pointer flex-shrink-0"
         onClick={() => navigate("/")}>
         PetCare+
       </div>
 
       {/* Navbar */}
-      <nav className="flex space-x-6 text-gray-700 text-[18px] mr-[400px]">
+      <nav className="hidden md:flex space-x-6 text-gray-700 text-[18px] flex-1 justify-center max-w-lg mx-4">
         <NavLink
           to="/"
           className={({ isActive }) =>
@@ -502,48 +504,62 @@ const Header = ({ onLoginClick }) => {
       </nav>
 
       {/* Actions */}
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center gap-2 md:gap-4 relative flex-shrink-0 min-w-0">
+        {/* Role-based Navigation - Quick Access */}
+        {user && (
+          <div className="hidden xl:block relative z-10 flex-shrink-0">
+            <RoleBasedNavigation />
+          </div>
+        )}
+
         {/* Search */}
-        <div className="flex items-center bg-[#e8f7f0] rounded-[12px] w-[150px] px-[15px] py-[10px] border-none transition-all duration-300 ease-in-out 
-                        hover:bg-[#d8f5e7] hover:shadow-md focus-within:bg-[#d8f5e7] focus-within:shadow-lg">
-          <i className="fa-solid fa-magnifying-glass text-[#29a980] mr-[2px]"></i>
+        <div className="hidden sm:flex items-center bg-[#e8f7f0] rounded-[12px] w-[120px] md:w-[150px] px-[10px] md:px-[15px] py-[8px] md:py-[10px] border-none transition-all duration-300 ease-in-out 
+                        hover:bg-[#d8f5e7] hover:shadow-md focus-within:bg-[#d8f5e7] focus-within:shadow-lg flex-shrink-0">
+          <i className="fa-solid fa-magnifying-glass text-[#29a980] mr-[2px] text-sm"></i>
           <input
             type="text"
             placeholder="Tìm kiếm"
-            className="bg-transparent focus:outline-none text-sm w-[100px]"/>
+            className="bg-transparent focus:outline-none text-xs md:text-sm w-[80px] md:w-[100px]"/>
+        </div>
+
+        {/* Shopping Cart */}
+        <div className="relative z-10 flex-shrink-0">
+          <CartIcon className="bg-[#e8f7f0] hover:bg-[#d8f5e7] rounded-[10px] transition duration-300 ease" />
         </div>
 
         {/* Notification */}
         <div 
-          className="relative cursor-pointer" 
+          className="relative cursor-pointer z-10 flex-shrink-0" 
           onClick={() => navigate("/dashboard")}
         >
           <i
-            className="fa-regular fa-bell text-[#29a980] bg-[#e8f7f0] p-3 rounded-[10px] transition duration-300 ease hover:bg-[#d8f5e7]"
+            className="fa-regular fa-bell text-[#29a980] bg-[#e8f7f0] p-2 md:p-3 rounded-[10px] transition duration-300 ease hover:bg-[#d8f5e7] text-sm md:text-base"
           ></i>
           {/* Dấu chấm đỏ (chỉ hiển thị nếu hasNewReminders là true) */}
           {hasNewReminders && (
-            <span className="absolute top-0 right-0 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse border border-white"></span>
+            <span className="absolute top-0 right-0 h-2 w-2 md:h-2.5 md:w-2.5 bg-red-500 rounded-full animate-pulse border border-white"></span>
           )}
         </div>
 
         {/* Auth */}
         {!user ? (
           <button
-            onClick={onLoginClick} // 👈 Gọi hàm mở modal
-            className="px-[15px] py-[9px] rounded-[12px] font-bold text-[14px] bg-[#29a980] text-white hover:bg-[#1d926d]">
+            onClick={onLoginClick}
+            className="px-3 md:px-[15px] py-2 md:py-[9px] rounded-[12px] font-bold text-xs md:text-[14px] bg-[#29a980] text-white hover:bg-[#1d926d] flex-shrink-0 whitespace-nowrap">
             Đăng nhập
           </button>
         ) : (
-          <div className="relative">
+          <div className="relative z-[60] flex-shrink-0" style={{ minWidth: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img
               src={`https://api.dicebear.com/9.x/initials/svg?seed=${user.full_name || user.email?.split("@")[0] || "User"}`}
               alt="User"
-              className="w-10 h-10 rounded-full border-2 border-green-500 cursor-pointer"
-              onClick={() => setMenuOpen(!menuOpen)}/>
+              className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-green-500 cursor-pointer"
+              onClick={() => setMenuOpen(!menuOpen)}
+              style={{ display: 'block', visibility: 'visible', opacity: 1, minWidth: '32px', minHeight: '32px', flexShrink: 0 }}
+            />
 
             {menuOpen && (
-              <div className="absolute right-0 top-14 w-72 bg-white/90 backdrop-blur-md border border-gray-100 shadow-lg rounded-2xl p-3 z-50">
+              <div className="absolute right-0 top-12 md:top-14 w-72 bg-white/90 backdrop-blur-md border border-gray-100 shadow-lg rounded-2xl p-3 z-[100]" style={{ display: 'block' }}>
                 <div className="flex items-center gap-3 border-b border-gray-100 pb-3 mb-3">
                   <img
                     src={`https://api.dicebear.com/9.x/initials/svg?seed=${user.full_name || user.email?.split("@")[0] || "User"}`}
@@ -562,11 +578,57 @@ const Header = ({ onLoginClick }) => {
                   </div>
                 </div>
 
+                {vendor ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        navigate("/vendor/dashboard");
+                        setMenuOpen(false);
+                      }}
+                      className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
+                      <i className="fa-solid fa-store text-green-500"></i>
+                      <span>Vendor Dashboard</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate("/vendor/products");
+                        setMenuOpen(false);
+                      }}
+                      className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
+                      <i className="fa-solid fa-box text-green-500"></i>
+                      <span>Quản lý sản phẩm</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate("/vendor/orders");
+                        setMenuOpen(false);
+                      }}
+                      className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
+                      <i className="fa-solid fa-shopping-cart text-green-500"></i>
+                      <span>Quản lý đơn hàng</span>
+                    </button>
+                    <div className="border-t border-gray-100 my-2"></div>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => {
+                      navigate("/dashboard");
+                      setMenuOpen(false);
+                    }}
+                    className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
+                    <i className="fa-solid fa-chart-simple text-green-500"></i>
+                    <span>Bảng điều khiển</span>
+                  </button>
+                )}
+
                 <button
-                  onClick={() => navigate("/dashboard")}
+                  onClick={() => {
+                    navigate("/orders");
+                    setMenuOpen(false);
+                  }}
                   className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
-                  <i className="fa-solid fa-chart-simple text-green-500"></i>
-                  <span>Bảng điều khiển</span>
+                  <i className="fa-solid fa-receipt text-green-500"></i>
+                  <span>Đơn hàng của tôi</span>
                 </button>
 
                 <button
@@ -693,6 +755,101 @@ const Footer = () => (
   </footer>
 );
 
+// --- Vendor Quick Access Section ---
+const VendorQuickAccess = () => {
+  const navigate = useNavigate();
+  const { vendor, user } = useAuth();
+
+  if (!vendor || !user) return null;
+
+  return (
+    <section className="vendor-quick-access" style={{ padding: "40px 30px", backgroundColor: "#f0fdf4", marginTop: "40px" }}>
+      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+        <h2 style={{ fontSize: "2em", marginBottom: "10px", fontWeight: 700, color: "#29a980" }}>
+          Vendor Management
+        </h2>
+        <p style={{ color: "#4F946B", marginBottom: "30px" }}>
+          Quản lý cửa hàng và đơn hàng của bạn một cách dễ dàng
+        </p>
+        
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "20px" }}>
+          <div
+            onClick={() => navigate("/vendor/dashboard")}
+            style={{
+              backgroundColor: "white",
+              padding: "25px",
+              borderRadius: "12px",
+              border: "2px solid #29a980",
+              cursor: "pointer",
+              transition: "all 0.3s",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.boxShadow = "0 5px 15px rgba(41,169,128,0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+            }}>
+            <i className="fa-solid fa-chart-line" style={{ fontSize: "2em", color: "#29a980", marginBottom: "10px" }}></i>
+            <h4 style={{ fontWeight: 600, marginBottom: "5px" }}>Dashboard</h4>
+            <p style={{ color: "#4F946B", fontSize: "0.9em" }}>Xem tổng quan doanh số và thống kê</p>
+          </div>
+
+          <div
+            onClick={() => navigate("/vendor/products")}
+            style={{
+              backgroundColor: "white",
+              padding: "25px",
+              borderRadius: "12px",
+              border: "2px solid #29a980",
+              cursor: "pointer",
+              transition: "all 0.3s",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.boxShadow = "0 5px 15px rgba(41,169,128,0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+            }}>
+            <i className="fa-solid fa-box" style={{ fontSize: "2em", color: "#29a980", marginBottom: "10px" }}></i>
+            <h4 style={{ fontWeight: 600, marginBottom: "5px" }}>Quản lý sản phẩm</h4>
+            <p style={{ color: "#4F946B", fontSize: "0.9em" }}>Thêm, sửa và quản lý sản phẩm/dịch vụ</p>
+          </div>
+
+          <div
+            onClick={() => navigate("/vendor/orders")}
+            style={{
+              backgroundColor: "white",
+              padding: "25px",
+              borderRadius: "12px",
+              border: "2px solid #29a980",
+              cursor: "pointer",
+              transition: "all 0.3s",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.boxShadow = "0 5px 15px rgba(41,169,128,0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+            }}>
+            <i className="fa-solid fa-shopping-cart" style={{ fontSize: "2em", color: "#29a980", marginBottom: "10px" }}></i>
+            <h4 style={{ fontWeight: 600, marginBottom: "5px" }}>Quản lý đơn hàng</h4>
+            <p style={{ color: "#4F946B", fontSize: "0.9em" }}>Xem và cập nhật trạng thái đơn hàng</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 // --- Main App Component ---
 
 const HomePage = () => {
@@ -711,6 +868,7 @@ const HomePage = () => {
 
         <main className="content">
           <HeroSection />
+          <VendorQuickAccess />
           <ExploreSection />
           <CareSection />
           <SupportSection />

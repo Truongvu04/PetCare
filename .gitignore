@@ -6,3 +6,5 @@ logs/
 package-lock.json
 backend/.cursorignore
 frontend/pet-app/pet-care.code-workspace
+
+ai-docs/

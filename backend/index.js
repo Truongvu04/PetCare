@@ -18,6 +18,12 @@ import authRoutes from "./src/routes/auth.routes.js";
 import petRoutes from "./src/routes/pets.js";
 import reminderRoutes from "./src/routes/reminder.js";
 import geoapifyRoutes from "./src/routes/geoapify.routes.js";
+import productRoutes from "./src/routes/productRoutes.js";
+import orderRoutes from "./src/routes/orderRoutes.js";
+import serviceRoutes from "./src/routes/serviceRoutes.js";
+import appointmentRoutes from "./src/routes/appointmentRoutes.js";
+import reviewRoutes from "./src/routes/reviewRoutes.js";
+import cartRoutes from "./src/routes/cartRoutes.js";
 
 import "./src/config/passport.js";
 import './src/scheduler/reminderJob.js'; // Đã kích hoạt cron job
@@ -47,6 +53,13 @@ app.use("/api/auth", authRoutes);
 app.use("/api/pets", petRoutes);
 app.use("/api/reminders", reminderRoutes);
 app.use("/api/geoapify", geoapifyRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/services", serviceRoutes);
+app.use("/api/appointments", appointmentRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/cart", cartRoutes);
+console.log("✅ Cart routes registered at /api/cart");
 
 app.get(
   "/auth/google",
