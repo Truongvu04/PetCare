@@ -3,17 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
 import api from "../../api/axiosConfig.js";
 import CartIcon from "./CartIcon.jsx";
+import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
 import {
-  Home,
-  PawPrint,
   ChevronDown,
   Search,
-  Bell,
-  Heart,
-  DollarSign,
-  Calendar,
-  ShoppingBag,
-  Settings,
 } from "lucide-react";
 
 const Shop = () => {
@@ -38,60 +31,9 @@ const Shop = () => {
   }, []);
 
   return (
-    <div className="flex bg-gray-50 min-h-screen justify-center relative">
-      {/* Floating Cart Button */}
+    <div className="relative">
       <CartIcon showFloating={true} />
-      <div className="flex w-full max-w-[1280px]">
-        {/* Sidebar */}
-        <div className="w-64 bg-white shadow-sm p-6 border-r border-gray-100">
-          <div className="flex items-center space-x-3 mb-8">
-            <img
-              src={user?.avatar_url || "https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"}
-              alt="Profile"
-              onClick={() => navigate("/")}
-              className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-green-400 transition"/>
-            <div>
-              <h3 className="font-semibold text-gray-900">{user?.full_name || "Emily Carter"}</h3>
-              {/* <span className="owner font-semibold text-gray-900">{user?.role || "Owner"}</span> */}
-            </div>
-          </div>
-
-          <nav className="flex flex-col space-y-2">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-              <Home size={18} /> Dashboard
-            </button>
-            <div className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-              <PawPrint size={18} /> My Pets
-            </div>
-            <button
-              onClick={() => navigate("/reminder")}
-              className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-              <Bell size={18} /> Reminders
-            </button>
-            <button
-              onClick={() => navigate("/health")}
-              className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-              <Heart size={18} /> Health & Activity
-            </button>
-            <button className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-              <DollarSign size={18} /> Expenses
-            </button>
-            <button className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-              <Calendar size={18} /> Calendar
-            </button>
-            <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 text-green-800 font-semibold">
-              <ShoppingBag size={18} /> Shop
-            </button>
-            <button className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-              <Settings size={18} /> Settings
-            </button>
-          </nav>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 px-8 py-6">
+      <CustomerLayout currentPage="shop">
           <div className="mb-8 flex items-center gap-4">
             <div className="relative w-full max-w-xl">
               <input
@@ -106,7 +48,6 @@ const Shop = () => {
                 size={20}
               />
             </div>
-            <CartIcon className="ml-auto" />
           </div>
 
           {/* Category Filter */}
@@ -202,8 +143,7 @@ const Shop = () => {
             <button className="text-gray-500 hover:text-green-600">3</button>
             <button className="text-gray-500 hover:text-green-600">›</button>
           </div>
-        </div>
-      </div>
+      </CustomerLayout>
     </div>
   );
 };

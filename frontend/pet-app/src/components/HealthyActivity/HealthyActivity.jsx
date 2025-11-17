@@ -1,19 +1,10 @@
 // import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
+import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
 import "./style.css";
 import {
-  LayoutDashboard,
-  Home,
-  Dog,
-  Bell,
-  Heart,
-  DollarSign,
-  Calendar,
-  ShoppingBag,
-  Settings,
   MapPin,
-  PawPrint,
 } from "lucide-react";
 import {
   LineChart,
@@ -40,64 +31,7 @@ const handleOpenMap = () => {
   navigate('/vet-map');
   };
   return (
-    <div className="min-h-screen bg-[#fafafa] flex justify-center">
-      <div className="w-full max-w-[1280px] bg-white flex">
-        {/* Sidebar */}
-        <aside className="w-64 min-h-screen border-r border-gray-200 p-6 flex flex-col justify-between">
-          <div>
-            <div className="profile flex items-center space-x-3 mb-8">
-              <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center text-green-800 font-semibold">
-                <div className="avatar">
-                  <img src="https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg" alt="profile"
-                  onClick={() => navigate("/")}/>
-                </div>
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900">{user?.full_name || 'Emily Carter'}</p>
-                {/* <p className="owner font-semibold text-gray-900">Owner</p> */}
-              </div>
-            </div>
-
-            <nav className="flex flex-col space-y-2">
-              {[
-                { name: "Dashboard", icon: <Home size={18} />, path: "/Dashboard" },
-                { name: "My Pets", icon: <PawPrint size={18} />, path: "/mypets"},
-                { name: "Reminders", icon: <Bell size={18} />, path: "/reminder" },
-                { name: "Health & Activity", icon: <Heart size={18} /> },
-                { name: "Expenses", icon: <DollarSign size={18} /> },
-                { name: "Calendar", icon: <Calendar size={18} /> },
-                { name: "Shop", icon: <ShoppingBag size={18} />, path: "/shops"},
-                { name: "Settings", icon: <Settings size={18} /> },
-              ].map((item, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    if (item.path) navigate(item.path); // 👈 chuyển trang nếu có path
-                  }}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-left ${
-                    item.name === "Health & Activity"
-                      ? "bg-green-100 text-green-800 font-medium"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  {item.icon}
-                  <span>{item.name}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          <button 
-            onClick={handleOpenMap}
-            className="flex items-center space-x-2 text-gray-900 hover:text-green-700 transition-colors"
-          >
-            <MapPin size={18} />
-            <span>Veterinary clinic map</span>
-          </button>
-        </aside>
-
-        {/* Main content */}
-        <main className="flex-1 p-10">
+    <CustomerLayout currentPage="health">
           <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
             Health & Activity
           </h2>
@@ -219,10 +153,7 @@ const handleOpenMap = () => {
               </table>
             </div>
           </section>
-        </main>
-      </div>
-      
-    </div>
+    </CustomerLayout>
   );
 };
 

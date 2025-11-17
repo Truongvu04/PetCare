@@ -2,15 +2,9 @@
   import { useNavigate } from "react-router-dom";
   import { useAuth } from "../../hooks/useAuth.js"; 
   import api from "../../api/axiosConfig.js"; 
+  import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
   import {
     PawPrint,
-    Home,
-    Heart,
-    Bell,
-    DollarSign,
-    Calendar,
-    ShoppingBag,
-    Settings,
     Trash2,
   } from "lucide-react";
 
@@ -75,61 +69,7 @@
     };
 
     return (
-      <div className="min-h-screen bg-gray-50 flex justify-center">
-        <div className="flex w-full max-w-[1280px]">
-          {/* Sidebar (Cập nhật user info) */}
-          <aside className="w-64 bg-white border-r p-6 flex flex-col">
-            {/* User Info */}
-            <div className="flex items-center space-x-3 mb-8">
-              <img
-                src={user?.avatar_url || "https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"}
-                alt="User"
-                className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-green-400 transition"/>
-              <div>
-                <h3 className="font-semibold text-gray-900">{user?.full_name || "Emily Carter"}</h3>
-                {/* <span className="owner font-semibold text-gray-900">{user?.role || "Owner"}</span> */}
-              </div>
-            </div>
-
-            {/* Navigation (Giữ nguyên) */}
-            <nav className="flex flex-col gap-2 text-gray-700">
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-                <Home size={18} /> Dashboard
-              </button>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 text-green-800 font-semibold">
-                <PawPrint size={18} /> My Pets
-              </div>
-              <button
-                onClick={() => navigate("/reminder")}
-                className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-                <Bell size={18} /> Reminders
-              </button>
-              <button
-                onClick={() => navigate("/health")}
-                className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-                <Heart size={18} /> Health & Activity
-              </button>
-              <button className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-                <DollarSign size={18} /> Expenses
-              </button>
-              <button className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-                <Calendar size={18} /> Calendar
-              </button>
-              <button 
-                onClick={() => navigate("/shops")}
-                className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-                <ShoppingBag size={18} /> Shop
-              </button>
-              <button className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-                <Settings size={18} /> Settings
-              </button>
-            </nav>
-          </aside>
-
-          {/* Main Content (Cập nhật) */}
-          <main className="flex-1 p-8">
+      <CustomerLayout currentPage="mypets">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-3xl font-extrabold text-gray-900 mb-2">My Pets</h2>
               <button
@@ -209,9 +149,7 @@
                 ))
               )}
             </div>
-          </main>
-        </div>
-      </div>
+      </CustomerLayout>
     );
   };
 

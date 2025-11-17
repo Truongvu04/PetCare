@@ -3,8 +3,6 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
 import api from "../../api/axiosConfig.js";
 import LoginForm from "../Auth/LoginForm";
-import CartIcon from "../Shop/CartIcon.jsx";
-import RoleBasedNavigation from "../Navigation/RoleBasedNavigation.jsx";
 
 // --- Constants (Thay thế các đường dẫn file ảnh cục bộ bằng Placeholder URL) ---
 const PLACEHOLDERS = {
@@ -505,13 +503,6 @@ const Header = ({ onLoginClick }) => {
 
       {/* Actions */}
       <div className="flex items-center gap-2 md:gap-4 relative flex-shrink-0 min-w-0">
-        {/* Role-based Navigation - Quick Access */}
-        {user && (
-          <div className="hidden xl:block relative z-10 flex-shrink-0">
-            <RoleBasedNavigation />
-          </div>
-        )}
-
         {/* Search */}
         <div className="hidden sm:flex items-center bg-[#e8f7f0] rounded-[12px] w-[120px] md:w-[150px] px-[10px] md:px-[15px] py-[8px] md:py-[10px] border-none transition-all duration-300 ease-in-out 
                         hover:bg-[#d8f5e7] hover:shadow-md focus-within:bg-[#d8f5e7] focus-within:shadow-lg flex-shrink-0">
@@ -520,11 +511,6 @@ const Header = ({ onLoginClick }) => {
             type="text"
             placeholder="Tìm kiếm"
             className="bg-transparent focus:outline-none text-xs md:text-sm w-[80px] md:w-[100px]"/>
-        </div>
-
-        {/* Shopping Cart */}
-        <div className="relative z-10 flex-shrink-0">
-          <CartIcon className="bg-[#e8f7f0] hover:bg-[#d8f5e7] rounded-[10px] transition duration-300 ease" />
         </div>
 
         {/* Notification */}

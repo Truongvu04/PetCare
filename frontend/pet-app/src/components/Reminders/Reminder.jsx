@@ -1,11 +1,9 @@
 // PetCare/frontend/pet-app/src/components/Reminders/Reminder.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Home, PawPrint, Bell, Heart, DollarSign, Calendar, ShoppingBag, Settings,
-} from "lucide-react";
 import { useAuth } from "../../hooks/useAuth.js";
 import api from "../../api/axiosConfig.js";
+import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
 
 const RemindersAuto = () => {
   const navigate = useNavigate();
@@ -143,55 +141,8 @@ const RemindersAuto = () => {
     }
   }
 
-  // --- JSX with improved UI ---
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center">
-      <div className="flex w-full max-w-[1280px]">
-        {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col justify-between rounded-xl shadow-sm">
-          <div>
-            <div className="profile flex items-center space-x-3 mb-8">
-              <img
-                src={user?.avatar_url || "https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"}
-                alt="profile"
-                onClick={() => navigate("/")}
-                className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-green-400 transition"
-              />
-              <div>
-                <p className="font-semibold text-gray-900">{user?.full_name || "Emily Carter"}</p>
-              </div>
-            </div>
-            <nav className="space-y-2">
-              <button onClick={() => navigate("/dashboard")} className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-                <Home size={18} /> Dashboard
-              </button>
-              <button onClick={() => navigate("/mypets")} className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-                <PawPrint size={18} /> My Pets
-              </button>
-              <button onClick={() => navigate("/reminder")} className="text-green-800 font-semibold flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 w-full text-left transition">
-                <Bell size={18} /> Reminders
-              </button>
-              <button onClick={() => navigate("/health")} className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-                <Heart size={18} /> Health & Activity
-              </button>
-              <button className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-              <DollarSign size={18} /> Expenses
-              </button>
-              <button className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-                <Calendar size={18} /> Calendar
-              </button>
-              <button className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-                <ShoppingBag size={18} /> Shop
-              </button>
-              <button className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 w-full text-left transition">
-                <Settings size={18} /> Settings
-              </button>             
-            </nav>
-          </div>
-        </aside>
-
-        {/* Main content */}
-        <main className="flex-1 bg-gray-50 p-10 overflow-y-auto">
+    <CustomerLayout currentPage="reminder">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Set Up Reminders</h1>
             <p className="text-md text-green-700 mb-12">Schedule reminders for vaccinations, check-ups, feeding, and grooming.</p>
@@ -280,9 +231,7 @@ const RemindersAuto = () => {
               </div>
             </form>
           </div>
-        </main>
-      </div>
-    </div>
+    </CustomerLayout>
   );
 };
 
