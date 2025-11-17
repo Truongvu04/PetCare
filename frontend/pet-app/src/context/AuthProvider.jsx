@@ -106,7 +106,6 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider value={{ 
       user, 
       customer: user?.customer || null,
-      vendor: user?.vendor || null,
       token, 
       loading, 
       login, 

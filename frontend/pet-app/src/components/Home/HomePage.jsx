@@ -433,7 +433,7 @@ const SupportCard = ({ iconClass, title, description }) => (
 // --- HEADER ---
 const Header = ({ onLoginClick }) => {
   const navigate = useNavigate();
-  const { user, vendor, logout } = useAuth(); // ✅ lấy thông tin từ context bao gồm vendor
+  const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   // === YÊU CẦU 4: THÊM STATE VÀ LOGIC CHO CHUÔNG THÔNG BÁO ===
@@ -564,48 +564,15 @@ const Header = ({ onLoginClick }) => {
                   </div>
                 </div>
 
-                {vendor ? (
-                  <>
-                    <button
-                      onClick={() => {
-                        navigate("/vendor/dashboard");
-                        setMenuOpen(false);
-                      }}
-                      className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
-                      <i className="fa-solid fa-store text-green-500"></i>
-                      <span>Vendor Dashboard</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        navigate("/vendor/products");
-                        setMenuOpen(false);
-                      }}
-                      className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
-                      <i className="fa-solid fa-box text-green-500"></i>
-                      <span>Quản lý sản phẩm</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        navigate("/vendor/orders");
-                        setMenuOpen(false);
-                      }}
-                      className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
-                      <i className="fa-solid fa-shopping-cart text-green-500"></i>
-                      <span>Quản lý đơn hàng</span>
-                    </button>
-                    <div className="border-t border-gray-100 my-2"></div>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => {
-                      navigate("/dashboard");
-                      setMenuOpen(false);
-                    }}
-                    className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
-                    <i className="fa-solid fa-chart-simple text-green-500"></i>
-                    <span>Bảng điều khiển</span>
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    navigate("/dashboard");
+                    setMenuOpen(false);
+                  }}
+                  className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
+                  <i className="fa-solid fa-chart-simple text-green-500"></i>
+                  <span>Bảng điều khiển</span>
+                </button>
 
                 <button
                   onClick={() => {
@@ -646,7 +613,7 @@ const HeroSection = () => (
 
       <div className="hero-overlay">
         <h1>Welcome to PetCare+</h1>
-        <p>Your all-in-one platform for managing your pet's life and connecting with trusted vendors, vets, and products.</p>
+        <p>Your all-in-one platform for managing your pet's life and connecting with vets and products.</p>
         <Link to="/mypets" className="btn btn-primary">
           Get Started
         </Link>
@@ -658,7 +625,7 @@ const HeroSection = () => (
 const ExploreSection = () => (
   <section className="explore-section">
     <h2>Explore PetCare+</h2>
-    <p>Discover the features that make PetCare+ the ultimate platform for pet owners and vendors.</p>
+    <p>Discover the features that make PetCare+ the ultimate platform for pet owners.</p>
     <a href="#" className="btn btn-secondary">Learn More</a>
 
     <div className="features-grid">
@@ -667,13 +634,13 @@ const ExploreSection = () => (
         title="Pet Owner Features"
         description="Track health records, appointments, and care schedules with ease."/>
       <FeatureCard
-        iconClass="fa-solid fa-store"
-        title="Vendor Services"
-        description="Gain access to a wide network of pet owners and manage your business efficiently."/>
+        iconClass="fa-solid fa-heart-pulse"
+        title="Health Tracking"
+        description="Monitor your pet's health and wellness with comprehensive tracking tools."/>
       <FeatureCard
         iconClass="fa-solid fa-cart-shopping"
         title="Marketplace"
-        description="Easily purchase a wide range of pet products from trusted vendors."/>
+        description="Easily purchase a wide range of pet products from trusted sources."/>
     </div>
   </section>
 );
@@ -681,8 +648,8 @@ const ExploreSection = () => (
 const CareSection = () => (
   <section className="care-section">
     <h2>Find the Best Care for Your Pet</h2>
-    <p>Connect with top-rated vendors offering a variety of services to keep your pet happy and healthy.</p>
-    <a href="#" className="btn btn-primary">Find a Vendor</a>
+    <p>Connect with top-rated services to keep your pet happy and healthy.</p>
+    <a href="#" className="btn btn-primary">Find Services</a>
 
     <div className="services-grid">
       <ServiceCard
@@ -741,101 +708,6 @@ const Footer = () => (
   </footer>
 );
 
-// --- Vendor Quick Access Section ---
-const VendorQuickAccess = () => {
-  const navigate = useNavigate();
-  const { vendor, user } = useAuth();
-
-  if (!vendor || !user) return null;
-
-  return (
-    <section className="vendor-quick-access" style={{ padding: "40px 30px", backgroundColor: "#f0fdf4", marginTop: "40px" }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <h2 style={{ fontSize: "2em", marginBottom: "10px", fontWeight: 700, color: "#29a980" }}>
-          Vendor Management
-        </h2>
-        <p style={{ color: "#4F946B", marginBottom: "30px" }}>
-          Quản lý cửa hàng và đơn hàng của bạn một cách dễ dàng
-        </p>
-        
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "20px" }}>
-          <div
-            onClick={() => navigate("/vendor/dashboard")}
-            style={{
-              backgroundColor: "white",
-              padding: "25px",
-              borderRadius: "12px",
-              border: "2px solid #29a980",
-              cursor: "pointer",
-              transition: "all 0.3s",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-5px)";
-              e.currentTarget.style.boxShadow = "0 5px 15px rgba(41,169,128,0.2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
-            }}>
-            <i className="fa-solid fa-chart-line" style={{ fontSize: "2em", color: "#29a980", marginBottom: "10px" }}></i>
-            <h4 style={{ fontWeight: 600, marginBottom: "5px" }}>Dashboard</h4>
-            <p style={{ color: "#4F946B", fontSize: "0.9em" }}>Xem tổng quan doanh số và thống kê</p>
-          </div>
-
-          <div
-            onClick={() => navigate("/vendor/products")}
-            style={{
-              backgroundColor: "white",
-              padding: "25px",
-              borderRadius: "12px",
-              border: "2px solid #29a980",
-              cursor: "pointer",
-              transition: "all 0.3s",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-5px)";
-              e.currentTarget.style.boxShadow = "0 5px 15px rgba(41,169,128,0.2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
-            }}>
-            <i className="fa-solid fa-box" style={{ fontSize: "2em", color: "#29a980", marginBottom: "10px" }}></i>
-            <h4 style={{ fontWeight: 600, marginBottom: "5px" }}>Quản lý sản phẩm</h4>
-            <p style={{ color: "#4F946B", fontSize: "0.9em" }}>Thêm, sửa và quản lý sản phẩm/dịch vụ</p>
-          </div>
-
-          <div
-            onClick={() => navigate("/vendor/orders")}
-            style={{
-              backgroundColor: "white",
-              padding: "25px",
-              borderRadius: "12px",
-              border: "2px solid #29a980",
-              cursor: "pointer",
-              transition: "all 0.3s",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-5px)";
-              e.currentTarget.style.boxShadow = "0 5px 15px rgba(41,169,128,0.2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
-            }}>
-            <i className="fa-solid fa-shopping-cart" style={{ fontSize: "2em", color: "#29a980", marginBottom: "10px" }}></i>
-            <h4 style={{ fontWeight: 600, marginBottom: "5px" }}>Quản lý đơn hàng</h4>
-            <p style={{ color: "#4F946B", fontSize: "0.9em" }}>Xem và cập nhật trạng thái đơn hàng</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
-
 // --- Main App Component ---
 
 const HomePage = () => {
@@ -854,7 +726,6 @@ const HomePage = () => {
 
         <main className="content">
           <HeroSection />
-          <VendorQuickAccess />
           <ExploreSection />
           <CareSection />
           <SupportSection />

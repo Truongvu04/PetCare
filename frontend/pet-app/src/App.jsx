@@ -25,14 +25,6 @@ import ViewProfile from "./components/Pets/ViewProfile.jsx";
 import EditProfile from "./components/Pets/EditProfile.jsx";
 import Reminders from "./components/Reminders/Reminder.jsx";
 import HealthActivity from "./components/HealthyActivity/HealthyActivity.jsx";
-
-import AddProduct from "./components/Vendor/AddProduct.jsx";
-import EditProduct from "./components/Vendor/EditProduct.jsx";
-import AddService from "./components/Vendor/AddService.jsx";
-import EditService from "./components/Vendor/EditService.jsx";
-import VendorProducts from "./components/Vendor/VendorProducts.jsx";
-import VendorOrders from "./components/Vendor/VendorOrders.jsx";
-import VendorDashboard from "./components/Vendor/VendorDashboard.jsx";
 import OrderConfirmation from "./components/Shop/OrderConfirmation.jsx";
 
 function App() {
@@ -118,62 +110,6 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Reminders />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/vendor/dashboard"
-              element={
-                <ProtectedRoute>
-                  <VendorDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/vendor/products"
-              element={
-                <ProtectedRoute>
-                  <VendorProducts />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/vendor/products/add"
-              element={
-                <ProtectedRoute>
-                  <AddProduct />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/vendor/products/edit/:id"
-              element={
-                <ProtectedRoute>
-                  <EditProduct />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/vendor/services/add"
-              element={
-                <ProtectedRoute>
-                  <AddService />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/vendor/services/edit/:id"
-              element={
-                <ProtectedRoute>
-                  <EditService />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/vendor/orders"
-              element={
-                <ProtectedRoute>
-                  <VendorOrders />
                 </ProtectedRoute>
               }
             />
