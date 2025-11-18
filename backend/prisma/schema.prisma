@@ -73,7 +73,7 @@ model Pet {
 model Reminder {
   reminder_id String @id @default(cuid()) // Dùng CUID (chuỗi)
 
-  type             ReminderType
+  type             reminders_type
   vaccination_type String?
   feeding_time     DateTime? @db.Time // Dùng DateTime + @db.Time cho kiểu TIME
   reminder_date    DateTime  @db.Date // Dùng DateTime + @db.Date cho kiểu DATE
@@ -110,7 +110,7 @@ enum ReminderStatus {
   done
 }
 
-enum ReminderType {
+enum reminders_type {
   vaccination
   checkup
   feeding
