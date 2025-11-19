@@ -71,12 +71,48 @@ const OrderConfirmation = () => {
         </p>
       </div>
 
-      <div className="flex justify-center mb-8">
-        <div className="w-64 h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-6xl mb-2">🐕</div>
-            <p className="text-gray-500 text-sm">Pet Illustration</p>
-          </div>
+      <div className="flex justify-center mb-12">
+        <div className="relative w-full max-w-2xl aspect-[4/3] bg-[#fdf6f0] rounded-xl overflow-hidden shadow-inner flex items-center justify-center">
+          {/* Display the first image as the main large image, or a grid if multiple */}
+          {order.order_items?.length === 1 ? (
+            (() => {
+              const item = order.order_items[0];
+              const thumbnail = item.products?.product_images?.find(img => img.is_thumbnail);
+              return (
+                <img
+                  src={thumbnail
+                    ? (thumbnail.image_url?.startsWith('http') ? thumbnail.image_url : `http://localhost:5000${thumbnail.image_url}`)
+                    : "https://via.placeholder.com/400"
+                  }
+                  alt={item.products?.name}
+                  className="h-full object-contain p-8"
+                  onError={(e) => e.target.src = "https://via.placeholder.com/400"}
+                />
+              );
+            })()
+          ) : (
+            <div className="grid grid-cols-2 gap-4 p-8 w-full h-full place-items-center overflow-y-auto">
+              {order.order_items?.map((item) => {
+                const thumbnail = item.products?.product_images?.find(img => img.is_thumbnail);
+                return (
+                  <div key={item.id} className="relative w-full h-48 bg-white rounded-lg shadow-sm flex items-center justify-center p-2">
+                    <img
+                      src={thumbnail
+                        ? (thumbnail.image_url?.startsWith('http') ? thumbnail.image_url : `http://localhost:5000${thumbnail.image_url}`)
+                        : "https://via.placeholder.com/150"
+                      }
+                      alt={item.products?.name}
+                      className="max-w-full max-h-full object-contain"
+                      onError={(e) => e.target.src = "https://via.placeholder.com/150"}
+                    />
+                    <div className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full font-bold shadow-sm">
+                      x{item.quantity}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -138,7 +174,7 @@ const OrderConfirmation = () => {
           Continue Shopping
         </button>
       </div>
-    </div>
+    </div >
   );
 };
 

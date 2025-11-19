@@ -6,9 +6,25 @@ import {
   getCustomerOrders,
   getVendorOrders,
   updateOrderStatus,
+  cancelOrder,
 } from "../controllers/orderController.js";
 
 const router = express.Router();
+
+console.log("✅ Order routes loaded");
+
+// Router-level logger
+router.use((req, res, next) => {
+  console.log(`[Order Router] ${req.method} ${req.url}`);
+  next();
+});
+
+router.get("/ping", (req, res) => {
+  res.json({ message: "Order router is working" });
+});
+
+// Move cancel route to top to avoid any potential shadowing
+router.patch("/:id/cancel", verifyToken, cancelOrder);
 
 router.post("/", verifyToken, createOrder);
 

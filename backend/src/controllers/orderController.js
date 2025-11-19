@@ -119,7 +119,7 @@ export const createOrder = async (req, res) => {
     console.error("Error message:", err.message);
     console.error("Error code:", err.code);
     console.error("Error stack:", err.stack);
-    
+
     // Check for Prisma errors
     if (err.code === "P2003") {
       return res.status(400).json({ message: "Invalid foreign key reference" });
@@ -130,19 +130,19 @@ export const createOrder = async (req, res) => {
     if (err.code === "P2012") {
       return res.status(400).json({ message: "Missing required field: " + err.message });
     }
-    
+
     if (err.message.includes("not found") || err.message.includes("Insufficient") || err.message.includes("Invalid")) {
       return res.status(400).json({ message: err.message });
     }
-    
+
     // Check if it's a database column error
     if (err.message.includes("Unknown column") || err.message.includes("shipping_address")) {
-      return res.status(500).json({ 
+      return res.status(500).json({
         message: "Database schema error: shipping_address column missing. Please run the migration SQL.",
-        error: err.message 
+        error: err.message
       });
     }
-    
+
     res.status(500).json({ message: "Server error: " + err.message });
   }
 };
@@ -275,7 +275,7 @@ export const getVendorOrders = async (req, res) => {
     // Filter order_items to only include items from this vendor
     const filteredOrders = orders.map(order => ({
       ...order,
-      order_items: order.order_items.filter(item => 
+      order_items: order.order_items.filter(item =>
         item.products && item.products.vendor_id === parseInt(vendor_id)
       ),
     }));
@@ -290,7 +290,7 @@ export const getVendorOrders = async (req, res) => {
     if (err.meta) {
       console.error("[VENDOR ORDERS] Error meta:", JSON.stringify(err.meta, null, 2));
     }
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Server error: " + err.message,
       code: err.code,
     });
@@ -347,3 +347,61 @@ export const updateOrderStatus = async (req, res) => {
   }
 };
 
+
+export const cancelOrder = async (req, res) => {
+  try {
+    const user_id = req.user.user_id;
+    const { id } = req.params;
+
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ message: "Invalid order ID" });
+    }
+
+    console.log(`[CANCEL ORDER] Request to cancel order ${id} by user ${user_id}`);
+
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Find the order and verify ownership
+      const order = await tx.orders.findUnique({
+        where: { order_id: parseInt(id) },
+        include: { order_items: true },
+      });
+
+      if (!order) {
+        throw new Error("Order not found");
+      }
+
+      if (order.user_id !== user_id) {
+        throw new Error("Unauthorized to cancel this order");
+      }
+
+      if (order.status !== "pending") {
+        throw new Error("Only pending orders can be cancelled");
+      }
+
+      // 2. Restore stock for each item
+      for (const item of order.order_items) {
+        await tx.products.update({
+          where: { product_id: item.product_id },
+          data: { stock: { increment: item.quantity } },
+        });
+      }
+
+      // 3. Update order status
+      const updatedOrder = await tx.orders.update({
+        where: { order_id: parseInt(id) },
+        data: { status: "cancelled" },
+      });
+
+      return updatedOrder;
+    });
+
+    console.log(`[CANCEL ORDER] Order ${id} cancelled successfully`);
+    res.json(result);
+  } catch (err) {
+    console.error("[CANCEL ORDER] Error:", err);
+    if (err.message === "Order not found" || err.message === "Unauthorized to cancel this order" || err.message === "Only pending orders can be cancelled") {
+      return res.status(400).json({ message: err.message });
+    }
+    res.status(500).json({ message: "Server error: " + err.message });
+  }
+};

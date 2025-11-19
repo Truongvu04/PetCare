@@ -7,6 +7,25 @@ const OrderDetail = () => {
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+
+  const handleCancelOrder = async () => {
+    try {
+      await api.patch(`/orders/${order.order_id}/cancel`);
+      // Refresh order details
+      const response = await api.get("/orders/my-orders");
+      const foundOrder = response.data.find((o) => o.order_id === parseInt(id));
+      if (foundOrder) setOrder(foundOrder);
+      setShowCancelModal(false);
+      // Optional: Show a success toast here if you have a toast system
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      const status = error.response?.status;
+      const message = error.response?.data?.message || "Failed to cancel order";
+      alert(`Error ${status || 'Unknown'}: ${message}`);
+      setShowCancelModal(false);
+    }
+  };
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -37,20 +56,17 @@ const OrderDetail = () => {
     <div className="max-w-4xl mx-auto p-8">
       <h1 className="text-2xl font-bold mb-6">Order Details</h1>
 
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <p className="text-sm text-gray-600">Order Number</p>
-            <p className="font-semibold">#{order.order_id}</p>
+      {/* Order Summary Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+        <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Order Summary</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
+          <div className="border-b border-gray-100 pb-4">
+            <p className="text-sm font-medium text-green-700 mb-1 uppercase tracking-wide">Order Number</p>
+            <p className="text-lg font-semibold text-gray-900">#{order.order_id}</p>
           </div>
-          <div>
-            <p className="text-sm text-gray-600">Total Amount</p>
-            <p className="font-semibold">${(Number(order.total) / 1000).toFixed(2)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Order Date</p>
-            <p className="font-semibold">
+          <div className="border-b border-gray-100 pb-4">
+            <p className="text-sm font-medium text-green-700 mb-1 uppercase tracking-wide">Order Date</p>
+            <p className="text-lg font-semibold text-gray-900">
               {new Date(order.created_at).toLocaleDateString("en-US", {
                 year: "numeric",
                 month: "long",
@@ -58,32 +74,57 @@ const OrderDetail = () => {
               })}
             </p>
           </div>
-          <div>
-            <p className="text-sm text-gray-600">Payment Method</p>
-            <p className="font-semibold capitalize">
+          <div className="border-b border-gray-100 pb-4">
+            <p className="text-sm font-medium text-green-700 mb-1 uppercase tracking-wide">Total Amount</p>
+            <p className="text-lg font-semibold text-gray-900">${(Number(order.total) / 1000).toFixed(2)}</p>
+          </div>
+          <div className="border-b border-gray-100 pb-4">
+            <p className="text-sm font-medium text-green-700 mb-1 uppercase tracking-wide">Payment Method</p>
+            <p className="text-lg font-semibold text-gray-900 capitalize">
               {order.payment_method || "Credit Card"}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Items</h2>
-        <div className="border rounded-lg p-4">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-2 px-4">Item</th>
-                <th className="text-left py-2 px-4">Quantity</th>
-                <th className="text-right py-2 px-4">Price</th>
+      {/* Items Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+        <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Items</h2>
+        <div className="overflow-hidden rounded-lg border border-gray-200">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-900">Item</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-900 text-center">Quantity</th>
+                <th className="px-6 py-4 text-sm font-semibold text-gray-900 text-right">Price</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-200">
               {order.order_items?.map((item) => (
-                <tr key={item.id} className="border-b">
-                  <td className="py-3 px-4 font-medium">{item.products?.name || "Product"}</td>
-                  <td className="py-3 px-4">{item.quantity}</td>
-                  <td className="py-3 px-4 text-right font-semibold">${(Number(item.price) / 1000).toFixed(2)}</td>
+                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden border border-gray-200">
+                        <img
+                          src={item.products?.product_images?.[0]?.image_url
+                            ? (item.products.product_images[0].image_url.startsWith('http')
+                              ? item.products.product_images[0].image_url
+                              : `http://localhost:5000${item.products.product_images[0].image_url}`)
+                            : "https://via.placeholder.com/64"
+                          }
+                          alt={item.products?.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <span className="font-medium text-gray-900">{item.products?.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-center text-green-600 font-medium">
+                    {item.quantity}
+                  </td>
+                  <td className="px-6 py-4 text-right font-medium text-green-600">
+                    ${(Number(item.price) / 1000).toFixed(2)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -91,13 +132,15 @@ const OrderDetail = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Delivery Details</h2>
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <p className="text-sm text-gray-600">Estimated Delivery</p>
-            <p className="font-semibold">
+      {/* Delivery Details Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+        <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Delivery Details</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
+          <div className="border-b border-gray-100 pb-4">
+            <p className="text-sm font-medium text-green-700 mb-1 uppercase tracking-wide">Estimated Delivery</p>
+            <p className="text-lg font-semibold text-gray-900">
               {(() => {
+                if (!order?.created_at) return "N/A";
                 const orderDate = new Date(order.created_at);
                 const minDate = new Date(orderDate);
                 minDate.setDate(minDate.getDate() + 3);
@@ -107,45 +150,66 @@ const OrderDetail = () => {
               })()}
             </p>
           </div>
-          <div>
-            <p className="text-sm text-gray-600">Shipping Address</p>
-            <p className="font-semibold">
+          <div className="border-b border-gray-100 pb-4">
+            <p className="text-sm font-medium text-green-700 mb-1 uppercase tracking-wide">Shipping Address</p>
+            <p className="text-lg font-semibold text-gray-900">
               {order.shipping_address || "Address not provided"}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span>Subtotal</span>
-            <span>${(Number(order.subtotal) / 1000).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Shipping</span>
-            <span>{Number(order.shipping) === 0 ? "Free" : `$${(Number(order.shipping) / 1000).toFixed(2)}`}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Tax</span>
-            <span>${(Number(order.tax) / 1000).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-lg pt-2 border-t">
-            <span>Total</span>
-            <span>${(Number(order.total) / 1000).toFixed(2)}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-6">
+      <div className="mt-6 flex gap-4">
         <button
           onClick={() => navigate("/orders")}
-          className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+          className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
           Back to Orders
         </button>
+
+        {order.status === 'pending' && (
+          <button
+            onClick={() => setShowCancelModal(true)}
+            className="px-6 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100">
+            Cancel Order
+          </button>
+        )}
       </div>
-    </div>
+
+      {/* Cancel Confirmation Modal */}
+      {
+        showCancelModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl transform transition-all">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Cancel Order?</h3>
+                <p className="text-gray-500 mb-8">
+                  Are you sure you want to cancel this order? This action cannot be undone.
+                </p>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setShowCancelModal(false)}
+                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    No, Keep Order
+                  </button>
+                  <button
+                    onClick={handleCancelOrder}
+                    className="flex-1 px-6 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors shadow-lg hover:shadow-red-200"
+                  >
+                    Yes, Cancel Order
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 };
 

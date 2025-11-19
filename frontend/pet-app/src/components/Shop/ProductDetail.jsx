@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Star, ShoppingCart } from "lucide-react";
+import { Star, ShoppingCart, ArrowLeft } from "lucide-react";
 import api from "../../api/axiosConfig.js";
 import { useCart } from "./CartContext.jsx";
 import CartIcon from "./CartIcon.jsx";
@@ -12,6 +12,7 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -39,7 +40,7 @@ const ProductDetail = () => {
   const selectedImage = images[selectedImageIndex] || images[0];
   const averageRating =
     product.reviews?.reduce((sum, r) => sum + r.rating, 0) /
-      product.reviews?.length || 0;
+    product.reviews?.length || 0;
 
   // Helper function to build image URL
   const getImageUrl = (imageUrl) => {
@@ -58,13 +59,16 @@ const ProductDetail = () => {
     <div className="max-w-[1280px] mx-auto p-8 bg-gray-50 min-h-screen relative">
       {/* Floating Cart Button */}
       <CartIcon showFloating={true} />
-      
-      {/* Header with Cart Icon */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="text-sm text-green-700">
-          Marketplace / <span className="text-gray-500">{product.category || "Products"}</span>
-        </div>
-        <CartIcon />
+
+      {/* Header with Back Button */}
+      <div className="flex items-center mb-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-gray-600 hover:text-green-700 transition-colors font-medium"
+        >
+          <ArrowLeft size={20} />
+          Back
+        </button>
       </div>
 
       {/* Product Info Section */}
@@ -105,11 +109,10 @@ const ProductDetail = () => {
                         src={imageUrl}
                         alt={`${product.name} ${idx + 1}`}
                         onClick={() => setSelectedImageIndex(idx)}
-                        className={`w-20 h-20 object-cover rounded cursor-pointer border-2 flex-shrink-0 ${
-                          idx === selectedImageIndex
-                            ? "border-green-600"
-                            : "border-gray-200 hover:border-green-400"
-                        }`}
+                        className={`w-20 h-20 object-cover rounded cursor-pointer border-2 flex-shrink-0 ${idx === selectedImageIndex
+                          ? "border-green-600"
+                          : "border-gray-200 hover:border-green-400"
+                          }`}
                         onError={(e) => {
                           if (e.target.src !== "https://via.placeholder.com/80?text=No+Image") {
                             e.target.src = "https://via.placeholder.com/80?text=No+Image";
@@ -147,9 +150,8 @@ const ProductDetail = () => {
               </div>
               <div className="flex items-center justify-between py-2 border-b">
                 <span className="text-sm text-gray-600">Stock:</span>
-                <span className={`text-sm font-medium ${
-                  product.stock > 0 ? "text-green-600" : "text-red-600"
-                }`}>
+                <span className={`text-sm font-medium ${product.stock > 0 ? "text-green-600" : "text-red-600"
+                  }`}>
                   {product.stock > 0 ? `${product.stock} available` : "Out of stock"}
                 </span>
               </div>
@@ -167,23 +169,38 @@ const ProductDetail = () => {
             onClick={() => {
               if (product.stock > 0) {
                 addToCart(product);
-                alert("Đã thêm vào giỏ hàng!");
+                setShowToast(true);
+                setTimeout(() => setShowToast(false), 3000);
               } else {
                 alert("Sản phẩm đã hết hàng!");
               }
             }}
             disabled={product.stock === 0}
-            className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-              product.stock > 0
-                ? "bg-green-600 text-white hover:bg-green-700"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
+            className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${product.stock > 0
+              ? "bg-green-600 text-white hover:bg-green-700"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
           >
-            <ShoppingCart size={18} /> 
+            <ShoppingCart size={18} />
             {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
           </button>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed bottom-8 right-8 bg-gray-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-bounce-in z-50">
+          <div className="bg-green-500 rounded-full p-1">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <h4 className="font-semibold text-sm">Success</h4>
+            <p className="text-sm text-gray-300">Added to cart successfully!</p>
+          </div>
+        </div>
+      )}
 
       {/* Reviews Section */}
       <div className="bg-white rounded-lg shadow-sm p-6">
