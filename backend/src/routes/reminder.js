@@ -3,12 +3,12 @@ import { prisma } from '../config/prisma.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
 
 import pkg from '@prisma/client';
-const { ReminderFrequency, reminders_type, ReminderStatus } = pkg;
+const { ReminderFrequency, RemindersType, ReminderStatus } = pkg;
 
 const router = express.Router();
 
 const ALLOWED_FREQUENCIES = Object.values(ReminderFrequency);
-const ALLOWED_TYPES = Object.values(reminders_type);
+const ALLOWED_TYPES = Object.values(RemindersType);
 const ALLOWED_STATUS = Object.values(ReminderStatus);
 const VIETNAM_OFFSET_HOURS = 7;
 

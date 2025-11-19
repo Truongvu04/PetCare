@@ -16,12 +16,12 @@ const RoleBasedNavigation = ({ className = "" }) => {
   }
 
   const navItems = [
-    {
-      label: "My Orders",
-      icon: <ShoppingBag size={18} />,
-      path: "/orders",
-      description: "View order history",
-    },
+    // {
+    //   label: "My Orders",
+    //   icon: <ShoppingBag size={18} />,
+    //   path: "/orders",
+    //   description: "View order history",
+    // },
     {
       label: "My Cart",
       icon: <ShoppingCart size={18} />,
@@ -44,8 +44,7 @@ const RoleBasedNavigation = ({ className = "" }) => {
             <button
               onClick={() => navigate(item.path)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-green-50 hover:text-green-700 transition-all"
-              title={item.description}
-            >
+              title={item.description}>
               {item.icon}
               <span className="hidden md:inline">{item.label}</span>
             </button>

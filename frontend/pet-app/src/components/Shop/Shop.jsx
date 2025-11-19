@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  FileText,
   X
 } from "lucide-react";
 
@@ -184,20 +185,26 @@ const Shop = () => {
     <div className="relative">
       <CartIcon showFloating={true} />
       <CustomerLayout currentPage="shop">
-        <div className="mb-8 flex items-center gap-4">
+        <div className="mb-8 flex justify-between items-center gap-4">
           <div className="relative w-full max-w-xl">
             <input
               type="text"
               placeholder="Search for products..."
               value={searchQuery}
               onChange={handleSearchChange}
-              className="w-full rounded-full border border-gray-200 pl-12 pr-10 py-3 focus:ring-1 focus:ring-green-500 focus:outline-none shadow-sm"
-            />
+              className="w-full rounded-full border border-gray-200 pl-12 pr-10 py-3 focus:ring-1 focus:ring-green-500 focus:outline-none shadow-sm"/>
             <Search
               className="absolute left-4 top-3.5 text-gray-400"
-              size={20}
-            />
+              size={20}/>
           </div>
+
+          {/* Nút My Orders (Căn phải) */}
+          <button
+            onClick={() => navigate("/orders")} 
+            className="flex-shrink-0 px-6 py-3 text-green-600 font-medium focus:ring-1 focus:ring-green-500
+                       rounded-full shadow-sm transition-colors whitespace-nowrap hover:border-green-600 hover:bg-green-100">           
+            My Orders
+          </button>
         </div>
 
         {/* Category Filter */}
@@ -209,8 +216,7 @@ const Shop = () => {
             {selectedCategory && (
               <button
                 onClick={() => handleCategoryChange(null)}
-                className="text-sm text-red-500 flex items-center gap-1 hover:underline"
-              >
+                className="text-sm text-red-500 flex items-center gap-1 hover:underline">
                 <X size={14} /> Clear Filter
               </button>
             )}
@@ -222,8 +228,7 @@ const Shop = () => {
               className={`px-4 py-2 rounded-full text-sm transition-all ${selectedCategory === null
                 ? "bg-green-600 text-white shadow-md"
                 : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-                }`}
-            >
+                }`}>
               All
             </button>
             {categories.map((cat) => (
@@ -233,8 +238,7 @@ const Shop = () => {
                 className={`px-4 py-2 rounded-full text-sm transition-all ${selectedCategory === cat
                   ? "bg-green-600 text-white shadow-md"
                   : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-                  }`}
-              >
+                  }`}>
                 {cat}
               </button>
             ))}
@@ -248,8 +252,7 @@ const Shop = () => {
                 className={`px-4 py-2 rounded-full text-sm flex items-center gap-1 transition-all ${sortOption === option
                   ? "bg-green-100 text-green-800 border border-green-200 font-medium"
                   : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-                  }`}
-              >
+                  }`}>
                 {option}
               </button>
             ))}
@@ -268,8 +271,7 @@ const Shop = () => {
                 <p className="text-gray-500 text-lg">No products found matching your criteria.</p>
                 <button
                   onClick={handleClearFilters}
-                  className="mt-4 text-green-600 font-medium hover:underline"
-                >
+                  className="mt-4 text-green-600 font-medium hover:underline">
                   Clear all filters
                 </button>
               </div>
@@ -298,8 +300,7 @@ const Shop = () => {
                     <div
                       key={product.product_id}
                       onClick={() => navigate(`/shop/${product.product_id}`)}
-                      className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-3 cursor-pointer group border border-transparent hover:border-green-100"
-                    >
+                      className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-3 cursor-pointer group border border-transparent hover:border-green-100">
                       <div className="w-full h-48 bg-gray-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden relative">
                         <img
                           src={imageUrl}
@@ -309,8 +310,7 @@ const Shop = () => {
                             if (e.target.src !== "https://via.placeholder.com/200?text=No+Image") {
                               e.target.src = "https://via.placeholder.com/200?text=No+Image";
                             }
-                          }}
-                        />
+                          }}/>
                       </div>
                       <h3 className="font-semibold text-gray-800 line-clamp-2 h-12 mb-1 group-hover:text-green-700 transition-colors">
                         {product.name}
@@ -335,8 +335,7 @@ const Shop = () => {
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-green-50 hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
+                  className="w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-green-50 hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                   <ChevronLeft size={20} />
                 </button>
 
@@ -347,8 +346,7 @@ const Shop = () => {
                     className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${currentPage === page
                       ? "bg-green-600 text-white shadow-md font-bold"
                       : "border border-gray-200 text-gray-600 hover:bg-green-50 hover:text-green-600"
-                      }`}
-                  >
+                      }`}>
                     {page}
                   </button>
                 ))}
@@ -356,8 +354,7 @@ const Shop = () => {
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-green-50 hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
+                  className="w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-green-50 hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                   <ChevronRight size={20} />
                 </button>
               </div>

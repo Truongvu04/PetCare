@@ -37,21 +37,29 @@ const handleOpenMap = () => {
           </h2>
 
           {/* Tabs */}
-          <div className="flex space-x-8 border-b mb-6">
-            {["Overview", "Weight", "Diet", "Medical History"].map(
-              (tab, index) => (
-                <button
-                  key={index}
-                  className={`pb-2 font-medium ${
-                    tab === "Overview"
-                      ? "text-green-700 border-b-2 border-green-600"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  {tab}
-                </button>
-              )
-            )}
+          <div className="flex justify-between items-center border-b mb-6">
+            <div className="flex space-x-8">
+              {["Overview", "Weight", "Diet", "Medical History"].map(
+                (tab, index) => (
+                  <button
+                    key={index}
+                    className={`pb-2 font-medium ${
+                      tab === "Overview"
+                        ? "text-green-700 border-b-2 border-green-600"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}>
+                    {tab}
+                  </button>
+                )
+              )}
+            </div>
+
+            <button
+              onClick={handleOpenMap}
+              className="flex items-center text-green-00 !text-green-600 hover:!text-green-500 space-x-1 pb-2 font-medium border-b-2 border-transparent">
+              <MapPin className="w-5 h-5"/>
+              <span>Clinic Map</span>
+            </button>
           </div>
 
           {/* Weight Section */}
@@ -69,15 +77,14 @@ const handleOpenMap = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={data}>
                     <XAxis dataKey="month" stroke="#9ca3af" />
-                    <YAxis hide />
-                    <Tooltip />
+                    <YAxis hide/>
+                    <Tooltip/>
                     <Line
                       type="monotone"
                       dataKey="weight"
                       stroke="#22c55e"
                       strokeWidth={2}
-                      dot={false}
-                    />
+                      dot={false}/>
                   </LineChart>
                 </ResponsiveContainer>
               </div>

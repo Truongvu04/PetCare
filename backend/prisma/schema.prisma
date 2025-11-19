@@ -30,7 +30,7 @@ model Pet {
 model Reminder {
   reminder_id      String             @id @default(cuid()) @db.Char(25)
   pet_id           String             @db.Char(12)
-  type             reminders_type
+  type             RemindersType
   vaccination_type String?            @db.VarChar(255)
   feeding_time     DateTime?          @db.Time(0)
   reminder_date    DateTime           @db.Date
@@ -300,7 +300,7 @@ enum ReminderStatus {
   done
 }
 
-enum reminders_type {
+enum RemindersType {
   vaccination
   vet_visit
   feeding
