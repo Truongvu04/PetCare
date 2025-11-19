@@ -1,17 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  PawPrint,
-  Home,
-  Heart,
-  Bell,
-  DollarSign,
-  Calendar,
-  ShoppingBag,
-  Settings,
-} from "lucide-react";
-import { useAuth } from "../../hooks/useAuth.js"; // 👈 Thêm
-import api from "../../api/axiosConfig.js"; // 👈 Thêm
+import { PawPrint } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth.js";
+import api from "../../api/axiosConfig.js";
+import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
 
 const AddNewPet = () => {
   const navigate = useNavigate();
@@ -54,8 +46,7 @@ const AddNewPet = () => {
   const handleAddPet = async (e) => {
     e.preventDefault();
     
-    // 👈 Kiểm tra user
-    if (!user || !user.user_id) {
+    if (!user) {
       alert("❌ Bạn phải đăng nhập để thêm thú cưng!");
       navigate("/login");
       return;
@@ -68,10 +59,7 @@ const AddNewPet = () => {
       const speciesValue =
         formData.species === "Other"
           ? formData.customSpecies.trim()
-          : formData.species;
-
-      // 👈 Thêm user_id từ context
-      formDataToSend.append("user_id", user.user_id.toString()); 
+          : formData.species; 
       formDataToSend.append("name", formData.name.trim());
       formDataToSend.append("species", speciesValue);
       formDataToSend.append("vaccination", formData.vaccination);
@@ -107,66 +95,7 @@ const AddNewPet = () => {
   };
 
   return (
-    <div className="flex justify-center min-h-screen bg-gray-50 p-6">
-      <div className="flex w-full max-w-[1280px]">
-        {/* Sidebar (Cập nhật để hiển thị user thật) */}
-        <aside className="w-60 bg-white rounded-2xl shadow-sm p-6 mr-6 flex flex-col">
-          <div className="flex items-center space-x-3 mb-8">
-            <div className="w-10 h-10 rounded-full bg-green-200 overflow-hidden">
-              <img
-                src={user?.avatar_url || "https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"}
-                alt="profile"
-                onClick={() => navigate("/")}
-                className="w-full h-full object-cover"/>
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 leading-tight">
-                {user?.full_name || "Emily Carter"}
-              </p>
-              {/* <span className="owner font-semibold text-gray-900">{user?.role || "Owner"}</span> */}
-            </div>
-          </div>
-
-          <nav className="flex flex-col gap-2">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100 w-full text-left">
-              <Home size={18} /> Dashboard
-            </button>
-            <button
-              onClick={() => navigate("/mypets")}
-              className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-md bg-green-100 text-green-800 font-semibold">
-              <PawPrint size={18} /> My Pets
-            </button>
-            <button
-              onClick={() => navigate("/reminder")}
-              className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100">
-              <Bell size={18} /> Reminders
-            </button>
-            <button
-              onClick={() => navigate("/health")}
-              className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100">
-              <Heart size={18} /> Health & Activity
-            </button>
-            <a className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100">
-              <DollarSign size={18} /> Expenses
-            </a>
-            <a className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100">
-              <Calendar size={18} /> Calendar
-            </a>
-            <a 
-              onClick={() => navigate("/shops")}
-              className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100">
-              <ShoppingBag size={18} /> Shop
-            </a>
-            <a className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100">
-              <Settings size={18} /> Settings
-            </a>
-          </nav>
-        </aside>
-
-        {/* Main content (Giữ nguyên) */}
-        <main className="flex-1 bg-white rounded-2xl shadow-sm p-10">
+    <CustomerLayout currentPage="mypets">
           <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Add New Pet</h2>
 
           <div className="flex justify-between items-start gap-10">
@@ -341,9 +270,7 @@ const AddNewPet = () => {
               </label>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+    </CustomerLayout>
   );
 };
 

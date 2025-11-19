@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import jwt from "jsonwebtoken"; 
+import jwt from "jsonwebtoken";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +18,12 @@ import authRoutes from "./src/routes/auth.routes.js";
 import petRoutes from "./src/routes/pets.js";
 import reminderRoutes from "./src/routes/reminder.js";
 import geoapifyRoutes from "./src/routes/geoapify.routes.js";
+import productRoutes from "./src/routes/productRoutes.js";
+import orderRoutes from "./src/routes/orderRoutes.js";
+import serviceRoutes from "./src/routes/serviceRoutes.js";
+import appointmentRoutes from "./src/routes/appointmentRoutes.js";
+import reviewRoutes from "./src/routes/reviewRoutes.js";
+import cartRoutes from "./src/routes/cartRoutes.js";
 
 import "./src/config/passport.js";
 import './src/scheduler/reminderJob.js'; // Đã kích hoạt cron job
@@ -36,6 +42,13 @@ app.use(
     credentials: true,
   })
 );
+
+// DEBUG LOGGER
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
@@ -47,6 +60,13 @@ app.use("/api/auth", authRoutes);
 app.use("/api/pets", petRoutes);
 app.use("/api/reminders", reminderRoutes);
 app.use("/api/geoapify", geoapifyRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/services", serviceRoutes);
+app.use("/api/appointments", appointmentRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/cart", cartRoutes);
+console.log("✅ Cart routes registered at /api/cart");
 
 app.get(
   "/auth/google",
@@ -62,7 +82,7 @@ app.get(
   passport.authenticate("google", { failureRedirect: "/login", session: false }),
   (req, res) => {
     // req.user bây giờ là đối tượng user từ database
-    const user = req.user; 
+    const user = req.user;
 
     // ✅ TẠO TOKEN MỚI TỪ THÔNG TIN USER
     const payload = {
@@ -110,7 +130,7 @@ app.get(
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
-    
+
     // Chuyển hướng về frontend VỚI TOKEN HỢP LỆ
     res.redirect(`${process.env.FRONTEND_URL}/?token=${token}`);
   }

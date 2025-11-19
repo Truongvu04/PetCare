@@ -1,17 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
-import {
-  Home,
-  PawPrint,
-  Bell,
-  Heart,
-  DollarSign,
-  Calendar,
-  ShoppingBag,
-  Settings,
-  Camera,
-} from "lucide-react";
+import { Camera } from "lucide-react";
+import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -129,45 +120,7 @@ const EditProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center p-6">
-      <div className="flex w-full max-w-[1280px]">
-        {/* Sidebar */}
-        <aside className="w-64 bg-white border-r p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center space-x-3 mb-8">
-              <img
-                src="https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"
-                alt="User"
-                className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-green-400 transition"
-                onClick={() => navigate("/")}/>
-              <div>
-                <p className="font-semibold text-gray-900">{user?.full_name || 'Emily Carter'}</p>
-                {/* <span className="text-sm text-green-600 block">Owner</span> */}
-              </div>
-            </div>
-            <nav className="space-y-2">
-              <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-50 w-full text-left text-gray-700">
-                <Home size={18} /> Dashboard
-              </button>
-              <button onClick={() => navigate("/mypets")} className="flex items-center gap-2 px-3 py-2 rounded-md bg-green-50 text-green-800 font-semibold w-full">
-                <PawPrint size={18} /> My Pets
-              </button>
-              <button onClick={() => navigate("/reminder")} className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-50 w-full text-left text-gray-700">
-                <Bell size={18} /> Reminders
-              </button>
-              <button onClick={() => navigate("/health")} className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-50 w-full text-left text-gray-700">
-                <Heart size={18} /> Health & Activity
-              </button>
-              <a className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-50 w-full text-left text-gray-700"><DollarSign size={18} /> Expenses</a>
-              <a className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-50 w-full text-left text-gray-700"><Calendar size={18} /> Calendar</a>
-              <a className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-50 w-full text-left text-gray-700"><ShoppingBag size={18} /> Shop</a>
-              <a className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-50 w-full text-left text-gray-700"><Settings size={18} /> Settings</a>
-            </nav>
-          </div>
-        </aside>
-
-        {/* Main content */}
-        <main className="flex-1 bg-gray-50 p-12">
+    <CustomerLayout currentPage="mypets">
           <div className="max-w-3xl mx-auto">
             <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
               Edit {formData.name}’s Profile
@@ -261,9 +214,7 @@ const EditProfile = () => {
               </div>
             </form>
           </div>
-        </main>
-      </div>
-    </div>
+    </CustomerLayout>
   );
 };
 

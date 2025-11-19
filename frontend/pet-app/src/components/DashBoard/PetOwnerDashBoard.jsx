@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Home, PawPrint, Bell, Heart, DollarSign, Calendar, ShoppingBag, Settings,
-  MessageCircle, Scissors, Syringe, MapPin, Stethoscope, Utensils, Activity,
+  MessageCircle, Scissors, Syringe, MapPin, Stethoscope, Utensils, Activity, FileText,
 } from "lucide-react";
-// --- THAY ĐỔI 1: Import 'Link' ---
-import { useNavigate, Link } from "react-router-dom"; 
-// ----------------------------------
-import { useAuth } from "../../hooks/useAuth.js"; // 👈 Thêm
-import api from "../../api/axiosConfig.js"; // 👈 Thêm
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth.js";
+import api from "../../api/axiosConfig.js";
+import QuickAccessCards from "./QuickAccessCards.jsx";
+import CustomerLayout from "./CustomerLayout.jsx";
 
 // getReminderIcon function (Giữ nguyên)
 const getReminderIcon = (type) => {
@@ -123,17 +123,6 @@ const PetOwnerDashboard = () => {
     };
   }, [user]); // 👈 Phụ thuộc vào user
 
-  // menuItems (giữ nguyên)
-  const menuItems = [
-    { name: "Dashboard", icon: <Home size={18} />, path: "/dashboard" },
-    { name: "My Pets", icon: <PawPrint size={18} />, path: "/mypets" },
-    { name: "Reminders", icon: <Bell size={18} />, path: "/reminder" },
-    { name: "Health & Activity", icon: <Heart size={18} />, path: "/health" },
-    { name: "Expenses", icon: <DollarSign size={18} /> },
-    { name: "Calendar", icon: <Calendar size={18} /> },
-    { name: "Shop", icon: <ShoppingBag size={18} />, path: "/shops" },
-    { name: "Settings", icon: <Settings size={18} /> },
-  ];
 
   // Dữ liệu mẫu (giữ nguyên)
   const shops = [
@@ -147,55 +136,9 @@ const PetOwnerDashboard = () => {
     { name: "Animal Care Center", distance: "3 miles away" },
   ];
 
-  // JSX return (Cập nhật user info)
   return (
-    <div className="min-h-screen bg-[#fafafa] flex justify-center">
-      <div className="w-full max-w-[1280px] bg-white flex">
-        {/* --- Sidebar --- */}
-        <aside className="w-64 min-h-screen border-r border-gray-200 p-6 flex flex-col justify-between">
-           <div>
-             {/* User Info (Cập nhật) */}
-             <div className="flex items-center space-x-3 mb-8">
-               {/* --- THAY ĐỔI 2: Bọc <img> bằng <Link> --- */}
-               <Link to="/">
-                 <img
-                   src={user?.avatar_url || "https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"}
-                   alt="avatar"
-                   className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-green-400 transition"
-                 />
-               </Link>
-               {/* ------------------------------------------- */}
-               <div>
-                 <p className="text-gray-900 font-semibold">{user?.full_name || "Khách"}</p>
-                 {/* <p className="text-gray-500 text-sm">{user?.role || "Owner"}</p> */}
-               </div>
-             </div>
-             {/* Navigation (Giữ nguyên) */}
-             <nav className="flex flex-col space-y-2">
-               {menuItems.map((item, index) => (
-                 <button
-                   key={index}
-                   onClick={() => item.path && navigate(item.path)}
-                   className={`flex items-center space-x-2 text-left px-3 py-2 rounded-lg transition ${
-                     item.name === "Dashboard"
-                       ? "bg-green-100 text-green-800 font-medium"
-                       : "text-gray-700 hover:bg-gray-100"
-                   }`}>
-                   {item.icon}
-                   <span>{item.name}</span>
-                 </button>
-               ))}
-             </nav>
-           </div>
-           {/* Chat Button (Giữ nguyên) */}
-           <button className="flex items-center space-x-2 text-gray-900 hover:text-green-700 mt-auto pt-4 border-t border-gray-100">
-             <MessageCircle size={18} />
-             <span>Chat</span>
-           </button>
-        </aside>
-
-        {/* --- Main content --- */}
-        <main className="flex-1 p-10 overflow-y-auto">
+    <CustomerLayout currentPage="dashboard">
+          <QuickAccessCards />
           <h2 className="text-3xl font-extrabold text-gray-900 mb-5">
             Dashboard
           </h2>
@@ -345,9 +288,7 @@ const PetOwnerDashboard = () => {
                   <button className="text-sm text-green-600 hover:text-green-800 font-medium">View Map</button>
                </div>
            </section>
-        </main>
-      </div>
-    </div>
+    </CustomerLayout>
   );
 };
 

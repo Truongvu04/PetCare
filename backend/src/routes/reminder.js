@@ -1,17 +1,14 @@
-// PetCare/backend/src/routes/reminder.js
 import express from 'express';
 import { prisma } from '../config/prisma.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
 
-// 1. IMPORT ENUMS (Theo chuẩn project hiện tại)
 import pkg from '@prisma/client';
-const { ReminderFrequency, ReminderType, ReminderStatus } = pkg;
+const { ReminderFrequency, RemindersType, ReminderStatus } = pkg;
 
 const router = express.Router();
 
-// 2. CONSTANTS (Giữ nguyên)
 const ALLOWED_FREQUENCIES = Object.values(ReminderFrequency);
-const ALLOWED_TYPES = Object.values(ReminderType);
+const ALLOWED_TYPES = Object.values(RemindersType);
 const ALLOWED_STATUS = Object.values(ReminderStatus);
 const VIETNAM_OFFSET_HOURS = 7;
 
@@ -120,21 +117,19 @@ function calculateDisplayFields(reminder) {
 
 // --- 4. API Routes ---
 
-// (POST /api/reminders giữ nguyên)
 router.post('/', verifyToken, async (req, res) => {
     try {
         const {
             pet_id, type, vaccination_type, feeding_time, reminder_date, frequency = 'none',
             end_date
         } = req.body;
-        const userIdFromToken = req.user.user_id;
+        const user_id = req.user.user_id;
 
-        // --- Validation ---
         if (!pet_id || !type) {
             return res.status(400).json({ error: 'Missing required fields (pet_id, type)' });
         }
         const pet = await prisma.pet.findFirst({
-            where: { id: pet_id, user_id: userIdFromToken }
+            where: { id: pet_id, user_id }
         });
         if (!pet) {
             return res.status(404).json({ error: 'Pet not found or unauthorized' });
@@ -241,13 +236,12 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 
-// (GET /api/reminders - Giữ nguyên sửa lỗi lọc trùng từ lần trước)
 router.get('/', verifyToken, async (req, res) => {
      try {
-        const userIdFromToken = req.user.user_id;
+        const user_id = req.user.user_id;
         const allReminders = await prisma.reminder.findMany({
             where: {
-                pet: { user_id: userIdFromToken },
+                pet: { user_id },
                 status: ReminderStatus.pending 
             },
             include: { pet: { select: { name: true } } },
@@ -329,11 +323,11 @@ router.get('/', verifyToken, async (req, res) => {
 router.put('/:reminderId', verifyToken, async (req, res) => {
     try {
         const reminderId = req.params.reminderId;
-        const userIdFromToken = req.user.user_id;
+        const user_id = req.user.user_id;
         const { vaccination_type, feeding_time, reminder_date, status, frequency, is_read, end_date } = req.body;
 
         const existingReminder = await prisma.reminder.findFirst({
-            where: { reminder_id: reminderId, pet: { user_id: userIdFromToken } }
+            where: { reminder_id: reminderId, pet: { user_id } }
         });
         if (!existingReminder) {
             return res.status(404).json({ error: 'Reminder not found or unauthorized' });
@@ -398,9 +392,9 @@ router.put('/:reminderId', verifyToken, async (req, res) => {
 router.delete('/:reminderId', verifyToken, async (req, res) => {
     try {
         const reminderId = req.params.reminderId;
-        const userIdFromToken = req.user.user_id;
+        const user_id = req.user.user_id;
         const deleteResult = await prisma.reminder.deleteMany({
-            where: { reminder_id: reminderId, pet: { user_id: userIdFromToken } }
+            where: { reminder_id: reminderId, pet: { user_id } }
         });
         if (deleteResult.count === 0) {
              return res.status(404).json({ error: 'Reminder not found or unauthorized' });
@@ -413,10 +407,9 @@ router.delete('/:reminderId', verifyToken, async (req, res) => {
 });
 
 
-// (PUT /mark-read/today)
 router.put('/mark-read/today', verifyToken, async (req, res) => {
     try {
-        const userIdFromToken = req.user.user_id;
+        const user_id = req.user.user_id;
         
         const todayUTC = new Date();
         todayUTC.setUTCHours(0, 0, 0, 0); 
@@ -425,7 +418,7 @@ router.put('/mark-read/today', verifyToken, async (req, res) => {
         
         const result = await prisma.reminder.updateMany({
             where: {
-                pet: { user_id: userIdFromToken }, 
+                pet: { user_id }, 
                 is_read: false,
                 status: ReminderStatus.pending, 
                 OR: [
@@ -444,7 +437,7 @@ router.put('/mark-read/today', verifyToken, async (req, res) => {
             }
         });
 
-        console.log(`[INFO] User ${userIdFromToken} marked ${result.count} new reminders as read.`);
+        console.log(`[INFO] User ${user_id} marked ${result.count} new reminders as read.`);
         return res.status(200).json({ message: `Successfully marked ${result.count} new reminders as read.` });
 
     } catch (err) {

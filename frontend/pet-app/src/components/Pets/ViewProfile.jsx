@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  Home,
-  PawPrint,
-  Bell,
-  Heart,
-  DollarSign,
-  Calendar,
-  ShoppingBag,
-  Settings,
   Edit3,
   Scissors,
   Stethoscope,
@@ -15,8 +7,9 @@ import {
   Utensils,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth.js"; // 👈 Thêm
-import api from "../../api/axiosConfig.js"; // 👈 Thêm
+import { useAuth } from "../../hooks/useAuth.js";
+import api from "../../api/axiosConfig.js";
+import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
 
 const ViewProfile = () => {
   const navigate = useNavigate();
@@ -74,75 +67,7 @@ const ViewProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center">
-      <div className="flex w-full max-w-[1280px]">
-        {/* Sidebar (Cập nhật user info) */}
-        <aside className="w-64 bg-white border-r p-6 flex flex-col justify-between">
-          <div>
-            {/* User info */}
-            <div className="flex items-center space-x-3 mb-8">
-              <img
-                src={user?.avatar_url || "https://images.pexels.com/photos/1851164/pexels-photo-1851164.jpeg"}
-                alt="User"
-                className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-green-400 transition"
-              />
-              <div>
-                <h3 className="font-semibold text-gray-900">{user?.full_name || "Emily Carter"}</h3>
-                {/* <span className="owner font-semibold text-gray-900">{user?.role || "Owner"}</span> */}
-              </div>
-            </div>
-
-            {/* Menu (Giữ nguyên) */}
-            <nav className="space-y-2">
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100 w-full text-left text-gray-700"
-              >
-                <Home size={18} /> Dashboard
-              </button>
-
-              <button
-                onClick={() => navigate("/mypets")}
-                className="text-gray-700 flex items-center gap-2 px-3 py-2 rounded-md bg-green-100 text-green-800 font-semibold w-full"
-              >
-                <PawPrint size={18} /> My Pets
-              </button>
-
-              <button
-                onClick={() => navigate("/reminder")}
-                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100 w-full text-left text-gray-700"
-              >
-                <Bell size={18} /> Reminders
-              </button>
-
-              <button
-                onClick={() => navigate("/health")}
-                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100 w-full text-left text-gray-700"
-              >
-                <Heart size={18} /> Health & Activity
-              </button>
-
-              <a className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100 text-gray-700 w-full">
-                <DollarSign size={18} /> <span>Expenses</span>
-              </a>
-
-              <a className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100 text-gray-700 w-full">
-                <Calendar size={18} /> <span>Calendar</span>
-              </a>
-
-              <a className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100 text-gray-700 w-full">
-                <ShoppingBag size={18} /> <span>Shop</span>
-              </a>
-
-              <a className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-green-100 text-gray-700 w-full">
-                <Settings size={18} /> <span>Settings</span>
-              </a>
-            </nav>
-          </div>
-        </aside>
-
-        {/* Main content (Giữ nguyên) */}
-        <main className="flex-1 p-8">
+    <CustomerLayout currentPage="mypets">
           <div className="max-w-5xl mx-auto">
             {/* Header */}
             <div className="flex justify-between items-center mb-8">
@@ -272,9 +197,7 @@ const ViewProfile = () => {
               </div>
             </section>
           </div>
-        </main>
-      </div>
-    </div>
+    </CustomerLayout>
   );
 };
 

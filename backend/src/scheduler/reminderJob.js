@@ -4,9 +4,8 @@ import { prisma } from '../config/prisma.js';
 // Đảm bảo import từ file ESM mailer.js gốc của bạn
 import { sendReminderEmail } from '../utils/mailer.js'; 
 
-// 1. IMPORT ENUMS (Theo chuẩn project hiện tại)
 import pkg from '@prisma/client';
-const { ReminderFrequency, ReminderType, ReminderStatus } = pkg; 
+const { ReminderFrequency, reminders_type, ReminderStatus } = pkg; 
 
 // === FIX_7: Đặt múi giờ Việt Nam (GMT+7) ===
 const VIETNAM_OFFSET_HOURS = 7;
