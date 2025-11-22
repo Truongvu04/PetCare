@@ -1,11 +1,223 @@
+// generator client {
+//   provider = "prisma-client-js"
+// }
+
+// datasource db {
+//   provider = "mysql"
+//   url      = env("DATABASE_URL")
+// }
+
+// enum Role {
+//   owner
+//   vendor
+//   admin
+// }
+
+// // ------ Bảng Enum  ------
+
+// // ----------------------- USER ----------------------
+
+// model User {
+//   user_id       Int      @id @default(autoincrement()) @map("user_id")
+//   full_name     String   @map("full_name")
+//   email         String   @unique @map("email")
+//   password_hash String?  @map("password_hash")
+//   phone         String?  @map("phone")
+//   role          Role     @default(owner) @map("role")
+//   googleId      String?  @unique
+//   facebookId    String?  @unique
+//   created_at    DateTime @default(now()) @map("created_at")
+
+//   pets Pet[] // ✅ Đã thêm: 1 User có nhiều Pet
+
+//   @@map("Users") // Khớp với schema cũ của bạn
+// }
+
+// // ----------------------- OTP ----------------------
+
+// model OTP {
+//   id        Int      @id @default(autoincrement())
+//   email     String?
+//   phone     String?
+//   code      String
+//   createdAt DateTime @default(now())
+// }
+
+// // ----------------------- PETS ----------------------
+
+// model Pet {
+//   id              String   @id @default(cuid()) // Dùng CUID (chuỗi) để khớp với file .sql (CHAR 12)
+//   name            String
+//   species         String
+//   breed           String?
+//   age             Int?
+//   weight          Float? // Dùng Float cho DECIMAL(5,2)
+//   vaccination     String?
+//   medical_history String?  @db.Text
+//   description     String?  @db.Text
+//   photo_url       String?
+//   created_at      DateTime @default(now())
+
+//   // --- Liên kết ---
+//   user_id Int // Khóa ngoại
+//   owner   User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+//   reminders Reminder[] // 1 Pet có nhiều Reminder
+
+//   @@map("pets") // Tên bảng trong MySQL (giống petcare.sql.txt)
+// }
+
+// // ------------------------- REMINDERS--------------------------
+// model Reminder {
+//   reminder_id String @id @default(cuid()) // Dùng CUID (chuỗi)
+
+//   type             ReminderType
+//   vaccination_type String?
+//   feeding_time     DateTime?         @db.Time // Dùng DateTime + @db.Time cho kiểu TIME
+//   reminder_date    DateTime          @db.Date // Dùng DateTime + @db.Date cho kiểu DATE
+//   frequency        ReminderFrequency @default(none)
+//   status           ReminderStatus    @default(pending)
+//   is_read          Boolean           @default(false)
+//   end_date         DateTime?         @db.Date // Ngày kết thúc lặp lại
+
+//   is_instance Boolean  @default(false) // Đánh dấu đây là bản sao do cron job tạo
+//   email_sent  Boolean  @default(false)
+//   created_at  DateTime @default(now())
+//   updated_at  DateTime @updatedAt
+
+//   // --- Liên kết ---
+//   pet_id String // Khóa ngoại
+//   pet    Pet    @relation(fields: [pet_id], references: [id], onDelete: Cascade)
+
+//   @@index([pet_id])
+//   @@index([reminder_date])
+//   @@map("reminders") // Tên bảng trong MySQL (giống petcare.sql.txt)
+// }
+
+// enum ReminderFrequency {
+//   none
+//   daily
+//   weekly
+//   monthly
+//   yearly
+// }
+
+// enum ReminderStatus {
+//   pending
+//   done
+// }
+
+// enum ReminderType {
+//   vaccination
+//   checkup
+//   feeding
+//   grooming
+// }
+
+// model Vendor {
+//   id          String   @id @default(cuid())
+//   email       String   @unique
+//   password    String
+//   shopName    String
+//   phone       String?
+//   logo        String?
+//   banner      String?
+//   description String?
+//   address     String?
+//   shipping    Json?
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+
+//   products Product[]
+//   coupons  Coupon[]
+//   orders   Order[]
+//   staff    VendorStaff[]
+// }
+
+// model VendorStaff {
+//   id        String   @id @default(cuid())
+//   vendor    Vendor   @relation(fields: [vendorId], references: [id])
+//   vendorId  String
+//   name      String
+//   email     String
+//   role      String
+//   createdAt DateTime @default(now())
+// }
+
+// model Product {
+//   id          String   @id @default(cuid())
+//   vendor      Vendor   @relation(fields: [vendorId], references: [id])
+//   vendorId    String
+//   title       String
+//   description String?
+//   price       Float
+//   stock       Int      @default(0)
+//   // images   String[] @default([]) // <--- XÓA DÒNG NÀY
+//   active      Boolean  @default(true)
+//   metadata    Json?
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+
+//   images Json?
+
+//   coupons    Coupon[]    @relation("ProductCoupons")
+//   orderItems OrderItem[]
+// }
+
+// model Coupon {
+//   id            String   @id @default(cuid())
+//   vendor        Vendor   @relation(fields: [vendorId], references: [id])
+//   vendorId      String
+//   code          String   @unique
+//   minOrderValue Float    @default(0)
+//   description   String?
+//   discountPct   Int
+//   startDate     DateTime
+//   endDate       DateTime
+//   createdAt     DateTime @default(now())
+//   updatedAt     DateTime @updatedAt
+
+//   products Product[] @relation("ProductCoupons")
+// }
+
+// model Order {
+//   id         String   @id @default(cuid())
+//   vendor     Vendor?  @relation(fields: [vendorId], references: [id])
+//   vendorId   String?
+//   total      Float
+//   status     String   @default("PENDING")
+//   items      Json
+//   customerId String?
+//   couponCode String?
+//   createdAt  DateTime @default(now())
+//   updatedAt  DateTime @updatedAt
+
+//   itemsRel OrderItem[]
+// }
+
+// model OrderItem {
+//   id        String  @id @default(cuid())
+//   order     Order   @relation(fields: [orderId], references: [id])
+//   orderId   String
+//   product   Product @relation(fields: [productId], references: [id])
+//   productId String
+//   quantity  Int
+//   price     Float
+// }
+
+
+
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql" 
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+// ------ Bảng Enum ------
 
 enum Role {
   owner
@@ -13,88 +225,24 @@ enum Role {
   admin
 }
 
-// ------ Bảng Enum  ------
-
-// ----------------------- USER ----------------------
-
-model User {
-  user_id       Int      @id @default(autoincrement()) @map("user_id")
-  full_name     String   @map("full_name")
-  email         String   @unique @map("email")
-  password_hash String?  @map("password_hash")
-  phone         String?  @map("phone")
-  role          Role     @default(owner) @map("role")
-  googleId      String?  @unique
-  facebookId    String?  @unique
-  created_at    DateTime @default(now()) @map("created_at")
-
-  pets Pet[] // ✅ Đã thêm: 1 User có nhiều Pet
-
-  @@map("Users") // Khớp với schema cũ của bạn
+enum OrderStatus {
+  pending
+  paid
+  shipped
+  cancelled
+  refunded
 }
 
-// ----------------------- OTP ----------------------
-
-model OTP {
-  id        Int      @id @default(autoincrement())
-  email     String?
-  phone     String?
-  code      String
-  createdAt DateTime @default(now())
+enum PaymentMethod {
+  momo
+  vnpay
+  zalopay
 }
 
-// ----------------------- PETS ----------------------
-
-model Pet {
-  id              String   @id @default(cuid()) // Dùng CUID (chuỗi) để khớp với file .sql (CHAR 12)
-  name            String
-  species         String
-  breed           String?
-  age             Int?
-  weight          Float? // Dùng Float cho DECIMAL(5,2)
-  vaccination     String?
-  medical_history String?  @db.Text
-  description     String?  @db.Text
-  photo_url       String?
-  created_at      DateTime @default(now())
-
-  // --- Liên kết ---
-  user_id Int // Khóa ngoại
-  owner   User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-
-  reminders Reminder[] // 1 Pet có nhiều Reminder
-
-  @@map("pets") // Tên bảng trong MySQL (giống petcare.sql.txt)
-}
-
-
-
-// ------------------------- REMINDERS--------------------------
-model Reminder {
-  reminder_id String @id @default(cuid()) // Dùng CUID (chuỗi)
-
-  type             ReminderType
-  vaccination_type String?
-  feeding_time     DateTime? @db.Time // Dùng DateTime + @db.Time cho kiểu TIME
-  reminder_date    DateTime  @db.Date // Dùng DateTime + @db.Date cho kiểu DATE
-  frequency        ReminderFrequency @default(none)
-  status           ReminderStatus    @default(pending)
-  is_read          Boolean           @default(false)
-  end_date         DateTime?         @db.Date // Ngày kết thúc lặp lại
-
-  is_instance   Boolean           @default(false) // Đánh dấu đây là bản sao do cron job tạo
-  email_sent       Boolean           @default(false)
-  created_at    DateTime          @default(now())
-  updated_at    DateTime          @updatedAt
-
-  
-  // --- Liên kết ---
-  pet_id String // Khóa ngoại
-  pet    Pet    @relation(fields: [pet_id], references: [id], onDelete: Cascade)
-
-  @@index([pet_id])
-  @@index([reminder_date])
-  @@map("reminders") // Tên bảng trong MySQL (giống petcare.sql.txt)
+enum VendorStatus {
+  pending
+  approved
+  rejected
 }
 
 enum ReminderFrequency {
@@ -112,7 +260,398 @@ enum ReminderStatus {
 
 enum ReminderType {
   vaccination
-  checkup
+  vet_visit
   feeding
   grooming
+  medication
+  other
+}
+
+// ----------------------- 1. USERS ----------------------
+
+model User {
+  user_id       Int      @id @default(autoincrement()) @map("user_id")
+  full_name     String   @map("full_name") @db.VarChar(191)
+  email         String   @unique @map("email") @db.VarChar(191)
+  password_hash String?  @map("password_hash") @db.VarChar(191)
+  phone         String?  @map("phone") @db.VarChar(191)
+  role          Role     @default(owner) @map("role")
+  googleId      String?  @unique @map("googleId") @db.VarChar(191)
+  facebookId    String?  @unique @map("facebookId") @db.VarChar(191)
+  avatar_url    String?  @map("avatar_url") @db.VarChar(255)
+  
+  // Đã sửa: Bỏ @db.DateTime(3) để an toàn
+  created_at    DateTime @default(now()) @map("created_at")
+
+  // --- Liên kết ---
+  pets                Pet[]
+  carts               Cart[]
+  orders              Order[]
+  payments            Payment[]
+  reviews             Review[]
+  vendor              Vendor?             @relation("UserVendorLink")
+  service_appointments ServiceAppointment[]
+
+  @@map("users")
+}
+
+// ----------------------- 2. VENDORS ----------------------
+
+model Vendor {
+  vendor_id   Int          @id @default(autoincrement()) @map("vendor_id")
+  user_id     Int          @unique @map("user_id")
+  store_name  String       @map("store_name") @db.VarChar(150)
+  description String?      @map("description") @db.Text
+  address     String?      @map("address") @db.VarChar(255)
+  phone       String?      @map("phone") @db.VarChar(50)
+  logo_url    String?      @map("logo_url") @db.VarChar(255)
+  status      VendorStatus @default(pending) @map("status")
+  banner_url  String?      @map("banner_url") @db.VarChar(255) 
+  default_shipping_fee Float? @default(0) @map("default_shipping_fee")
+  // Đã sửa: Bỏ @db.DateTime(3)
+  created_at  DateTime     @default(now()) @map("created_at")
+  updated_at  DateTime     @updatedAt @map("updated_at")
+
+  // --- Liên kết ---
+  user     User      @relation("UserVendorLink", fields: [user_id], references: [user_id], onDelete: Cascade)
+  products Product[]
+  coupons  Coupon[]
+  orders   Order[]
+  services Service[]
+
+  @@map("vendors")
+}
+
+// ----------------------- 3. PRODUCTS ----------------------
+
+model Product {
+  product_id  Int      @id @default(autoincrement()) @map("product_id")
+  vendor_id   Int      @map("vendor_id")
+  name        String   @map("name") @db.VarChar(191)
+  description String?  @map("description") @db.Text
+  price       Float    @map("price")
+  stock       Int?     @default(0) @map("stock")
+  category    String?  @map("category") @db.VarChar(100)
+  
+  // Đã sửa: Bỏ @db.DateTime gây lỗi
+  created_at  DateTime @default(now()) @map("created_at")
+  updated_at  DateTime @updatedAt @map("updated_at")
+
+  // --- Liên kết ---
+  vendor      Vendor        @relation(fields: [vendor_id], references: [vendor_id], onDelete: Cascade)
+  images      ProductImage[]
+  order_items OrderItem[]
+  cart_items  CartItem[]
+  reviews     Review[]
+
+  @@index([vendor_id], map: "products_vendor_id_fkey")
+  @@map("products")
+}
+
+// ----------------------- 4. PRODUCT_IMAGES ----------------------
+
+model ProductImage {
+  id           Int      @id @default(autoincrement())
+  product_id   Int      @map("product_id")
+  image_url    String   @map("image_url") @db.VarChar(1000)
+  is_thumbnail Boolean  @default(false) @map("is_thumbnail") @db.TinyInt
+  
+  // Đã sửa: Bỏ @db.Timestamp gây lỗi
+  created_at   DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+
+  @@index([product_id], map: "product_images_product_id_idx")
+  @@map("product_images")
+}
+
+// ----------------------- 5. ORDERS ----------------------
+
+model Order {
+  order_id       Int            @id @default(autoincrement()) @map("order_id")
+  user_id        Int            @map("user_id")
+  vendor_id      Int            @map("vendor_id")
+  status         OrderStatus?   @default(pending) @map("status")
+  payment_method PaymentMethod? @map("payment_method")
+  
+  // Đã sửa: Bỏ @db.DateTime gây lỗi
+  created_at     DateTime       @default(now()) @map("created_at")
+  updated_at     DateTime       @updatedAt @map("updated_at")
+
+  shipping Decimal @default(0.00) @map("shipping") @db.Decimal(10, 2)
+  subtotal Decimal @default(0.00) @map("subtotal") @db.Decimal(10, 2)
+  tax      Decimal @default(0.00) @map("tax") @db.Decimal(10, 2)
+  total    Decimal @default(0.00) @map("total") @db.Decimal(10, 2)
+
+  shipping_address String? @map("shipping_address") @db.VarChar(500)
+
+  // --- Liên kết ---
+  user          User          @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  vendor        Vendor        @relation(fields: [vendor_id], references: [vendor_id], onDelete: Cascade)
+  order_items   OrderItem[]
+  payments      Payment[]
+  coupon_usages CouponUsage[]
+
+  @@index([user_id], map: "orders_user_id_fkey")
+  @@index([vendor_id], map: "orders_vendor_id_fkey")
+  @@map("orders")
+}
+
+// ----------------------- 6. ORDER_ITEMS ----------------------
+
+model OrderItem {
+  id         Int      @id @default(autoincrement())
+  order_id   Int      @map("order_id")
+  product_id Int      @map("product_id")
+  quantity   Int?     @default(1) @map("quantity")
+  price      Float    @map("price")
+  
+  // Đã sửa
+  created_at DateTime @default(now()) @map("created_at")
+
+  // --- Liên kết ---
+  order   Order   @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+
+  @@index([order_id], map: "order_items_order_id_fkey")
+  @@index([product_id], map: "order_items_product_id_fkey")
+  @@map("order_items")
+}
+
+// ----------------------- 7. CARTS & CART_ITEMS ----------------------
+
+model Cart {
+  cart_id    Int      @id @default(autoincrement()) @map("cart_id")
+  user_id    Int      @map("user_id")
+  
+  // Đã sửa
+  created_at DateTime @default(now()) @map("created_at")
+  updated_at DateTime @updatedAt @map("updated_at")
+
+  // --- Liên kết ---
+  user       User       @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  cart_items CartItem[]
+
+  @@index([user_id], map: "carts_user_id_fkey")
+  @@map("carts")
+}
+
+model CartItem {
+  id         Int      @id @default(autoincrement())
+  cart_id    Int      @map("cart_id")
+  product_id Int      @map("product_id")
+  quantity   Int?     @default(1) @map("quantity")
+  price      Float    @map("price")
+  
+  // Đã sửa
+  added_at   DateTime @default(now()) @map("added_at")
+
+  // --- Liên kết ---
+  cart    Cart    @relation(fields: [cart_id], references: [cart_id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+
+  @@index([cart_id], map: "cart_items_cart_id_fkey")
+  @@index([product_id], map: "cart_items_product_id_fkey")
+  @@map("cart_items")
+}
+
+// ----------------------- 8. PAYMENTS ----------------------
+
+model Payment {
+  payment_id     Int           @id @default(autoincrement()) @map("payment_id")
+  order_id       Int           @map("order_id")
+  user_id        Int           @map("user_id")
+  amount         Float         @map("amount")
+  method         PaymentMethod @map("method")
+  status         String?       @default("pending") @map("status")
+  transaction_id String?       @map("transaction_id") @db.VarChar(191)
+  
+  // Đã sửa
+  created_at     DateTime      @default(now()) @map("created_at")
+  updated_at     DateTime      @updatedAt @map("updated_at")
+
+  // --- Liên kết ---
+  order Order @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
+  user  User  @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([order_id], map: "payments_order_id_fkey")
+  @@index([user_id], map: "payments_user_id_fkey")
+  @@map("payments")
+}
+
+// ----------------------- 9. COUPONS & COUPON_USAGES ----------------------
+
+model Coupon {
+  coupon_id        Int       @id @default(autoincrement()) @map("coupon_id")
+  code             String    @unique @map("code") @db.VarChar(100)
+  discount_percent Float?    @map("discount_percent")
+  discount_amount  Float?    @map("discount_amount")
+  vendor_id        Int?      @map("vendor_id")
+  rule_condition   String?   @map("rule_condition") @db.Text
+  start_date       DateTime? @map("start_date")
+  end_date         DateTime? @map("end_date")
+  
+  // Đã sửa
+  created_at       DateTime  @default(now()) @map("created_at")
+  updated_at       DateTime  @updatedAt @map("updated_at")
+
+  // --- Liên kết ---
+  vendor        Vendor?       @relation(fields: [vendor_id], references: [vendor_id], onDelete: Cascade)
+  coupon_usages CouponUsage[]
+
+  @@index([vendor_id], map: "coupons_vendor_id_fkey")
+  @@map("coupons")
+}
+
+model CouponUsage {
+  id         Int      @id @default(autoincrement())
+  coupon_id  Int      @map("coupon_id")
+  order_id   Int      @map("order_id")
+  
+  // Đã sửa
+  created_at DateTime @default(now())
+
+  // --- Liên kết ---
+  coupon Coupon @relation(fields: [coupon_id], references: [coupon_id], onDelete: Cascade)
+  order  Order  @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
+
+  @@index([coupon_id], map: "coupon_usages_coupon_id_fkey")
+  @@index([order_id], map: "coupon_usages_order_id_fkey")
+  @@map("coupon_usages")
+}
+
+// ----------------------- 10. REVIEWS ----------------------
+
+model Review {
+  review_id  Int      @id @default(autoincrement()) @map("review_id")
+  product_id Int?     @map("product_id")
+  service_id Int?     @map("service_id")
+  user_id    Int      @map("user_id")
+  rating     Int      @map("rating")
+  comment    String?  @map("comment") @db.Text
+  
+  // Đã sửa
+  created_at DateTime @default(now()) @map("created_at")
+  updated_at DateTime @updatedAt @map("updated_at")
+
+  // --- Liên kết ---
+  product Product? @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+  service Service? @relation(fields: [service_id], references: [service_id], onDelete: Cascade)
+  user    User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([product_id], map: "reviews_product_id_idx")
+  @@index([service_id], map: "reviews_service_id_idx")
+  @@index([user_id], map: "reviews_user_id_idx")
+  @@map("reviews")
+}
+
+// ----------------------- 11. SERVICES ----------------------
+
+model Service {
+  service_id  Int      @id @default(autoincrement()) @map("service_id")
+  vendor_id   Int      @map("vendor_id")
+  name        String   @map("name") @db.VarChar(191)
+  description String?  @map("description") @db.Text
+  price       Float    @map("price")
+  duration    Int?     @map("duration")
+  
+  // Đã sửa
+  created_at  DateTime @default(now()) @map("created_at")
+  updated_at  DateTime @updatedAt @map("updated_at")
+
+  // --- Liên kết ---
+  vendor       Vendor               @relation(fields: [vendor_id], references: [vendor_id], onDelete: Cascade)
+  appointments ServiceAppointment[]
+  reviews      Review[]
+
+  @@index([vendor_id], map: "services_vendor_id_idx")
+  @@map("services")
+}
+
+model ServiceAppointment {
+  appointment_id   Int      @id @default(autoincrement()) @map("appointment_id")
+  service_id       Int      @map("service_id")
+  user_id          Int      @map("user_id")
+  appointment_date DateTime @map("appointment_date") // Giữ nguyên vì không có default now
+  status           String?  @map("status") @db.VarChar(50)
+  notes            String?  @map("notes") @db.Text
+  
+  // Đã sửa
+  created_at       DateTime @default(now()) @map("created_at")
+  updated_at       DateTime @updatedAt @map("updated_at")
+
+  // --- Liên kết ---
+  service Service @relation(fields: [service_id], references: [service_id], onDelete: Cascade)
+  user    User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([service_id], map: "service_appointments_service_id_idx")
+  @@index([user_id], map: "service_appointments_user_id_idx")
+  @@map("service_appointments")
+}
+
+// ----------------------- 12. PETS & REMINDERS ----------------------
+
+model Pet {
+  id              String   @id @default(cuid()) @map("id") @db.Char(12)
+  user_id         Int?     @map("user_id")
+  name            String   @map("name") @db.VarChar(100)
+  species         String   @map("species") @db.VarChar(50)
+  breed           String?  @map("breed") @db.VarChar(100)
+  age             Int?     @map("age")
+  weight          Decimal? @map("weight") @db.Decimal(5, 2)
+  vaccination     String?  @map("vaccination") @db.VarChar(100)
+  medical_history String?  @map("medical_history") @db.VarChar(191)
+  description     String?  @map("description") @db.VarChar(191)
+  photo_url       String?  @map("photo_url") @db.VarChar(255)
+  
+  // Đã sửa: Bỏ @db.Timestamp(6) để đồng bộ
+  created_at      DateTime @default(now()) @map("created_at")
+
+  // --- Liên kết ---
+  owner     User?      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  reminders Reminder[]
+
+  @@index([user_id], map: "pets_user_id_fkey")
+  @@map("pets")
+}
+
+model Reminder {
+  reminder_id      String            @id @default(cuid()) @map("reminder_id") @db.Char(25)
+  pet_id           String            @map("pet_id") @db.Char(12)
+  type             ReminderType      @map("type")
+  vaccination_type String?           @map("vaccination_type") @db.VarChar(255)
+  feeding_time     DateTime?         @map("feeding_time") @db.Time(0)
+  reminder_date    DateTime          @map("reminder_date") @db.Date
+  frequency        ReminderFrequency @default(none) @map("frequency")
+  status           ReminderStatus    @default(pending) @map("status")
+  is_read          Boolean?          @default(false) @map("is_read") @db.TinyInt
+  end_date         DateTime?         @map("end_date") @db.Date
+
+  is_instance Boolean? @default(false) @map("is_instance") @db.TinyInt
+  email_sent  Boolean? @default(false) @map("email_sent") @db.TinyInt
+  
+  // Đã sửa: Bỏ @db.Timestamp(6)
+  created_at  DateTime @default(now()) @map("created_at")
+  updated_at  DateTime @updatedAt @map("updated_at")
+
+  // --- Liên kết ---
+  pet Pet @relation(fields: [pet_id], references: [id], onDelete: Cascade)
+
+  @@index([pet_id], map: "idx_reminders_pet_id")
+  @@index([reminder_date], map: "idx_reminders_reminder_date")
+  @@map("reminders")
+}
+
+// ----------------------- 13. OTP ----------------------
+
+model OTP {
+  id        Int      @id @default(autoincrement())
+  email     String?  @map("email") @db.VarChar(191)
+  phone     String?  @map("phone") @db.VarChar(191)
+  code      String   @map("code") @db.VarChar(191)
+  
+  // Đã sửa
+  createdAt DateTime @default(now()) @map("createdAt")
+
+  @@map("otp")
 }

@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import jwt from "jsonwebtoken"; 
+import jwt from "jsonwebtoken";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,7 +18,7 @@ import authRoutes from "./src/routes/auth.routes.js";
 import petRoutes from "./src/routes/pets.js";
 import reminderRoutes from "./src/routes/reminder.js";
 import geoapifyRoutes from "./src/routes/geoapify.routes.js";
-
+import vendorRoutes from './src/routes/vendor.routes.js';
 import "./src/config/passport.js";
 import './src/scheduler/reminderJob.js'; // Đã kích hoạt cron job
 
@@ -48,6 +48,8 @@ app.use("/api/pets", petRoutes);
 app.use("/api/reminders", reminderRoutes);
 app.use("/api/geoapify", geoapifyRoutes);
 
+app.use('/api/v1/vendor', vendorRoutes);
+
 app.get(
   "/auth/google",
   passport.authenticate("google", {
@@ -62,7 +64,7 @@ app.get(
   passport.authenticate("google", { failureRedirect: "/login", session: false }),
   (req, res) => {
     // req.user bây giờ là đối tượng user từ database
-    const user = req.user; 
+    const user = req.user;
 
     // ✅ TẠO TOKEN MỚI TỪ THÔNG TIN USER
     const payload = {
@@ -110,7 +112,7 @@ app.get(
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
-    
+
     // Chuyển hướng về frontend VỚI TOKEN HỢP LỆ
     res.redirect(`${process.env.FRONTEND_URL}/?token=${token}`);
   }
