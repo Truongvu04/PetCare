@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Lock, Bell, Shield, Loader2, Save, Eye, EyeOff } from 'lucide-react';
-import { apiGetVendorProfile, apiUpdatePassword, apiUpdateVendorProfile } from '../../api/vendorApi'; // Tạm dùng apiUpdateVendorProfile để update thông tin cá nhân
+// Đảm bảo đường dẫn import đúng với cấu trúc dự án của bạn
+import { apiGetVendorProfile, apiUpdatePassword } from '../../api/vendorApi'; 
 
 const AccountSettings = () => {
     const [loading, setLoading] = useState(true);
@@ -11,7 +12,7 @@ const AccountSettings = () => {
         fullName: '',
         email: '',
         phone: '',
-        role: 'Vendor',
+        role: 'Vendor', // Mặc định là Vendor
     });
 
     // State cho đổi mật khẩu
@@ -39,11 +40,17 @@ const AccountSettings = () => {
             const res = await apiGetVendorProfile();
             const data = res.data;
             
+            // Xử lý hiển thị role: Lấy từ data hoặc mặc định là Vendor
+            // Helper function để viết hoa chữ cái đầu (vendor -> Vendor)
+            const displayRole = data.role 
+                ? data.role.charAt(0).toUpperCase() + data.role.slice(1) 
+                : 'Vendor';
+
             setProfile({
-                fullName: data.full_name || '', // Lấy từ bảng User
+                fullName: data.full_name || '', 
                 email: data.email || '',
-                phone: data.phone || '', // SĐT cá nhân (có thể trùng hoặc khác SĐT shop)
-                role: 'Vendor Owner'
+                phone: data.phone || '', 
+                role: displayRole 
             });
         } catch (err) {
             console.error("Lỗi tải thông tin tài khoản:", err);
@@ -71,7 +78,7 @@ const AccountSettings = () => {
                 newPassword: passData.newPassword
             });
             alert("Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
-            // Có thể logout luôn nếu muốn bảo mật cao
+            // Reset form
             setPassData({ oldPassword: '', newPassword: '', confirmPassword: '' });
         } catch (err) {
             alert("Lỗi: " + (err.response?.data?.message || err.message));
@@ -79,10 +86,6 @@ const AccountSettings = () => {
             setSaving(false);
         }
     };
-
-    // Xử lý cập nhật thông tin cá nhân (nếu backend hỗ trợ update User riêng)
-    // Hiện tại ta tạm bỏ qua vì apiUpdateVendorProfile đang update bảng Vendor
-    // Bạn có thể thêm API updateUserInfo vào backend sau này.
 
     const toggleShowPass = (field) => {
         setShowPass(prev => ({ ...prev, [field]: !prev[field] }));
@@ -104,7 +107,7 @@ const AccountSettings = () => {
                     <p className="text-sm text-gray-500 mt-1">Quản lý thông tin đăng nhập và bảo mật</p>
                 </div>
 
-                {/* 1. Thông tin cá nhân (Read-only hoặc Edit nếu có API) */}
+                {/* 1. Thông tin cá nhân (Read-only) */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                         <User size={20} className="text-blue-600" /> Thông tin Cá nhân

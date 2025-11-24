@@ -9,6 +9,8 @@ import jwt from "jsonwebtoken";
 export const registerVendor = async (req, res) => {
     try {
         const { full_name, name, email, password, phone, store_name, shopName, address } = req.body;
+        
+        // Xử lý fallback tên trường nếu frontend gửi lên khác nhau
         const finalFullName = full_name || name;
         const finalStoreName = store_name || shopName;
 
@@ -22,22 +24,52 @@ export const registerVendor = async (req, res) => {
         const hashed = await bcrypt.hash(password, 10);
 
         const result = await prisma.$transaction(async (tx) => {
+            // 1. Tạo User trước
             const newUser = await tx.user.create({
                 data: {
-                    full_name: finalFullName, email, password_hash: hashed, role: "vendor", phone: phone || null
+                    full_name: finalFullName, 
+                    email, 
+                    password_hash: hashed, 
+                    role: "vendor", 
+                    phone: phone || null
                 }
             });
+
+            // 2. Tạo Vendor
             const newVendor = await tx.vendor.create({
                 data: {
-                    user_id: newUser.user_id, store_name: finalStoreName, address: address || null, phone: phone || null, status: 'pending',
+                    user_id: newUser.user_id, 
+                    store_name: finalStoreName, 
+                    address: address || null, 
+                    phone: phone || null,
+                    
+                    // --- THAY ĐỔI Ở ĐÂY ---
+                    // Để trạng thái là 'active' (hoặc 'approved') để coi như Admin đã duyệt
+                    status: 'active', 
+                    
+                    // Lưu ý: Nếu trong Prisma Schema bạn định nghĩa field là isApproved (Boolean) 
+                    // thì dùng dòng dưới đây thay cho dòng status ở trên:
+                    // isApproved: true,
                 }
             });
             return { user: newUser, vendor: newVendor };
         });
 
-        const token = jwt.sign({ id: result.vendor.vendor_id, role: 'vendor' }, process.env.VENDOR_SECRET_KEY, { expiresIn: "7d" });
-        res.status(201).json({ message: "Đăng ký thành công!", token, vendor: result.vendor });
+        // Tạo token
+        const token = jwt.sign(
+            { id: result.vendor.vendor_id, role: 'vendor' }, 
+            process.env.VENDOR_SECRET_KEY, 
+            { expiresIn: "7d" }
+        );
+
+        res.status(201).json({ 
+            message: "Đăng ký thành công! Tài khoản đã được kích hoạt.", 
+            token, 
+            vendor: result.vendor 
+        });
+
     } catch (error) {
+        console.error("Register Vendor Error:", error); // Nên log lỗi ra để debug
         res.status(500).json({ error: "Lỗi hệ thống khi đăng ký." });
     }
 };

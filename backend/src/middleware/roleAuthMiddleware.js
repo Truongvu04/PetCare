@@ -1,35 +1,33 @@
 // src/middleware/roleAuthMiddleware.js
 
-// Hàm factory tạo middleware kiểm tra vai trò cụ thể
-export const requireRole = (requiredRole) => {
+export const requireRole = (allowedRoles) => {
+    const requiredRoles = Array.isArray(allowedRoles) 
+                          ? allowedRoles.map(role => role.toLowerCase()) 
+                          : [allowedRoles.toLowerCase()];
+                          
     return (req, res, next) => {
-        // LƯU Ý: Middleware này phải được đặt SAU userAuth 
-        // để đảm bảo req.user đã được gắn vào request.
+        // Lấy vai trò từ req.user (đã được gắn sau verifyToken/vendorAuth)
+        const userPayload = req.user || req.vendor; 
 
-        // 1. Kiểm tra xem thông tin User đã được gắn chưa
-        if (!req.user) {
-            // Trường hợp userAuth chưa chạy hoặc thất bại
-            return res.status(403).json({
-                message: "Lỗi nội bộ: Không có thông tin người dùng được xác thực.",
+        if (!userPayload || !userPayload.role) {
+            // Lỗi Auth thất bại (401)
+            return res.status(401).json({
+                message: "Không xác thực được vai trò. Vui lòng đăng nhập lại.",
             });
         }
+        
+        const actualRole = userPayload.role.toLowerCase();
 
         // 2. Kiểm tra vai trò
-        if (req.user.role !== requiredRole) {
+        if (!requiredRoles.includes(actualRole)) {
+            // 403 Forbidden: Lỗi phân quyền
             return res.status(403).json({
                 message: "Bạn không có quyền truy cập chức năng này.",
-                required: requiredRole,
-                actual: req.user.role
+                required: requiredRoles.join(', '), 
+                actual: userPayload.role
             });
         }
 
-        // 3. Nếu OK, tiếp tục
         next();
     };
 };
-
-// Tạo middleware cụ thể cho Admin
-export const adminAuth = [
-    requireRole("ADMIN") // Thay "ADMIN" bằng giá trị role thực tế trong DB của bạn
-];
-// (Trong thực tế, nó sẽ được dùng như một mảng: [userAuth, requireRole('ADMIN')])

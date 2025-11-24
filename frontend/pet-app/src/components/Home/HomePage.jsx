@@ -695,9 +695,19 @@ const Footer = () => (
 
 // --- Main App Component ---
 
-const HomePage = () => {
-  const [showLogin, setShowLogin] = useState(false);
+// --- Main App Component ---
 
+const HomePage = () => {
+  // 👇 THÊM DÒNG NÀY VÀO ĐẦU COMPONENT
+  const navigate = useNavigate(); 
+  
+  const [showLogin, setShowLogin] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(null);
+
+  const handleCloseModal = () => {
+    setShowLogin(false);
+    setSelectedRole(null);
+  };
   return (
     <>
       <link
@@ -706,7 +716,7 @@ const HomePage = () => {
       <style>{CSS_STYLES}</style>
 
       <div className="container relative">
-        {/* Header truyền setShowLogin xuống để mở modal */}
+        {/* Header truyền hàm mở modal */}
         <Header onLoginClick={() => setShowLogin(true)} />
 
         <main className="content">
@@ -718,20 +728,79 @@ const HomePage = () => {
 
         <Footer />
 
-        {/* ✅ Modal Login */}
-        {showLogin && (
-          <div
-            // className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
-            onClick={() => setShowLogin(false)} // click ra ngoài để tắt
-          >
-            <div
-              onClick={(e) => e.stopPropagation()} // chặn tắt khi click trong modal
+      
+
+{/* ✅ LOGIC MODAL MỚI */}
+{showLogin && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+    onClick={handleCloseModal}
+  >
+    <div
+      className="bg-white p-6 rounded-2xl shadow-2xl w-[450px] relative animate-fadeIn"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button 
+        onClick={handleCloseModal} 
+        className="absolute top-3 right-3 text-gray-400 hover:text-red-500"
+      >
+        <i className="fa-solid fa-xmark text-xl"></i>
+      </button>
+
+      {!selectedRole ? (
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2 text-[#29a980]">Đăng nhập</h2>
+          <p className="text-gray-500 mb-6">Vui lòng chọn vai trò của bạn</p>
+          
+          <div className="flex gap-4 justify-center">
+            {/* --- NÚT OWNER (Giữ nguyên hiện form tại chỗ) --- */}
+            <button 
+              onClick={() => setSelectedRole('owner')}
+              className="flex flex-col items-center justify-center w-36 h-36 border-2 border-[#29a980] bg-green-50 rounded-xl hover:bg-[#29a980] hover:text-white transition-all duration-300 group"
             >
-              <LoginForm
-                onClose={() => setShowLogin(false)}/>
-            </div>
+              <i className="fa-solid fa-user text-3xl text-[#29a980] mb-2 group-hover:text-white"></i>
+              <span className="font-bold text-lg">Owner</span>
+              <span className="text-xs text-gray-500 group-hover:text-green-100">(Chủ nuôi)</span>
+            </button>
+
+            {/* --- NÚT VENDOR (SỬA LẠI: Chuyển hướng sang /vendor/login) --- */}
+           <button 
+              onClick={() => {
+                setShowLogin(false);
+                navigate('/vendor/login'); // 👉 Bây giờ dòng này mới hoạt động
+              }}
+  className="flex flex-col items-center justify-center w-36 h-36 border-2 border-blue-500 bg-blue-50 rounded-xl hover:bg-blue-500 hover:text-white transition-all duration-300 group"
+>
+  <i className="fa-solid fa-store text-3xl text-blue-500 mb-2 group-hover:text-white"></i>
+  <span className="font-bold text-lg">Vendor</span>
+  <span className="text-xs text-gray-500 group-hover:text-blue-100">(Cửa hàng)</span>
+</button>
           </div>
-        )}
+        </div>
+      ) : (
+        /* TRƯỜNG HỢP 2: Đã chọn Owner -> Hiện Form Đăng Nhập Owner trong Modal */
+        <div>
+           <button 
+             onClick={() => setSelectedRole(null)} 
+             className="mb-4 text-sm text-gray-500 hover:text-[#29a980] flex items-center gap-1"
+           >
+             <i className="fa-solid fa-arrow-left"></i> Chọn lại vai trò
+           </button>
+           
+           <h3 className="text-xl font-bold text-center mb-4">
+              Đăng nhập Owner
+           </h3>
+
+           {/* Form Login cho Owner */}
+           <LoginForm 
+              role="owner" 
+              onClose={handleCloseModal}
+           />
+        </div>
+      )}
+    </div>
+  </div>
+)}
       </div>
     </>
   );

@@ -10,14 +10,14 @@ const VENDOR_API = axios.create({
 
 // Interceptor: Tự động gắn Token
 VENDOR_API.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem("vendorToken");
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => Promise.reject(error)
+    (config) => {
+        const token = localStorage.getItem("vendorToken"); // Đọc từ localStorage
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`; // Gắn Header
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
 );
 
 // --- Auth & Profile ---

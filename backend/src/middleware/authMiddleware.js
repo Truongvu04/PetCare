@@ -1,51 +1,31 @@
-// backend/middleware/authMiddleware.js
+// src/middleware/authMiddleware.js
 import jwt from "jsonwebtoken";
 
 export const verifyToken = (req, res, next) => {
- 
-  if (req.method === "OPTIONS") {
-    return next();
-  }
-
-  const authHeader = req.headers.authorization || req.headers.Authorization;
-  console.log("Incoming auth header:", authHeader);
-
-  if (!authHeader || typeof authHeader !== "string") {
-    return res.status(401).json({ message: "No token provided" });
-  }
-
-  const parts = authHeader.split(" ");
-  if (parts.length !== 2 || parts[0].toLowerCase() !== "bearer") {
-    return res.status(401).json({ message: "Malformed token" });
-  }
-
-  const token = parts[1];
-  if (!token) {
-    return res.status(401).json({ message: "No token provided" });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      console.error("JWT verify error:", err);
-      // 403 nếu token invalid/expired, 401 nếu missing info
-      return res.status(403).json({ message: "Invalid or expired token" });
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ message: "No token provided" });
     }
 
-    const userIdFromPayload = decoded?.user_id || decoded?.id || decoded?.sub || decoded?.uid;
+    const token = authHeader.split(" ")[1];
+    
+    // SỬ DỤNG JWT_SECRET CHUNG cho Owner/Admin
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).json({ message: "Invalid or expired token" }); 
+        }
 
-    req.user = {
-      user_id: userIdFromPayload || null,
-      email: decoded?.email || null,
-      role: decoded?.role || null,
-      raw: decoded, // lưu tạm payload để debug (xóa sau khi production)
-    };
+        // Gắn thông tin cơ bản và vai trò vào req.user
+        req.user = {
+            user_id: decoded.user_id,
+            role: decoded.role, 
+            email: decoded.email,
+        };
+        
+        if (!req.user.user_id) {
+            return res.status(401).json({ message: "Unauthorized: Missing user ID in token" });
+        }
 
-    if (!req.user.user_id) {
-      console.warn("Token verified but no user_id found in payload. Payload:", decoded);
-      return res.status(401).json({ message: "Unauthorized: Missing user ID in token" });
-    }
-
-    console.log("✅ Token verified. User:", { user_id: req.user.user_id, email: req.user.email, role: req.user.role });
-    next();
-  });
+        next();
+    });
 };
