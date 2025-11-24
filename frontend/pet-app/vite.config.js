@@ -1,3 +1,4 @@
+// vite.config.js
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -5,8 +6,18 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: 'localhost', // Use localhost instead
-    port: 3000, // Try different port
-    strictPort: false, // Allow fallback to other ports
+    host: 'localhost',
+    port: 3000,
+    strictPort: false,
+    proxy: {
+      // chuyển /api -> http://localhost:5000
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api'),
+      },
+    },
   },
 })
