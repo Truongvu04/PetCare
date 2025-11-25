@@ -86,13 +86,6 @@ const Checkout = () => {
           // handle missing url
           alert("Không thể tạo URL thanh toán. Vui lòng thử lại.");
         }
-      }else if (orderPayload.payment_method === "zalopay") {
-         const payResp = await api.post("/payments/zalopay/create", { orderId });
-         const paymentUrl = payResp.data.paymentUrl;
-         if (paymentUrl) {
-           window.location.href = paymentUrl; // Redirect sang ZaloPay Gateway
-           return;
-         }
       }
 
       console.log("Order created successfully:", orderResp.data);
@@ -187,19 +180,6 @@ const Checkout = () => {
                   />
                   <span className="ml-2">VNPay (online)</span>
                 </label>
-
-                <label className="inline-flex items-center mt-2">
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="zalopay"
-                    checked={paymentMethod === 'zalopay'}
-                    onChange={() => setPaymentMethod('zalopay')}
-                    className="form-radio"
-                  />
-                  <span className="ml-2">Ví ZaloPay / QR Code</span>
-                </label>
-                
                 <label className="inline-flex items-center mt-2">
                   <input
                     type="radio"
