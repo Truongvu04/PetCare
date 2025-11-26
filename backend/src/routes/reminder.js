@@ -3,15 +3,26 @@ import { Prisma } from '@prisma/client';
 import { verifyToken } from '../middleware/authMiddleware.js';
 import { prisma } from '../config/prisma.js'; // <--- THÊM DÒNG NÀY ĐỂ FIX LỖI CRASH
 
-const ReminderTypeEnum = Prisma.ReminderType || Prisma.RemindersType || {};
-const ReminderFrequencyEnum = Prisma.ReminderFrequency || Prisma.ReminderFrequencies || {};
-const ReminderStatusEnum = Prisma.ReminderStatus || Prisma.ReminderStatuses || {};
+let ReminderTypeEnum = Prisma.ReminderType || Prisma.RemindersType || {};
+let ReminderFrequencyEnum = Prisma.ReminderFrequency || Prisma.ReminderFrequencies || {};
+let ReminderStatusEnum = Prisma.ReminderStatus || Prisma.ReminderStatuses || {};
 
 const router = express.Router();
 
-const ALLOWED_FREQUENCIES = Object.values(ReminderFrequencyEnum);
-const ALLOWED_TYPES = Object.values(ReminderTypeEnum);
-const ALLOWED_STATUS = Object.values(ReminderStatusEnum);
+let ALLOWED_FREQUENCIES = Object.values(ReminderFrequencyEnum || {});
+let ALLOWED_TYPES = Object.values(ReminderTypeEnum || {});
+let ALLOWED_STATUS = Object.values(ReminderStatusEnum || {});
+
+// Fallbacks when Prisma enums are not available at runtime
+if (!Array.isArray(ALLOWED_TYPES) || ALLOWED_TYPES.length === 0) {
+    ALLOWED_TYPES = ['vaccination', 'vet_visit', 'checkup', 'feeding', 'grooming', 'medication', 'other'];
+}
+if (!Array.isArray(ALLOWED_FREQUENCIES) || ALLOWED_FREQUENCIES.length === 0) {
+    ALLOWED_FREQUENCIES = ['none', 'daily', 'weekly', 'monthly', 'yearly'];
+}
+if (!Array.isArray(ALLOWED_STATUS) || ALLOWED_STATUS.length === 0) {
+    ALLOWED_STATUS = ['pending', 'success', 'fail', 'cancelled'];
+}
 const VIETNAM_OFFSET_HOURS = 7;
 
 // 3. HELPERS 
@@ -187,6 +198,7 @@ router.post('/', verifyToken, async (req, res) => {
             }
         }
 
+        /** @type {import('@prisma/client').ReminderFrequency} */
         const validatedFrequency = frequency;
 
         const newReminder = await prisma.reminder.create({
@@ -197,7 +209,7 @@ router.post('/', verifyToken, async (req, res) => {
                 feeding_time: feedingTimeObj,
                 reminder_date: finalReminderDate,
                 frequency: validatedFrequency, 
-                status: ReminderStatusEnum.pending, // Sử dụng Enum đã khai báo
+                status: 'pending', // use literal string to avoid enum runtime issues
                 end_date: validEndDate,
                 is_read: false, 
                 is_instance: false,
@@ -228,7 +240,7 @@ router.get('/', verifyToken, async (req, res) => {
         const allReminders = await prisma.reminder.findMany({
             where: {
                 pet: { user_id },
-                status: ReminderStatusEnum.pending 
+                status: 'pending' 
             },
             include: { pet: { select: { name: true } } },
             orderBy: [
@@ -334,6 +346,7 @@ router.put('/:reminderId', verifyToken, async (req, res) => {
         }
         if (frequency !== undefined) {
             if (!ALLOWED_FREQUENCIES.includes(frequency)) { return res.status(400).json({ error: 'Invalid frequency' }); }
+            /** @type {import('@prisma/client').ReminderFrequency} */
             const validatedFreqUpdate = frequency;
             dataToUpdate.frequency = validatedFreqUpdate;
         }
@@ -396,7 +409,7 @@ router.put('/mark-read/today', verifyToken, async (req, res) => {
             where: {
                 pet: { user_id }, 
                 is_read: false,
-                status: ReminderStatusEnum.pending, 
+                status: 'pending', 
                 OR: [
                     { reminder_date: todayUTC },
                     { created_at: { gte: todayUTC, lt: tomorrowUTC } }
