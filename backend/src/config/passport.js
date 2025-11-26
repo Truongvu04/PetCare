@@ -9,14 +9,13 @@ passport.serializeUser((user, done) => done(null, user.user_id));
 
 passport.deserializeUser(async (id, done) => {
     try {
-        const user = await prisma.user.findUnique({ where: { user_id: id } });
+        const user = await prisma.users.findUnique({ where: { user_id: id } });
         done(null, user);
     } catch (err) {
         done(err, null);
     }
 });
 
-// --- GOOGLE OAUTH ---
 passport.use(
     new GoogleStrategy(
         {
@@ -29,14 +28,14 @@ passport.use(
                 const googleId = profile.id;
                 const email = profile.emails?.[0]?.value;
 
-                let user = await prisma.user.findUnique({ where: { googleId } });
+                let user = await prisma.users.findUnique({ where: { googleId } });
 
                 if (!user && email) {
-                    user = await prisma.user.findUnique({ where: { email } });
+                    user = await prisma.users.findUnique({ where: { email } });
                 }
 
                 if (!user) {
-                    user = await prisma.user.create({
+                    user = await prisma.users.create({
                         data: {
                             full_name: profile.displayName || email || "Google User",
                             email,
@@ -45,7 +44,7 @@ passport.use(
                         },
                     });
                 } else if (!user.googleId) {
-                    user = await prisma.user.update({
+                    user = await prisma.users.update({
                         where: { user_id: user.user_id },
                         data: { googleId },
                     });
@@ -60,7 +59,6 @@ passport.use(
     )
 );
 
-// --- FACEBOOK OAUTH ---
 passport.use(
     new FacebookStrategy(
         {
@@ -74,17 +72,14 @@ passport.use(
                 const facebookId = profile.id;
                 const email = profile.emails?.[0]?.value;
 
-                // 🔍 Tìm user theo facebookId
-                let user = await prisma.user.findUnique({ where: { facebookId } });
+                let user = await prisma.users.findUnique({ where: { facebookId } });
 
-                // Nếu chưa có, thử theo email
                 if (!user && email) {
-                    user = await prisma.user.findUnique({ where: { email } });
+                    user = await prisma.users.findUnique({ where: { email } });
                 }
 
-                // Nếu chưa có -> tạo mới
                 if (!user) {
-                    user = await prisma.user.create({
+                    user = await prisma.users.create({
                         data: {
                             full_name: profile.displayName || email || "Facebook User",
                             email,
@@ -92,10 +87,8 @@ passport.use(
                             password_hash: null,
                         },
                     });
-                }
-                // Nếu có user nhưng chưa lưu facebookId → cập nhật
-                else if (!user.facebookId) {
-                    user = await prisma.user.update({
+                } else if (!user.facebookId) {
+                    user = await prisma.users.update({
                         where: { user_id: user.user_id },
                         data: { facebookId },
                     });

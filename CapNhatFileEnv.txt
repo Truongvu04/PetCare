@@ -1,0 +1,16 @@
+# VNPAY Config (Sandbox)
+VNPAY_TMN_CODE=HJR6PDSA
+VNPAY_SECRET=AJ10KL7XVQA2P0G35VN913RUAQEE0IHU
+VNPAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+#VNPAY_RETURN_URL=http://localhost:5000/api/payments/vnpay_return khong dung localhost duoc vi vnpay kong truy cap dc localhost dung ngrok hoac devtunnel de public url
+#VNPAY_RETURN_URL=https://vxjkwd6z-5000.asse.devtunnels.ms/api/payments/vnpay_return
+VNPAY_RETURN_URL=https://1e89be571856.ngrok-free.app/api/payments/vnpay_return #luu y: moi lan chay lai ngrok thi phai thay doi url moi doan nay "https://c70aece0fdde.ngrok-free.app"  /api/payments/vnpay_return
+
+#lenh chay ngrok: ngrok http 5000 
+
+#thong tin the ngan hang de chay demo vnpay
+#Ngân hàng	NCB
+#Số thẻ	9704198526191432198
+#Tên chủ thẻ	NGUYEN VAN A
+#Ngày phát hành	07/15
+#Mật khẩu OTP	123456
