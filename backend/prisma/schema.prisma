@@ -28,21 +28,21 @@ model Pet {
 }
 
 model Reminder {
-  reminder_id      String             @id @default(cuid()) @db.Char(25)
-  pet_id           String             @db.Char(12)
+  reminder_id      String            @id @default(cuid()) @db.Char(25)
+  pet_id           String            @db.Char(12)
   type             RemindersType
-  vaccination_type String?            @db.VarChar(255)
-  feeding_time     DateTime?          @db.Time(0)
-  reminder_date    DateTime           @db.Date
-  frequency        ReminderFrequency? @default(none)
-  status           ReminderStatus?    @default(pending)
-  is_read          Boolean?           @default(false)
-  is_instance      Boolean?           @default(false)
-  email_sent       Boolean?           @default(false)
-  created_at       DateTime?          @default(now()) @db.Timestamp(6)
-  updated_at       DateTime?          @default(now()) @updatedAt @db.Timestamp(6)
-  end_date         DateTime?          @db.Date
-  pet              Pet                @relation(fields: [pet_id], references: [id], onDelete: Cascade, map: "reminders_ibfk_1")
+  vaccination_type String?           @db.VarChar(255)
+  feeding_time     DateTime?         @db.Time(0)
+  reminder_date    DateTime          @db.Date
+  frequency        ReminderFrequency @default(none)
+  status           ReminderStatus    @default(pending)
+  is_read          Boolean           @default(false)
+  is_instance      Boolean           @default(false)
+  email_sent       Boolean           @default(false)
+  created_at       DateTime          @default(now()) @db.Timestamp(6)
+  updated_at       DateTime          @default(now()) @updatedAt @db.Timestamp(6)
+  end_date         DateTime?         @db.Date
+  pet              Pet               @relation(fields: [pet_id], references: [id], onDelete: Cascade, map: "reminders_ibfk_1")
 
   @@index([created_at], map: "idx_reminders_created_at")
   @@index([end_date], map: "idx_reminders_end_date")
@@ -171,19 +171,8 @@ model products {
   vendors        vendors          @relation(fields: [vendor_id], references: [vendor_id], onDelete: Cascade)
   reviews        reviews[]
 
-<<<<<<< HEAD
-  type             reminders_type
-  vaccination_type String?
-  feeding_time     DateTime? @db.Time // Dùng DateTime + @db.Time cho kiểu TIME
-  reminder_date    DateTime  @db.Date // Dùng DateTime + @db.Date cho kiểu DATE
-  frequency        ReminderFrequency @default(none)
-  status           ReminderStatus    @default(pending)
-  is_read          Boolean           @default(false)
-  end_date         DateTime?         @db.Date // Ngày kết thúc lặp lại
-=======
   @@index([vendor_id], map: "products_vendor_id_fkey")
 }
->>>>>>> feat/Duy/Sprint2
 
 model reviews {
   review_id  Int       @id @default(autoincrement())
@@ -311,11 +300,7 @@ enum ReminderStatus {
   done
 }
 
-<<<<<<< HEAD
-enum reminders_type {
-=======
 enum RemindersType {
->>>>>>> feat/Duy/Sprint2
   vaccination
   vet_visit
   feeding

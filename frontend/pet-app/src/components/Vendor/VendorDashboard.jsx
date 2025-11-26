@@ -1,0 +1,240 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+    apiGetDashboardStats,
+    apiGetVendorOrders,
+    apiGetVendorProfile,
+    apiGetNotifications,
+    apiGetRevenueChart
+} from '../../api/vendorApi';
+import { Package, ShoppingCart, DollarSign, Bell } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+// Helper: Định dạng tiền tệ VND
+const formatCurrency = (amount) => {
+    const numericAmount = parseFloat(amount || 0);
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(numericAmount);
+};
+
+const StatCard = ({ title, value, icon: Icon, colorClass }) => (
+    <div className="p-6 bg-white border border-gray-100 rounded-xl shadow-sm flex items-center justify-between">
+        <div>
+            <p className="text-sm font-medium text-gray-500">{title}</p>
+            <p className="mt-2 text-3xl font-bold text-gray-800">{value}</p>
+        </div>
+        <div className={`p-3 rounded-full ${colorClass}`}>
+            <Icon className="w-6 h-6 text-white" />
+        </div>
+    </div>
+);
+
+const renderStatus = (status) => {
+    let classes = 'bg-gray-100 text-gray-700';
+    let label = status || 'Chờ xác nhận';
+    if (status === 'shipped') { classes = 'bg-blue-100 text-blue-700'; label = 'Đang giao'; }
+    else if (status === 'delivered') { classes = 'bg-green-100 text-green-700'; label = 'Giao thành công'; }
+    else if (status === 'processing') { classes = 'bg-yellow-100 text-yellow-700'; label = 'Đang xử lý'; }
+    else if (status === 'cancelled') { classes = 'bg-red-100 text-red-700'; label = 'Đã hủy'; }
+    else if (status === 'paid') { classes = 'bg-green-100 text-green-700'; label = 'Đã thanh toán'; }
+    else if (status === 'pending') { classes = 'bg-yellow-100 text-yellow-700'; label = 'Chờ xử lý'; }
+    return <span className={`px-3 py-1 text-xs font-medium rounded-full ${classes}`}>{label}</span>;
+};
+
+const CustomTooltip = ({ active, payload, label, formatCurrency }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg">
+                <p className="text-sm font-semibold">{`Ngày: ${label}`}</p>
+                <p className="text-sm text-green-600">{`Doanh thu: ${formatCurrency(payload[0].value)}`}</p>
+            </div>
+        );
+    }
+    return null;
+};
+
+const VendorDashboard = () => {
+    const [stats, setStats] = useState({ productCount: 0, newOrders: 0, totalRevenue: 0 });
+    const [orders, setOrders] = useState([]);
+    const [vendorName, setVendorName] = useState('Vendor');
+    const [notifications, setNotifications] = useState([]);
+    const [chartData, setChartData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const storedVendor = localStorage.getItem('vendor');
+        if (storedVendor) {
+            try {
+                const parsedData = JSON.parse(storedVendor);
+                const nameToShow = parsedData.shopName || parsedData.store_name || parsedData.full_name || parsedData.email;
+                if (nameToShow) setVendorName(nameToShow);
+            } catch (err) {
+                console.error("Lỗi đọc LocalStorage:", err);
+            }
+        }
+
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                console.log("🚀 Bắt đầu gọi API Dashboard..."); // LOG 1
+
+                const [statsRes, ordersRes, profileRes, chartRes] = await Promise.all([
+                    apiGetDashboardStats().catch(err => ({ data: null })),
+                    apiGetVendorOrders().catch(err => ({ data: [] })),
+                    apiGetVendorProfile().catch(err => ({ data: {} })),
+                    apiGetRevenueChart().catch((err) => {
+                        console.error("❌ Lỗi API Biểu đồ:", err.message);
+                        return { data: [] };
+                    })
+                ]);
+
+                // --- DEBUG QUAN TRỌNG: Kiểm tra dữ liệu biểu đồ ---
+                console.log("📊 Dữ liệu Biểu đồ nhận được:", chartRes.data);
+                
+                if (Array.isArray(chartRes.data) && chartRes.data.length > 0) {
+                    console.log("✅ Có dữ liệu để vẽ!");
+                    setChartData(chartRes.data);
+                } else {
+                    console.log("⚠️ Dữ liệu biểu đồ RỖNG hoặc KHÔNG PHẢI MẢNG.");
+                    setChartData([]); 
+                }
+                // -------------------------------------------------
+
+                if (statsRes.data) {
+                    setStats({
+                        productCount: statsRes.data.productCount || 0,
+                        newOrders: statsRes.data.newOrders || 0,
+                        totalRevenue: Number(statsRes.data.totalRevenue || 0),
+                    });
+                }
+
+                setOrders(Array.isArray(ordersRes.data) ? ordersRes.data.slice(0, 5) : []);
+
+                const profile = profileRes.data;
+                if (profile) {
+                    const apiName = profile.store_name || profile.shopName || profile.full_name || profile.name;
+                    if (apiName) setVendorName(apiName);
+                }
+
+                try {
+                    const notifRes = await apiGetNotifications();
+                    setNotifications(Array.isArray(notifRes.data) ? notifRes.data : []);
+                } catch (error) {
+                    setNotifications([]);
+                }
+
+            } catch (err) {
+                console.error("Lỗi tải dữ liệu chính Dashboard:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [navigate]);
+
+    if (loading) return <div className="p-10 text-center text-gray-600 font-medium">Đang tải dữ liệu...</div>;
+
+    return (
+        <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+            {/* Header */}
+            <div className="flex justify-between items-end mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+                    <p className="mt-1 text-gray-600">Xin chào, <span className="font-semibold text-green-600">{vendorName}</span></p>
+                </div>
+                <button onClick={() => navigate('/vendor/notifications')} className="relative p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 transition">
+                    <Bell className="w-6 h-6 text-gray-600" />
+                    {notifications.length > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>}
+                </button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+                <StatCard title="Tổng sản phẩm" value={stats.productCount} icon={Package} colorClass="bg-blue-500" />
+                <StatCard title="Tổng đơn hàng" value={stats.newOrders} icon={ShoppingCart} colorClass="bg-yellow-500" />
+                <StatCard title="Doanh thu" value={formatCurrency(stats.totalRevenue)} icon={DollarSign} colorClass="bg-green-500" />
+            </div>
+
+            {/* Orders & Notifications */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <div className="lg:col-span-2">
+                    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden h-full">
+                        <div className="px-6 py-4 border-b border-gray-100 font-semibold text-gray-800">Đơn hàng mới nhất</div>
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase text-left">Mã</th>
+                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase text-left">Trạng thái</th>
+                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase text-right">Tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {orders.length === 0 ? (
+                                    <tr><td colSpan="3" className="p-4 text-center text-gray-500">Chưa có đơn hàng</td></tr>
+                                ) : (
+                                    orders.map(order => (
+                                        <tr key={order.order_id} onClick={() => navigate(`/vendor/orders/${order.order_id}`)} className="hover:bg-gray-50 cursor-pointer">
+                                            <td className="px-6 py-4 text-sm text-gray-700">#{order.order_id}</td>
+                                            <td className="px-6 py-4">{renderStatus(order.status)}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-700 text-right">{formatCurrency(order.total)}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div className="lg:col-span-1">
+                    <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 min-h-[200px]">
+                        <h3 className="font-semibold text-gray-800 mb-4">Thông báo</h3>
+                        <div className="space-y-4">
+                            {notifications.length === 0 ? <p className="text-sm text-gray-400 text-center py-4">Không có thông báo mới</p> : notifications.slice(0, 5).map((notif, index) => (
+                                <div key={index} className="flex gap-3 pb-3 border-b border-gray-50 last:border-0">
+                                    <div className="w-2 h-2 mt-1.5 rounded-full bg-blue-500 shrink-0"></div>
+                                    <p className="text-sm text-gray-600">{notif.message || notif.content || 'Thông báo mới'}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr className="my-8 border-gray-200" />
+
+            {/* Chart */}
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+                <div className="mb-6">
+                    <h3 className="text-lg font-bold text-gray-800">Biểu đồ doanh thu (7 Ngày)</h3>
+                    <p className="text-sm text-gray-500">Theo dõi xu hướng doanh thu gần nhất</p>
+                </div>
+                <div className="h-[300px] w-full">
+                    {chartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.2} />
+                                        <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} dy={10} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} tickFormatter={(value) => `${formatCurrency(value)}`.split('₫')[0].trim()} />
+                                <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
+                                <Area type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                            <DollarSign className="w-10 h-10 mb-2 opacity-50" />
+                            <p>Chưa có dữ liệu doanh thu để hiển thị</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default VendorDashboard;

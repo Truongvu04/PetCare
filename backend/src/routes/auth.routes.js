@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { sendOTPEmail } from "../utils/sendEmail.js";
-
+import { registerUser, loginUser } from '../controllers/userController.js';
 const router = express.Router();
 const prisma = new PrismaClient();
 
@@ -190,5 +190,8 @@ router.post("/logout", (req, res) => {
   console.log("🚪 User logged out");
   res.json({ message: "Logged out successfully" });
 });
+//
+router.post('/register', registerUser);
 
 export default router;
+
