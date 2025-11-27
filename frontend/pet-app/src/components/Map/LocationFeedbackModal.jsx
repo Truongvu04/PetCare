@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { showSuccess, showError, showWarning } from '../../utils/notifications';
 
 const LocationFeedbackModal = ({ 
   isOpen, 
@@ -15,7 +16,7 @@ const LocationFeedbackModal = ({
     e.preventDefault();
     
     if (!description.trim()) {
-      alert('Vui lòng mô tả vấn đề');
+      showWarning("Thiếu thông tin", "Vui lòng mô tả vấn đề");
       return;
     }
 
@@ -42,11 +43,11 @@ const LocationFeedbackModal = ({
       setCorrectAddress('');
       setFeedbackType('incorrect_location');
       
-      alert('Cảm ơn bạn đã báo cáo! Chúng tôi sẽ xem xét và cập nhật thông tin.');
+      showSuccess("Thành công", "Cảm ơn bạn đã báo cáo! Chúng tôi sẽ xem xét và cập nhật thông tin.");
       onClose();
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      alert('Có lỗi xảy ra khi gửi báo cáo. Vui lòng thử lại.');
+      showError("Lỗi", "Có lỗi xảy ra khi gửi báo cáo. Vui lòng thử lại.");
     } finally {
       setIsSubmitting(false);
     }

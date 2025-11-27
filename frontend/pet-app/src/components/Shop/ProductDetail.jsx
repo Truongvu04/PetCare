@@ -4,6 +4,7 @@ import { Star, ShoppingCart, ArrowLeft } from "lucide-react";
 import api from "../../api/axiosConfig.js";
 import { useCart } from "./CartContext.jsx";
 import CartIcon from "./CartIcon.jsx";
+import { showWarning, showToast } from "../../utils/notifications";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -12,7 +13,6 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -169,10 +169,9 @@ const ProductDetail = () => {
             onClick={() => {
               if (product.stock > 0) {
                 addToCart(product);
-                setShowToast(true);
-                setTimeout(() => setShowToast(false), 3000);
+                showToast("Đã thêm vào giỏ hàng!", "success");
               } else {
-                alert("Sản phẩm đã hết hàng!");
+                showWarning("Hết hàng", "Sản phẩm đã hết hàng!");
               }
             }}
             disabled={product.stock === 0}
@@ -187,20 +186,6 @@ const ProductDetail = () => {
         </div>
       </div>
 
-      {/* Toast Notification */}
-      {showToast && (
-        <div className="fixed bottom-8 right-8 bg-gray-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-bounce-in z-50">
-          <div className="bg-green-500 rounded-full p-1">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div>
-            <h4 className="font-semibold text-sm">Success</h4>
-            <p className="text-sm text-gray-300">Added to cart successfully!</p>
-          </div>
-        </div>
-      )}
 
       {/* Reviews Section */}
       <div className="bg-white rounded-lg shadow-sm p-6">

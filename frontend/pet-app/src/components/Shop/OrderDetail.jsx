@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../api/axiosConfig.js";
+import { useAuth } from "../../hooks/useAuth.js";
+import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
+import { Mail, Phone, User, MessageCircle } from "lucide-react";
+import { showSuccess, showError } from "../../utils/notifications";
 
 const OrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -13,16 +18,15 @@ const OrderDetail = () => {
     try {
       await api.patch(`/orders/${order.order_id}/cancel`);
       // Refresh order details
-      const response = await api.get("/orders/my-orders");
-      const foundOrder = response.data.find((o) => o.order_id === parseInt(id));
-      if (foundOrder) setOrder(foundOrder);
+      const response = await api.get(`/orders/${id}`);
+      setOrder(response.data);
       setShowCancelModal(false);
-      // Optional: Show a success toast here if you have a toast system
+      showSuccess("Thành công", "Đơn hàng đã được hủy thành công!");
     } catch (error) {
       console.error("Error cancelling order:", error);
       const status = error.response?.status;
-      const message = error.response?.data?.message || "Failed to cancel order";
-      alert(`Error ${status || 'Unknown'}: ${message}`);
+      const message = error.response?.data?.message || "Không thể hủy đơn hàng";
+      showError("Lỗi", `Lỗi ${status || 'Unknown'}: ${message}`);
       setShowCancelModal(false);
     }
   };
@@ -30,13 +34,13 @@ const OrderDetail = () => {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const response = await api.get(`/orders/my-orders`);
-        const foundOrder = response.data.find((o) => o.order_id === parseInt(id));
-        if (foundOrder) {
-          setOrder(foundOrder);
-        }
+        const response = await api.get(`/orders/${id}`);
+        setOrder(response.data);
       } catch (error) {
         console.error("Error fetching order:", error);
+        if (error.response?.status === 404) {
+          // Order not found - will be handled in render
+        }
       } finally {
         setLoading(false);
       }
@@ -45,15 +49,38 @@ const OrderDetail = () => {
   }, [id]);
 
   if (loading) {
-    return <div className="max-w-4xl mx-auto p-8">Loading...</div>;
+    return (
+      <CustomerLayout currentPage="orders">
+        <div className="max-w-4xl mx-auto p-8 flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading order details...</p>
+          </div>
+        </div>
+      </CustomerLayout>
+    );
   }
 
   if (!order) {
-    return <div className="max-w-4xl mx-auto p-8">Order not found</div>;
+    return (
+      <CustomerLayout currentPage="orders">
+        <div className="max-w-4xl mx-auto p-8">
+          <div className="text-center py-12">
+            <p className="text-gray-600 mb-4">Order not found</p>
+            <button
+              onClick={() => navigate("/orders")}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+              Back to Orders
+            </button>
+          </div>
+        </div>
+      </CustomerLayout>
+    );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-8">
+    <CustomerLayout currentPage="orders">
+      <div className="max-w-4xl mx-auto p-8">
       <h1 className="text-2xl font-bold mb-6">Order Details</h1>
 
       {/* Order Summary Section */}
@@ -159,20 +186,70 @@ const OrderDetail = () => {
         </div>
       </div>
 
+      {/* Contact Information Section */}
+      {user && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Contact Information</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
+            <div className="border-b border-gray-100 pb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <User className="text-green-600" size={18} />
+                <p className="text-sm font-medium text-green-700 uppercase tracking-wide">Name</p>
+              </div>
+              <p className="text-lg font-semibold text-gray-900">
+                {user.full_name || user.name || "Not provided"}
+              </p>
+            </div>
+            <div className="border-b border-gray-100 pb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Mail className="text-green-600" size={18} />
+                <p className="text-sm font-medium text-green-700 uppercase tracking-wide">Email</p>
+              </div>
+              <p className="text-lg font-semibold text-gray-900">
+                {user.email || "Not provided"}
+              </p>
+            </div>
+            {user.phone && (
+              <div className="border-b border-gray-100 pb-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Phone className="text-green-600" size={18} />
+                  <p className="text-sm font-medium text-green-700 uppercase tracking-wide">Phone</p>
+                </div>
+                <p className="text-lg font-semibold text-gray-900">
+                  {user.phone}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="justify-end mt-6 flex gap-4">
         <button
           onClick={() => navigate("/orders")}
-          className="px-6 py-2 bg-green-200 text-green-600 border border-green-400 rounded-lg hover:bg-green-100">
+          className="px-6 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors font-medium">
           Back to Orders
         </button>
 
         {order.status === 'pending' && (
           <button
             onClick={() => setShowCancelModal(true)}
-            className="px-6 py-2 bg-red-200 text-red-600 border border-red-400 rounded-lg hover:bg-red-100">
+            className="px-6 py-2 bg-red-600 text-white border border-red-600 rounded-lg hover:bg-red-700 transition-colors font-medium">
             Cancel Order
           </button>
         )}
+
+        <button
+          onClick={() => {
+            // Contact Support functionality - can be implemented later
+            const subject = encodeURIComponent(`Order #${order.order_id} - Support Request`);
+            const body = encodeURIComponent(`I need help with order #${order.order_id}`);
+            window.location.href = `mailto:support@petcare.com?subject=${subject}&body=${body}`;
+          }}
+          className="px-6 py-2 bg-green-600 text-white border border-green-600 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2">
+          <MessageCircle size={18} />
+          Contact Support
+        </button>
       </div>
 
       {/* Cancel Confirmation Modal */}
@@ -209,7 +286,8 @@ const OrderDetail = () => {
           </div>
         )
       }
-    </div >
+      </div>
+    </CustomerLayout>
   );
 };
 

@@ -1,9 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { apiGetVendorOrders, apiUpdateOrderStatus } from '../../api/vendorApi';
 import { Package, Layers, Search, Calendar, Loader2, Eye, X, Filter } from 'lucide-react';
+import { showSuccess, showError, showConfirm } from '../../utils/notifications';
 
 // --- Helper: Format Tiền ---
 const formatVND = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+
+// --- Helper: Lấy URL ảnh sản phẩm (đảm bảo consistency) ---
+const getProductImageUrl = (product) => {
+    if (!product) {
+        console.warn("⚠️ getProductImageUrl: product is null/undefined");
+        return null;
+    }
+    
+    // Debug: Log product structure
+    if (!product.product_images || product.product_images.length === 0) {
+        console.warn("⚠️ getProductImageUrl: No product_images found for product:", {
+            product_id: product.product_id,
+            product_name: product.name,
+            hasProductImages: !!product.product_images,
+            productImagesLength: product.product_images?.length || 0,
+            productKeys: Object.keys(product)
+        });
+        return null;
+    }
+    
+    // Ưu tiên thumbnail (is_thumbnail = true)
+    const thumbnail = product.product_images?.find(img => img.is_thumbnail === true || img.is_thumbnail === 1);
+    if (thumbnail?.image_url) {
+        const url = thumbnail.image_url.startsWith('http') 
+            ? thumbnail.image_url 
+            : `http://localhost:5000${thumbnail.image_url}`;
+        console.log("✅ getProductImageUrl: Using thumbnail:", url);
+        return url;
+    }
+    
+    // Nếu không có thumbnail, lấy ảnh đầu tiên
+    const firstImage = product.product_images?.[0]?.image_url;
+    if (firstImage) {
+        const url = firstImage.startsWith('http') 
+            ? firstImage 
+            : `http://localhost:5000${firstImage}`;
+        console.log("✅ getProductImageUrl: Using first image:", url);
+        return url;
+    }
+    
+    console.warn("⚠️ getProductImageUrl: No valid image URL found");
+    return null;
+};
 
 // --- Helper: Badge Trạng Thái ---
 const renderStatus = (status) => {
@@ -91,24 +135,54 @@ const OrderDetailModal = ({ order, onClose }) => {
                         <Layers size={18}/> Sản phẩm ({order.order_items?.length || 0})
                     </h4>
                     <div className="space-y-3">
-                        {order.order_items?.map((item, idx) => (
-                            <div key={idx} className="flex justify-between items-center p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 bg-gray-100 rounded-md flex items-center justify-center text-xs text-gray-400 border border-gray-200 overflow-hidden">
-                                        {/* Nếu có ảnh sản phẩm thì hiện ở đây, tạm thời hiện text */}
-                                        IMG
+                        {order.order_items?.map((item, idx) => {
+                            // Debug: Log structure để kiểm tra
+                            if (idx === 0) {
+                                console.log("🔍 OrderDetailModal - First item structure:", {
+                                    item,
+                                    hasProducts: !!item.products,
+                                    hasProduct: !!item.product,
+                                    productImages: item.products?.product_images,
+                                    productKeys: item.products ? Object.keys(item.products) : [],
+                                    itemKeys: Object.keys(item)
+                                });
+                            }
+                            
+                            // Try both 'products' (plural) and 'product' (singular) for compatibility
+                            const product = item.products || item.product;
+                            const imageUrl = getProductImageUrl(product);
+                            
+                            return (
+                                <div key={idx} className="flex justify-between items-center p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden border border-gray-200 flex-shrink-0">
+                                            {imageUrl ? (
+                                                <img
+                                                    src={imageUrl}
+                                                    alt={product?.name || "Product"}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        console.error("❌ Image load error:", imageUrl, e);
+                                                        e.target.style.display = 'none';
+                                                        e.target.parentElement.innerHTML = '<span class="text-xs text-gray-400">IMG</span>';
+                                                    }}
+                                                />
+                                            ) : (
+                                                <span className="text-xs text-gray-400">IMG</span>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-gray-800 text-sm">{product?.name || "Sản phẩm đã xóa"}</p>
+                                            <p className="text-xs text-gray-500">Đơn giá: {formatVND(item.price)}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-medium text-gray-800 text-sm">{item.product?.name || "Sản phẩm đã xóa"}</p>
-                                        <p className="text-xs text-gray-500">Đơn giá: {formatVND(item.price)}</p>
+                                    <div className="text-right">
+                                        <p className="text-sm font-bold">x{item.quantity}</p>
+                                        <p className="text-sm text-green-600 font-medium">{formatVND(item.price * item.quantity)}</p>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-sm font-bold">x{item.quantity}</p>
-                                    <p className="text-sm text-green-600 font-medium">{formatVND(item.price * item.quantity)}</p>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -149,7 +223,11 @@ const OrderManagement = () => {
     // Xử lý cập nhật trạng thái
     const handleStatusUpdate = async (orderId, newStatus) => {
         // Xác nhận trước khi đổi (tránh bấm nhầm)
-        if(!window.confirm(`Bạn có chắc muốn chuyển trạng thái đơn hàng #${orderId} sang "${newStatus}"?`)) return;
+        const result = await showConfirm(
+            "Cập nhật trạng thái",
+            `Bạn có chắc muốn chuyển trạng thái đơn hàng #${orderId} sang "${newStatus}"?`
+        );
+        if (!result.isConfirmed) return;
 
         try {
             // Optimistic Update: Cập nhật giao diện ngay lập tức cho mượt
@@ -157,8 +235,9 @@ const OrderManagement = () => {
             
             // Gọi API cập nhật thật trong DB
             await apiUpdateOrderStatus(orderId, newStatus);
+            showSuccess("Thành công", `Đã cập nhật trạng thái đơn hàng #${orderId} thành công!`);
         } catch (err) {
-            alert("Lỗi cập nhật: " + (err.response?.data?.message || err.message));
+            showError("Lỗi", "Lỗi cập nhật: " + (err.response?.data?.message || err.message));
             fetchOrders(); // Nếu lỗi thì tải lại dữ liệu cũ
         }
     };

@@ -1,21 +1,110 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "./CartContext.jsx";
-import { Trash2, Plus, Minus, ArrowLeft, ShoppingBag, ShieldCheck, CreditCard, CheckCircle } from "lucide-react";
+import { Trash2, Plus, Minus, ArrowLeft, ShoppingBag, ShieldCheck, CreditCard, CheckCircle, X } from "lucide-react";
 import CartIcon from "./CartIcon.jsx";
+import api from "../../api/axiosConfig.js";
+import { showSuccess, showError, showWarning } from "../../utils/notifications";
 
 const Cart = () => {
   const navigate = useNavigate();
   const { cartItems, removeFromCart, updateQuantity, getTotal, clearCart } = useCart();
 
+  // Coupon state
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+
   // getTotal() already returns price in smallest unit
   const subtotalRaw = getTotal();
   const subtotal = subtotalRaw / 1000; // Convert to dollars for display
-  const tax = subtotalRaw * 0.1; // Tax in smallest unit
-  const shipping = subtotalRaw > 100000 ? 0 : 30000; // Shipping in smallest unit
-  const total = subtotalRaw + tax + shipping; // Total in smallest unit
+  
+  // Calculate discount if coupon is applied
+  let discountAmount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.discount_percent) {
+      discountAmount = (subtotalRaw * appliedCoupon.discount_percent) / 100;
+    } else if (appliedCoupon.discount_amount) {
+      discountAmount = appliedCoupon.discount_amount * 1000; // Convert to smallest unit
+    }
+  }
+  
+  const subtotalAfterDiscount = subtotalRaw - discountAmount;
+  const tax = subtotalAfterDiscount * 0.1; // Tax in smallest unit (on discounted amount)
+  const shipping = subtotalAfterDiscount > 100000 ? 0 : 30000; // Shipping in smallest unit
+  const total = subtotalAfterDiscount + tax + shipping; // Total in smallest unit
 
   const [showConfirmation, setShowConfirmation] = React.useState(false);
+
+  // Get vendor_id from cart items (assume all items are from same vendor for coupon)
+  const getVendorId = () => {
+    if (cartItems.length === 0) return null;
+    // Try multiple paths to get vendor_id
+    const firstItem = cartItems[0];
+    
+    // Priority: vendors.vendor_id > product.vendor_id (direct field) > vendor_id
+    const vendorId = 
+      firstItem?.product?.vendors?.vendor_id || 
+      firstItem?.product?.vendor_id ||  // Direct vendor_id from products table
+      firstItem?.vendor_id ||
+      null;
+    
+    console.log("🔍 Cart - getVendorId:", {
+      cartItemsLength: cartItems.length,
+      firstItem: firstItem,
+      product: firstItem?.product,
+      productKeys: firstItem?.product ? Object.keys(firstItem.product) : [],
+      vendors: firstItem?.product?.vendors,
+      vendor_id_from_vendors: firstItem?.product?.vendors?.vendor_id,
+      vendor_id_from_product: firstItem?.product?.vendor_id,
+      final_vendor_id: vendorId,
+      type: typeof vendorId
+    });
+    
+    return vendorId;
+  };
+
+  // Handle apply coupon
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      showWarning("Cảnh báo", "Vui lòng nhập mã coupon");
+      return;
+    }
+
+    setApplyingCoupon(true);
+    try {
+      const vendorId = getVendorId();
+      console.log("🔍 Applying coupon - vendorId:", vendorId, "code:", couponCode.trim().toUpperCase());
+      
+      const response = await api.post("/coupons/validate", {
+        code: couponCode.trim().toUpperCase(),
+        vendor_id: vendorId !== null && vendorId !== undefined ? parseInt(vendorId) : null // Ensure it's an integer or null
+      });
+      
+      console.log("✅ Coupon validation response:", response.data);
+
+      if (response.data.valid && response.data.coupon) {
+        setAppliedCoupon(response.data.coupon);
+        setCouponCode(""); // Clear input
+        showSuccess("Thành công", `Đã áp dụng coupon "${response.data.coupon.code}" thành công!`);
+      } else {
+        showError("Lỗi", "Coupon không hợp lệ");
+      }
+    } catch (error) {
+      console.error("Error applying coupon:", error);
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || "Không thể áp dụng coupon. Vui lòng thử lại.";
+      showError("Lỗi", errorMsg);
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
+  // Handle remove coupon
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    showSuccess("Thành công", "Đã xóa coupon");
+  };
 
   const handleCheckout = () => {
     setShowConfirmation(true);
@@ -156,8 +245,19 @@ const Cart = () => {
             <div className="space-y-4 mb-8">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span className="font-medium">${(subtotal / 1000).toFixed(2)}</span>
+                <span className="font-medium">${(subtotalRaw / 1000).toFixed(2)}</span>
               </div>
+              
+              {appliedCoupon && discountAmount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span className="flex items-center gap-2">
+                    Discount ({appliedCoupon.code})
+                    {appliedCoupon.discount_percent && ` ${appliedCoupon.discount_percent}%`}
+                  </span>
+                  <span className="font-medium">-${(discountAmount / 1000).toFixed(2)}</span>
+                </div>
+              )}
+              
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
                 <span className="font-medium text-green-600">{shipping === 0 ? "Free" : `$${(shipping / 1000).toFixed(2)}`}</span>
@@ -177,16 +277,46 @@ const Cart = () => {
             </div>
 
             <div className="mb-6">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Enter coupon code"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                />
-                <button className="absolute right-2 top-2 px-4 py-1 bg-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-300 transition-colors">
-                  Apply
-                </button>
-              </div>
+              {appliedCoupon ? (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-green-800">Coupon Applied</p>
+                      <p className="text-xs text-green-600 mt-1">{appliedCoupon.code}</p>
+                    </div>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="p-1 hover:bg-green-100 rounded-lg transition-colors"
+                      title="Remove coupon"
+                    >
+                      <X size={18} className="text-green-600" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Enter coupon code"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleApplyCoupon();
+                      }
+                    }}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                    disabled={applyingCoupon}
+                  />
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={applyingCoupon || !couponCode.trim()}
+                    className="absolute right-2 top-2 px-4 py-1 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    {applyingCoupon ? "Applying..." : "Apply"}
+                  </button>
+                </div>
+              )}
             </div>
 
             <button

@@ -4,9 +4,12 @@ import {
     apiGetVendorProducts, 
     apiAddProduct, 
     apiUpdateProduct, 
-    apiDeleteProduct 
+    apiDeleteProduct,
+    VENDOR_API
 } from "../../api/vendorApi";
+import api from "../../api/axiosConfig.js";
 import { Search, Plus, Edit, Trash2, X, Save, Loader2 } from "lucide-react";
+import { showSuccess, showError, showConfirm } from "../../utils/notifications";
 
 // --- ❌ ĐÃ XÓA PHẦN API GIẢ LẬP (MOCK API) ---
 
@@ -25,8 +28,114 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
         category: product?.category || "",
         price: product?.price || 0,
         stock: product?.stock || 0,
-        description: product?.description || "", // Thêm description nếu cần
+        description: product?.description || "",
     });
+    const [images, setImages] = useState([]); // New images to upload
+    const [existingImages, setExistingImages] = useState([]); // Existing images from product (current state)
+    const [originalImages, setOriginalImages] = useState([]); // Original images when product was loaded (to track deletions)
+    const [imagePreviews, setImagePreviews] = useState([]); // All previews (existing + new)
+    const [loadingProduct, setLoadingProduct] = useState(false);
+
+    // Helper function to format image URL
+    const formatImageUrl = (url) => {
+        if (!url) return null;
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+            return url;
+        }
+        // If it's a relative path, prepend backend URL
+        return `http://localhost:5000${url.startsWith('/') ? url : '/' + url}`;
+    };
+
+    // Load existing images when product changes
+    useEffect(() => {
+        const loadProductData = async () => {
+            console.log("🖼️ ProductModal useEffect - Product:", product);
+            console.log("🖼️ Product images in product object:", product?.product_images);
+            console.log("🖼️ Product images type:", typeof product?.product_images);
+            console.log("🖼️ Product images is array?", Array.isArray(product?.product_images));
+            
+            // Reset form data when product changes
+            if (product) {
+                setFormData({
+                    name: product.name || "",
+                    category: product.category || "",
+                    price: product.price || 0,
+                    stock: product.stock || 0,
+                    description: product.description || "",
+                });
+
+                // If editing and product_images is missing or empty, try to fetch full product data
+                const productId = product.product_id || product.id;
+                if (productId && (!product.product_images || !Array.isArray(product.product_images) || product.product_images.length === 0)) {
+                    console.log("⚠️ Product images missing, fetching full product data...");
+                    setLoadingProduct(true);
+                    try {
+                        const response = await api.get(`/products/${productId}`);
+                        const fullProduct = response.data;
+                        console.log("✅ Fetched full product:", fullProduct);
+                        console.log("✅ Full product images:", fullProduct.product_images);
+                        
+                        if (fullProduct.product_images && Array.isArray(fullProduct.product_images) && fullProduct.product_images.length > 0) {
+                            const formattedImages = fullProduct.product_images
+                                .filter(img => img && img.image_url)
+                                .map(img => ({
+                                    id: img.image_id || img.id,
+                                    url: formatImageUrl(img.image_url),
+                                    is_thumbnail: img.is_thumbnail || false
+                                }));
+                            
+                            console.log("✅ Formatted images from API:", formattedImages);
+                            setExistingImages(formattedImages);
+                            setOriginalImages(formattedImages); // Store original for comparison
+                            setImagePreviews(formattedImages.map(img => img.url));
+                        } else {
+                            console.log("⚠️ No images in fetched product");
+                            setExistingImages([]);
+                            setOriginalImages([]);
+                            setImagePreviews([]);
+                        }
+                    } catch (err) {
+                        console.error("❌ Error fetching product details:", err);
+                        setExistingImages([]);
+                        setImagePreviews([]);
+                    } finally {
+                        setLoadingProduct(false);
+                    }
+                } else {
+                    // Product has images, use them directly
+                    if (product.product_images && Array.isArray(product.product_images) && product.product_images.length > 0) {
+                        console.log("✅ Found product_images in product object:", product.product_images.length);
+                        const formattedImages = product.product_images
+                            .filter(img => img && img.image_url)
+                            .map(img => ({
+                                id: img.image_id || img.id,
+                                url: formatImageUrl(img.image_url),
+                                is_thumbnail: img.is_thumbnail || false
+                            }));
+                        
+                        console.log("✅ Formatted images:", formattedImages);
+                        setExistingImages(formattedImages);
+                        setOriginalImages(formattedImages); // Store original for comparison
+                        setImagePreviews(formattedImages.map(img => img.url));
+                    } else {
+                        console.log("⚠️ No product_images found or empty array");
+                        setExistingImages([]);
+                        setOriginalImages([]);
+                        setImagePreviews([]);
+                    }
+                }
+            } else {
+                // New product, no images
+                setExistingImages([]);
+                setOriginalImages([]);
+                setImagePreviews([]);
+            }
+            // Reset new images when switching products
+            setImages([]);
+        };
+
+        loadProductData();
+    }, [product]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -37,14 +146,113 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
         });
     };
 
+    const handleImageChange = (e) => {
+        const files = Array.from(e.target.files);
+        const currentTotal = existingImages.length + images.length;
+        const maxImages = 5;
+        
+        if (currentTotal >= maxImages) {
+            showError("Lỗi", `Chỉ có thể upload tối đa ${maxImages} ảnh`);
+            e.target.value = ''; // Reset input
+            return;
+        }
+
+        // Calculate how many more images can be added
+        const remainingSlots = maxImages - currentTotal;
+        const filesToProcess = files.slice(0, remainingSlots);
+        
+        if (files.length > remainingSlots) {
+            showError("Lỗi", `Chỉ có thể thêm tối đa ${remainingSlots} ảnh nữa (tổng ${maxImages} ảnh)`);
+        }
+
+        const newImages = filesToProcess.filter(file => {
+            const isValidType = file.type.startsWith('image/');
+            const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB
+            if (!isValidType) {
+                showError("Lỗi", "Chỉ chấp nhận file ảnh");
+                return false;
+            }
+            if (!isValidSize) {
+                showError("Lỗi", "Kích thước file không được vượt quá 5MB");
+                return false;
+            }
+            return true;
+        });
+
+        if (newImages.length === 0) {
+            e.target.value = ''; // Reset input
+            return;
+        }
+
+        // Add new images to state
+        const updatedImages = [...images, ...newImages];
+        setImages(updatedImages);
+
+        // Create previews for new images
+        const newPreviews = [];
+        let loadedCount = 0;
+        newImages.forEach(file => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                newPreviews.push(reader.result);
+                loadedCount++;
+                if (loadedCount === newImages.length) {
+                    // Update previews with all new images at once
+                    setImagePreviews(prev => [...prev, ...newPreviews]);
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        e.target.value = ''; // Reset input to allow selecting same file again
+    };
+
+    const removeImage = (index) => {
+        // Check if removing existing image or new image
+        if (index < existingImages.length) {
+            // Removing existing image
+            setExistingImages(prev => prev.filter((_, i) => i !== index));
+            setImagePreviews(prev => prev.filter((_, i) => i !== index));
+        } else {
+            // Removing new image
+            const newImageIndex = index - existingImages.length;
+            setImages(prev => prev.filter((_, i) => i !== newImageIndex));
+            setImagePreviews(prev => prev.filter((_, i) => i !== index));
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSave(formData);
+        // Calculate which images were deleted by comparing originalImages with existingImages
+        const deletedImageIds = originalImages
+            .filter(originalImg => !existingImages.find(existingImg => existingImg.id === originalImg.id))
+            .map(img => img.id)
+            .filter(id => id); // Filter out null/undefined IDs
+        
+        console.log("🗑️ Deleted image IDs:", deletedImageIds);
+        console.log("📸 Remaining existing images:", existingImages.map(img => img.id));
+        console.log("➕ New images to upload:", images.length);
+        
+        // Pass: formData, new images, remaining existing images, deleted image IDs
+        onSave(formData, images, existingImages, deletedImageIds);
     };
+
+    if (loadingProduct) {
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                <div className="bg-white p-6 rounded-xl shadow-2xl">
+                    <div className="flex flex-col items-center gap-3">
+                        <Loader2 className="animate-spin text-green-600" size={32} />
+                        <p className="text-gray-600 font-medium">Đang tải thông tin sản phẩm...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            <div className="bg-white p-6 rounded-xl w-full max-w-lg shadow-2xl transform transition-all">
+            <div className="bg-white p-6 rounded-xl w-full max-w-lg shadow-2xl transform transition-all max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-gray-800">
                         {product ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}
@@ -119,6 +327,77 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
                         />
                     </div>
 
+                    {/* Image Upload */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Hình ảnh sản phẩm (Tùy chọn, tối đa 5 ảnh)
+                        </label>
+                        <div className="mt-2">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleImageChange}
+                                className="hidden"
+                                id="image-upload"
+                                disabled={(existingImages.length + images.length) >= 5}
+                            />
+                            <label
+                                htmlFor="image-upload"
+                                className={`cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-colors ${
+                                    (existingImages.length + images.length) >= 5 
+                                        ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                                        : "bg-white text-gray-700 hover:bg-gray-50"
+                                }`}
+                            >
+                                <Plus size={16} className="mr-2" />
+                                Chọn ảnh
+                            </label>
+                            <p className={`text-xs mt-1 ${
+                                (existingImages.length + images.length) >= 5 ? "text-red-500 font-medium" : "text-gray-500"
+                            }`}>
+                                {existingImages.length + images.length}/5 ảnh đã chọn
+                            </p>
+                        </div>
+
+                        {/* Image Previews */}
+                        {imagePreviews.length > 0 ? (
+                            <div className="mt-4 grid grid-cols-3 gap-4">
+                                {imagePreviews.map((preview, index) => (
+                                    <div key={`preview-${index}-${preview}`} className="relative group">
+                                        <img
+                                            src={preview}
+                                            alt={`Preview ${index + 1}`}
+                                            className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                                            onError={(e) => {
+                                                console.error("❌ Image load error:", preview);
+                                                e.target.src = 'https://via.placeholder.com/200x200?text=Image+Error';
+                                            }}
+                                            onLoad={() => {
+                                                console.log("✅ Image loaded successfully:", preview);
+                                            }}
+                                        />
+                                        <div className="absolute top-1 left-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                                            {index < existingImages.length ? 'Có sẵn' : 'Mới'}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeImage(index)}
+                                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                            title={index < existingImages.length ? 'Xóa ảnh hiện có' : 'Xóa ảnh mới'}
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="mt-4 text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-lg border border-gray-200">
+                                {product ? 'Chưa có hình ảnh. Hãy thêm ảnh cho sản phẩm.' : 'Chưa có hình ảnh. Hãy chọn ảnh để upload.'}
+                            </div>
+                        )}
+                    </div>
+
                     <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100">
                         <button
                             type="button"
@@ -157,7 +436,13 @@ const ProductManagement = () => {
         try {
             const res = await apiGetVendorProducts();
             // API trả về mảng trực tiếp hoặc { data: [...] } tùy backend
-            setProducts(Array.isArray(res.data) ? res.data : []); 
+            const productsList = Array.isArray(res.data) ? res.data : [];
+            console.log("📦 Fetched products:", productsList.length);
+            console.log("📦 First product sample:", productsList[0]);
+            if (productsList[0]) {
+                console.log("📦 First product images:", productsList[0].product_images);
+            }
+            setProducts(productsList); 
         } catch (err) {
             console.error("Failed to fetch products:", err);
         } finally {
@@ -168,24 +453,87 @@ const ProductManagement = () => {
     useEffect(() => { fetchProducts(); }, []);
 
     // Hàm lưu (Thêm mới hoặc Cập nhật) vào Database
-    const handleSave = async (data) => {
+    const handleSave = async (data, images = [], existingImages = [], deletedImageIds = []) => {
         setSaving(true);
         try {
+            // Create FormData for file upload
+            const formData = new FormData();
+            formData.append('name', data.name);
+            formData.append('category', data.category);
+            formData.append('price', data.price);
+            formData.append('stock', data.stock);
+            if (data.description) {
+                formData.append('description', data.description);
+            }
+
+            // Append new images
+            images.forEach((image) => {
+                formData.append('images', image);
+            });
+
+            // Append remaining existing image IDs (to keep them)
+            if (existingImages && existingImages.length > 0) {
+                const existingIds = existingImages.map(img => img.id).filter(id => id);
+                if (existingIds.length > 0) {
+                    formData.append('existingImageIds', JSON.stringify(existingIds));
+                }
+            }
+
+            // Append deleted image IDs (to delete them)
+            // Send each ID as a separate field with array notation so multer can parse it
+            if (deletedImageIds && deletedImageIds.length > 0) {
+                deletedImageIds.forEach(id => {
+                    formData.append('deletedImageIds[]', id.toString());
+                });
+                console.log("📤 Sending deleted image IDs to backend:", deletedImageIds);
+            }
+
+            let response;
             if (modalData.product) {
                 // Cập nhật: Gọi API PUT với ID sản phẩm (product_id hoặc id)
                 const productId = modalData.product.product_id || modalData.product.id;
-                await apiUpdateProduct(productId, data);
+                
+                // If we have deletedImageIds, append them as query params
+                let url = `/products/${productId}`;
+                if (deletedImageIds && deletedImageIds.length > 0) {
+                    const deletedIdsParam = deletedImageIds.join(',');
+                    url += `?deletedImageIds=${deletedIdsParam}`;
+                    console.log("📤 Sending deletedImageIds via query param:", deletedIdsParam);
+                }
+                
+                // Use custom axios call instead of apiUpdateProduct to include query params
+                const token = localStorage.getItem("token");
+                const config = {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    }
+                };
+                // Remove Content-Type header for FormData (browser will set it with boundary)
+                if (formData instanceof FormData) {
+                    delete config.headers['Content-Type'];
+                }
+                
+                response = await VENDOR_API.put(url, formData, config);
+                console.log("✅ Update product response:", response.data);
             } else {
                 // Thêm mới: Gọi API POST
-                await apiAddProduct(data);
+                response = await apiAddProduct(formData);
+                console.log("✅ Add product response:", response.data);
             }
+            
+            // Wait a bit to ensure database operations complete
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             await fetchProducts(); // Tải lại danh sách mới nhất từ DB
             setModalData({ show: false, product: null });
-            alert("Lưu sản phẩm thành công!");
+            showSuccess("Thành công", "Lưu sản phẩm thành công!");
+            
+            // Dispatch event để VendorDashboard refresh stats
+            window.dispatchEvent(new CustomEvent('productUpdated'));
         } catch (err) {
             console.error("Error saving product:", err);
-            alert("Có lỗi xảy ra khi lưu sản phẩm. Vui lòng thử lại.");
+            const errorMsg = err.response?.data?.error || err.response?.data?.message || "Có lỗi xảy ra khi lưu sản phẩm. Vui lòng thử lại.";
+            showError("Lỗi", errorMsg);
         } finally {
             setSaving(false);
         }
@@ -193,17 +541,22 @@ const ProductManagement = () => {
 
     // Hàm xóa sản phẩm khỏi Database
     const handleDelete = async (product) => {
-        if (window.confirm(`Bạn chắc chắn muốn xóa "${product.name}"?`)) {
+        const result = await showConfirm("Xóa sản phẩm", `Bạn chắc chắn muốn xóa "${product.name}"?`);
+        if (!result.isConfirmed) return;
+        
             try {
                 const productId = product.product_id || product.id;
                 await apiDeleteProduct(productId);
                 
                 // Cập nhật UI ngay lập tức
                 setProducts(prev => prev.filter(p => (p.product_id || p.id) !== productId));
+            showSuccess("Thành công", "Đã xóa sản phẩm thành công!");
+            
+            // Dispatch event để VendorDashboard refresh stats
+            window.dispatchEvent(new CustomEvent('productUpdated'));
             } catch (err) {
                 console.error("Error deleting product:", err);
-                alert("Không thể xóa sản phẩm.");
-            }
+            showError("Lỗi", "Không thể xóa sản phẩm.");
         }
     };
 
@@ -297,7 +650,11 @@ const ProductManagement = () => {
                                         <td className="p-4 text-right">
                                             <div className="flex justify-end gap-2">
                                                 <button
-                                                    onClick={() => setModalData({ show: true, product: p })}
+                                                    onClick={() => {
+                                                        console.log("✏️ Edit button clicked for product:", p);
+                                                        console.log("✏️ Product images:", p.product_images);
+                                                        setModalData({ show: true, product: p });
+                                                    }}
                                                     className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                                                     title="Chỉnh sửa"
                                                 >
@@ -322,8 +679,11 @@ const ProductManagement = () => {
 
             {modalData.show && (
                 <ProductModal
+                    key={modalData.product?.product_id || modalData.product?.id || 'new'}
                     product={modalData.product}
-                    onClose={() => setModalData({ show: false, product: null })}
+                    onClose={() => {
+                        setModalData({ show: false, product: null });
+                    }}
                     onSave={handleSave}
                     isSaving={saving}
                 />

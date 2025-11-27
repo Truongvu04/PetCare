@@ -1,11 +1,16 @@
 // src/components/Vendor/VendorLayout.jsx
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Home, List, ShoppingCart, Tag, Settings, LogOut } from 'lucide-react';
+import { Home, List, ShoppingCart, Tag, Settings, LogOut, Store, Shield } from 'lucide-react';
 import { apiGetVendorProfile } from '../../api/vendorApi';
+import { getAvatarUrl } from '../../utils/avatarHelper';
+import { performCompleteLogout } from '../../utils/logoutHelper';
+import { useAuth } from '../../hooks/useAuth';
+import { showConfirm } from '../../utils/notifications';
 
 const Sidebar = () => {
     const navigate = useNavigate();
+    const { user, loading: authLoading } = useAuth();
 
     // [SỬA 1] Khởi tạo state bằng dữ liệu từ LocalStorage (nếu có)
     // Giúp hiển thị tên Shop NGAY LẬP TỨC, không cần chờ API
@@ -21,6 +26,9 @@ const Sidebar = () => {
     // Hàm lấy thông tin profile mới nhất từ Server
     const fetchProfile = async () => {
         try {
+            // Add a small delay to ensure token is fully validated after login
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
             const response = await apiGetVendorProfile();
             // Cập nhật state
             setVendor(response.data);
@@ -28,10 +36,47 @@ const Sidebar = () => {
             localStorage.setItem('vendor', JSON.stringify(response.data));
         } catch (error) {
             console.error("Lỗi lấy thông tin Vendor:", error);
+            const status = error.response?.status;
+            const message = error.response?.data?.message || '';
+            
+            // Don't logout here - just log the error
+            // If it's a real auth issue, the interceptor will handle it after retry
+            if (status === 401) {
+                console.warn("⚠️ Unauthorized - token may be expired or not yet validated");
+                // Don't clear vendor data from localStorage - might be temporary
+            } else if (status === 403) {
+                console.warn("⚠️ Forbidden - user may not have vendor role:", message);
+            }
         }
     };
 
     useEffect(() => {
+        // Wait for auth to finish loading before making API calls
+        if (authLoading) {
+            return;
+        }
+
+        // Check if user is authenticated and has vendor access
+        // Allow access if:
+        // 1. User has vendor role, OR
+        // 2. User has admin role AND has vendor record (admin can access vendor dashboard)
+        const hasVendorAccess = user && (
+            user.role === 'vendor' || 
+            (user.role === 'admin' && (user.vendor || localStorage.getItem('vendor')))
+        );
+        
+        if (!user || !hasVendorAccess) {
+            console.warn("⚠️ VendorLayout: User not authenticated or doesn't have vendor access. User:", user?.email, "Role:", user?.role, "Has vendor:", !!user?.vendor);
+            return;
+        }
+
+        // Check if token exists
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.warn("⚠️ VendorLayout: No token found");
+            return;
+        }
+
         // 1. Gọi API để lấy dữ liệu mới nhất (trong background)
         fetchProfile();
 
@@ -44,13 +89,17 @@ const Sidebar = () => {
         return () => {
             window.removeEventListener('vendorProfileUpdated', handleProfileUpdate);
         };
-    }, []);
+    }, [authLoading, user]);
 
-    const handleLogout = () => {
-        if (window.confirm('Bạn có muốn đăng xuất?')) {
-            localStorage.removeItem('vendorToken');
-            localStorage.removeItem('vendor'); // Xóa luôn thông tin lưu tạm
-            navigate('/vendor/login');
+    const handleLogout = async () => {
+        const result = await showConfirm(
+            'Đăng xuất',
+            'Bạn có muốn đăng xuất khỏi hệ thống?',
+            'Đăng xuất',
+            'Hủy'
+        );
+        if (result.isConfirmed) {
+            performCompleteLogout();
         }
     };
 
@@ -58,8 +107,8 @@ const Sidebar = () => {
     const displayName = vendor?.shopName || vendor?.store_name || vendor?.full_name || vendor?.email || "Vendor";
     const displayInitial = displayName.charAt(0).toUpperCase();
     
-    // Ưu tiên logo_url (từ DB) hoặc avatar (từ user) hoặc logo (từ login)
-    const logoUrl = vendor?.logo_url || vendor?.avatar || vendor?.logo; 
+    // Use consistent avatar helper
+    const logoUrl = getAvatarUrl(vendor, vendor, 40); 
 
     const getNavLinkClass = ({ isActive }) =>
         `flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors
@@ -70,14 +119,20 @@ const Sidebar = () => {
 
             {/* Header Sidebar */}
             <div className="flex items-center gap-3 mb-6 px-2">
-                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden border border-gray-300 shrink-0">
-                    {logoUrl ? (
-                        <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
-                    ) : (
-                        <span className="text-lg font-semibold text-gray-600">
-                            {displayInitial}
-                        </span>
-                    )}
+                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden border border-gray-300 shrink-0 relative">
+                    <img 
+                        src={logoUrl} 
+                        alt="Logo" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                            e.target.style.display = 'none';
+                            const fallback = e.target.parentElement.querySelector('.avatar-fallback');
+                            if (fallback) fallback.style.display = 'flex';
+                        }}
+                    />
+                    <span className="avatar-fallback text-lg font-semibold text-gray-600 absolute inset-0 items-center justify-center" style={{ display: logoUrl && logoUrl.includes('dicebear') ? 'flex' : 'none' }}>
+                        {displayInitial}
+                    </span>
                 </div>
                 <div className="overflow-hidden">
                     <h2 className="font-bold text-gray-800 truncate text-sm" title={displayName}>
@@ -105,11 +160,23 @@ const Sidebar = () => {
 
             {/* Footer */}
             <div className="mt-auto pt-4 border-t border-gray-100 space-y-1">
+                {/* Show Admin Management if user has admin role */}
+                {user?.role === 'admin' && (
+                    <button
+                        onClick={() => navigate("/admin/dashboard")}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors"
+                    >
+                        <Shield size={20} /> Admin Management
+                    </button>
+                )}
+                <button
+                    onClick={() => navigate("/")}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors"
+                >
+                    <Store size={20} /> Về trang chủ
+                </button>
                 <NavLink to="/vendor/settings" className={getNavLinkClass}>
                     <Settings size={20} /> Cài đặt Shop
-                </NavLink>
-                <NavLink to="/vendor/account" className={getNavLinkClass}>
-                    <Settings size={20} /> Cài đặt Tài khoản
                 </NavLink>
                 <button
                     onClick={handleLogout}

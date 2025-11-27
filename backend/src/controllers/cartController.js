@@ -19,6 +19,7 @@ export const getCart = async (req, res) => {
                 },
                 vendors: {
                   select: {
+                    vendor_id: true,
                     store_name: true,
                   },
                 },
@@ -44,6 +45,7 @@ export const getCart = async (req, res) => {
                   },
                   vendors: {
                     select: {
+                      vendor_id: true,
                       store_name: true,
                     },
                   },
@@ -56,6 +58,17 @@ export const getCart = async (req, res) => {
       });
     }
 
+    // Debug: Log vendor_id from products
+    if (cart && cart.cart_items && cart.cart_items.length > 0) {
+      console.log("🔍 Cart items debug:", cart.cart_items.map(item => ({
+        product_id: item.products?.product_id,
+        product_name: item.products?.name,
+        vendor_id_direct: item.products?.vendor_id,
+        vendors_object: item.products?.vendors,
+        vendors_vendor_id: item.products?.vendors?.vendor_id
+      })));
+    }
+    
     res.json(cart);
   } catch (err) {
     console.error("Error fetching cart:", err);
@@ -133,6 +146,7 @@ export const addToCart = async (req, res) => {
               },
               vendors: {
                 select: {
+                  vendor_id: true,
                   store_name: true,
                 },
               },
@@ -165,6 +179,7 @@ export const addToCart = async (req, res) => {
               },
               vendors: {
                 select: {
+                  vendor_id: true,
                   store_name: true,
                 },
               },

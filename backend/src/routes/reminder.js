@@ -3,15 +3,26 @@ import { Prisma } from '@prisma/client';
 import { verifyToken } from '../middleware/authMiddleware.js';
 import { prisma } from '../config/prisma.js'; // <--- THÊM DÒNG NÀY ĐỂ FIX LỖI CRASH
 
-const ReminderTypeEnum = Prisma.ReminderType || Prisma.RemindersType || {};
-const ReminderFrequencyEnum = Prisma.ReminderFrequency || Prisma.ReminderFrequencies || {};
-const ReminderStatusEnum = Prisma.ReminderStatus || Prisma.ReminderStatuses || {};
+// Get enum values from Prisma - use correct enum names from schema
+const ReminderTypeEnum = Prisma.RemindersType || {};
+const ReminderFrequencyEnum = Prisma.ReminderFrequency || {};
+const ReminderStatusEnum = Prisma.ReminderStatus || {};
 
 const router = express.Router();
 
-const ALLOWED_FREQUENCIES = Object.values(ReminderFrequencyEnum);
-const ALLOWED_TYPES = Object.values(ReminderTypeEnum);
-const ALLOWED_STATUS = Object.values(ReminderStatusEnum);
+// Fallback to hardcoded values if Prisma enum is not available
+const ALLOWED_FREQUENCIES = Object.keys(ReminderFrequencyEnum).length > 0 
+  ? Object.values(ReminderFrequencyEnum) 
+  : ['none', 'daily', 'weekly', 'monthly', 'yearly'];
+
+const ALLOWED_TYPES = Object.keys(ReminderTypeEnum).length > 0 
+  ? Object.values(ReminderTypeEnum) 
+  : ['vaccination', 'vet_visit', 'feeding', 'grooming', 'medication', 'other'];
+
+const ALLOWED_STATUS = Object.keys(ReminderStatusEnum).length > 0 
+  ? Object.values(ReminderStatusEnum) 
+  : ['pending', 'done'];
+
 const VIETNAM_OFFSET_HOURS = 7;
 
 // 3. HELPERS 

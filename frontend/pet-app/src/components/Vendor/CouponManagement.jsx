@@ -6,7 +6,8 @@ import {
     apiCreateCoupon, 
     // Lưu ý: Backend hiện tại chưa có apiUpdateCoupon, ta sẽ dùng logic Xóa -> Tạo mới hoặc bổ sung sau
     apiDeleteCoupon 
-} from '../../api/vendorApi'; 
+} from '../../api/vendorApi';
+import { showSuccess, showError, showConfirm } from '../../utils/notifications'; 
 
 // Hàm format tiền tệ
 const formatVND = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
@@ -182,22 +183,24 @@ const CouponManagement = () => {
             await apiCreateCoupon(data);
             await fetchCoupons();
             setModalData({ show: false, coupon: null });
-            alert("Tạo mã giảm giá thành công!");
+            showSuccess("Thành công", "Tạo mã giảm giá thành công!");
         } catch (err) {
-            alert("Lỗi: " + (err.response?.data?.message || err.message));
+            showError("Lỗi", err.response?.data?.message || err.message);
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("Bạn có chắc chắn muốn xóa mã giảm giá này?")) return;
+        const result = await showConfirm("Xóa mã giảm giá", "Bạn có chắc chắn muốn xóa mã giảm giá này?");
+        if (!result.isConfirmed) return;
         try {
             // Gọi API xóa thật (dựa vào coupon_id)
             await apiDeleteCoupon(id);
             setCoupons(prev => prev.filter(c => c.coupon_id !== id)); // Lưu ý: Database dùng coupon_id
+            showSuccess("Thành công", "Đã xóa mã giảm giá thành công!");
         } catch (err) {
-            alert("Không thể xóa: " + err.message);
+            showError("Lỗi", "Không thể xóa: " + err.message);
         }
     };
 

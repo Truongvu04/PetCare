@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
+import { showError } from "../../utils/notifications";
 import api from "../../api/axiosConfig.js";
 import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
 
@@ -29,7 +30,7 @@ const ViewProfile = () => {
         console.error("❌ Error fetching pet:", err);
         // 👈 Xử lý lỗi (ví dụ: pet không thuộc về user này)
          if (err.response?.status === 403 || err.response?.status === 404) {
-           alert("Pet not found or you don't have permission to view this pet.");
+           showError("Lỗi", "Không tìm thấy thú cưng hoặc bạn không có quyền xem thú cưng này.");
            navigate("/mypets");
          } else {
            setPetData({ notFound: true });

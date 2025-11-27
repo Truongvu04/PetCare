@@ -12,8 +12,12 @@ const OrderConfirmation = () => {
 
   useEffect(() => {
     const orderId = location.state?.orderId || new URLSearchParams(location.search).get("orderId");
+    const status = new URLSearchParams(location.search).get("status");
+    
     if (orderId) {
       fetchOrder(orderId);
+    } else if (status === "missing") {
+      setLoading(false);
     } else {
       setLoading(false);
     }
@@ -47,7 +51,9 @@ const OrderConfirmation = () => {
     return <div className="max-w-4xl mx-auto p-8">Loading...</div>;
   }
 
-  if (!order) {
+  const status = new URLSearchParams(location.search).get("status");
+
+  if (!order && status !== "missing") {
     return (
       <div className="max-w-4xl mx-auto p-8">
         <div className="text-center py-12">
@@ -62,13 +68,80 @@ const OrderConfirmation = () => {
     );
   }
 
+  if (status === "fail") {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-red-600 text-3xl">✕</span>
+          </div>
+          <h1 className="text-2xl font-bold text-red-600 mb-2">Thanh toán thất bại</h1>
+          <p className="text-gray-600 mb-6">
+            Giao dịch của bạn không thành công. Vui lòng thử lại.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => navigate("/cart/checkout")}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+              Thử lại thanh toán
+            </button>
+            <button
+              onClick={() => navigate("/orders")}
+              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+              Xem đơn hàng
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "missing") {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <div className="text-center py-12">
+          <p className="text-gray-600 mb-4">Không tìm thấy thông tin thanh toán</p>
+          <button
+            onClick={() => navigate("/orders")}
+            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+            Xem đơn hàng
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <div className="text-center py-12">
+          <p className="text-gray-600 mb-4">Đang tải thông tin đơn hàng...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-8">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-green-700 mb-2">Order confirmed!</h1>
-        <p className="text-gray-600">
-          Your order has been placed successfully. You will receive an email confirmation shortly.
-        </p>
+        {status === "success" ? (
+          <>
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-green-600 text-3xl">✓</span>
+            </div>
+            <h1 className="text-3xl font-bold text-green-700 mb-2">Thanh toán thành công!</h1>
+            <p className="text-gray-600">
+              Đơn hàng của bạn đã được xác nhận và thanh toán thành công.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-3xl font-bold text-green-700 mb-2">Đơn hàng đã được đặt!</h1>
+            <p className="text-gray-600">
+              Đơn hàng của bạn đã được tạo thành công. Vui lòng thanh toán để hoàn tất.
+            </p>
+          </>
+        )}
       </div>
 
       <div className="flex justify-center mb-12">

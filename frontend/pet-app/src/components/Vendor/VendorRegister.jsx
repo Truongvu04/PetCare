@@ -1,23 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Eye, EyeOff, X } from 'lucide-react';
-
-// --- MOCK API (Giữ nguyên như yêu cầu) ---
-const apiRegisterVendor = async (formData) => {
-    console.log("Đang gọi API Register với dữ liệu:", formData);
-    // Giả lập độ trễ mạng 1.5 giây
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Giả lập phản hồi thành công từ Server
-    return { 
-        data: { 
-            token: "mock_vendor_jwt_token_123456" 
-        } 
-    };
-    // Để test lỗi, bỏ comment dòng dưới:
-    // throw { response: { data: { message: "Email này đã được sử dụng!" } } };
-};
-// -----------------------------------------------------------
+import { apiRegisterVendor } from '../../api/vendorApi';
+import { useAuth } from '../../hooks/useAuth';
 
 const VendorRegister = () => {
     // State cho form đăng ký (Giữ nguyên)
@@ -37,6 +22,7 @@ const VendorRegister = () => {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -60,26 +46,35 @@ const VendorRegister = () => {
 
         try {
             const response = await apiRegisterVendor(formData);
-            const { token } = response.data;
-
-            if (token) {
-                localStorage.setItem('vendorToken', token);
-                setMessage('Đăng ký thành công! Đang tự động đăng nhập...');
-                setTimeout(() => {
-                   navigate('/vendor/login');
-                }, 1000);
-            } else {
-                setMessage('Đăng ký thành công! Vui lòng đăng nhập.');
-                setTimeout(() => {
-                    navigate('/vendor/login');
-                }, 1500);
-            }
+            setMessage('Đăng ký thành công! Đang tự động đăng nhập...');
+            
+            // After registration, auto-login using unified auth
+            setTimeout(async () => {
+                try {
+                    // Use unified login endpoint
+                    const loginRes = await fetch('http://localhost:5000/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: formData.email, password: formData.password })
+                    });
+                    
+                    if (loginRes.ok) {
+                        const loginData = await loginRes.json();
+                        login({ token: loginData.token, user: loginData.user });
+                        navigate('/vendor/dashboard');
+                    } else {
+                        navigate('/');
+                    }
+                } catch (loginErr) {
+                    console.error('Auto-login failed:', loginErr);
+                    navigate('/');
+                }
+            }, 1000);
 
         } catch (err) {
             console.error(err);
             setError(err.response?.data?.message || err.response?.data?.error || 'Lỗi đăng ký. Vui lòng thử lại.');
-        } finally {
-             setLoading(false);
+            setLoading(false);
         }
     };
 
@@ -107,7 +102,7 @@ const VendorRegister = () => {
                 {/* Tab Switcher (Login / Register): Đổi bg thành bg-green-600 */}
                 <div className="bg-gray-100 p-1.5 rounded-full flex mb-8">
                     <Link 
-                        to="/vendor/login"
+                        to="/"
                         className="flex-1 py-3 text-center text-sm font-bold text-gray-500 rounded-full hover:bg-gray-200 transition-all"
                     >
                         Login
@@ -233,7 +228,7 @@ const VendorRegister = () => {
                 <div className="text-center mt-8">
                     <p className="text-gray-500 text-sm font-medium">
                         Already have an account?{' '}
-                        <Link to="/vendor/login" className="text-green-600 font-bold hover:underline ml-1">
+                        <Link to="/" className="text-green-600 font-bold hover:underline ml-1">
                             Login
                         </Link>
                     </p>

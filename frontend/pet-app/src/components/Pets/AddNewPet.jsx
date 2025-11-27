@@ -4,6 +4,7 @@ import { PawPrint } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth.js";
 import api from "../../api/axiosConfig.js";
 import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
+import { showSuccess, showError, showWarning } from "../../utils/notifications";
 
 const AddNewPet = () => {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ const AddNewPet = () => {
     e.preventDefault();
     
     if (!user) {
-      alert("❌ Bạn phải đăng nhập để thêm thú cưng!");
+      showWarning("Yêu cầu đăng nhập", "Bạn phải đăng nhập để thêm thú cưng!");
       navigate("/login");
       return;
     }
@@ -82,13 +83,13 @@ const AddNewPet = () => {
       const data = response.data; // 👈 axios trả về trong .data
 
       // 👈 axios không cần .ok, nó sẽ ném lỗi nếu status >= 400
-      alert(`✅ Thêm thú cưng thành công! ID: ${data.pet_id}`);
+      showSuccess("Thành công", `Thêm thú cưng thành công! ID: ${data.pet_id}`);
       navigate("/mypets");
 
     } catch (error) {
       console.error("Error adding pet:", error);
       const errorMsg = error.response?.data?.message || "Không thể thêm thú cưng.";
-      alert(`❌ Lỗi: ${errorMsg}`);
+      showError("Lỗi", errorMsg);
     } finally {
       setLoading(false);
     }

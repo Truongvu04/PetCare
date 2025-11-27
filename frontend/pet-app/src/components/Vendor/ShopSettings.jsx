@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Store, Loader2, Tag, Globe, Package, CheckCircle, AlertTriangle, Save } from 'lucide-react';
+import { Store, Loader2, Tag, Globe, CheckCircle, AlertTriangle, Save } from 'lucide-react';
 import { apiGetVendorProfile, apiUpdateVendorProfile } from '../../api/vendorApi';
 
 const ShopSettings = () => {
@@ -10,7 +10,6 @@ const ShopSettings = () => {
         description: '',
         logoUrl: '',
         bannerUrl: '',
-        defaultShippingFee: 0,
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -23,15 +22,15 @@ const ShopSettings = () => {
             const data = res.data;
             
             // Map dữ liệu từ API (Backend) vào Form (Frontend)
-            // Backend trả về: store_name, logo_url, banner_url, default_shipping_fee...
+            // Backend trả về: store_name, logo_url...
+            // Note: banner_url không tồn tại trong schema vendors
             setProfile({
                 vendorName: data.store_name || data.shopName || '', 
                 phone: data.phone || '',
                 address: data.address || '',
                 description: data.description || '',
                 logoUrl: data.logo_url || data.logo || '', 
-                bannerUrl: data.banner_url || data.banner || '', 
-                defaultShippingFee: data.default_shipping_fee || data.defaultShippingFee || 0,
+                bannerUrl: '', // banner_url không tồn tại trong database
             });
         } catch (err) {
             console.error("Lỗi tải profile:", err);
@@ -63,15 +62,24 @@ const ShopSettings = () => {
 
         // Chuẩn bị dữ liệu gửi lên Backend
         // Key ở đây phải khớp với req.body trong vendorController.js
+        // Chỉ gửi các field có giá trị (cho phép để trống các field không bắt buộc)
         const payload = {
-            shopName: profile.vendorName,
-            phone: profile.phone,
-            address: profile.address,
-            description: profile.description,
-            logo: profile.logoUrl,
-            banner: profile.bannerUrl,
-            defaultShippingFee: profile.defaultShippingFee,
+            shopName: profile.vendorName.trim(), // Bắt buộc
         };
+        
+        // Chỉ thêm các field optional nếu có giá trị hoặc muốn xóa (empty string)
+        if (profile.phone !== undefined && profile.phone !== null) {
+            payload.phone = profile.phone;
+        }
+        if (profile.address !== undefined && profile.address !== null) {
+            payload.address = profile.address;
+        }
+        if (profile.description !== undefined && profile.description !== null) {
+            payload.description = profile.description;
+        }
+        if (profile.logoUrl !== undefined && profile.logoUrl !== null) {
+            payload.logo = profile.logoUrl;
+        }
 
         try {
             // Gọi API cập nhật
@@ -138,13 +146,16 @@ const ShopSettings = () => {
                             </h3>
                             
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Tên Cửa Hàng</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                    Tên Cửa Hàng <span className="text-red-500">*</span>
+                                </label>
                                 <input
                                     type="text" name="vendorName" required
                                     value={profile.vendorName} onChange={handleChange}
                                     className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
                                     placeholder="VD: Pet Shop Cưng"
                                 />
+                                <p className="text-xs text-gray-500 mt-1">Trường bắt buộc</p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Số điện thoại</label>
@@ -218,25 +229,6 @@ const ShopSettings = () => {
                                     placeholder="Chào mừng đến với cửa hàng của chúng tôi..."
                                 />
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Vận chuyển */}
-                    <div className="pt-6 mt-6 border-t border-gray-100">
-                        <h3 className="font-bold text-gray-700 flex items-center gap-2 mb-4">
-                            <Package size={18} className="text-green-600"/> Cài đặt Vận chuyển
-                        </h3>
-                        <div className="max-w-sm">
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Phí vận chuyển mặc định (VNĐ)</label>
-                            <div className="relative">
-                                <input
-                                    type="number" name="defaultShippingFee" min="0" step="1000"
-                                    value={profile.defaultShippingFee} onChange={handleChange}
-                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all font-medium text-green-700 bg-gray-50 focus:bg-white pl-4 pr-12"
-                                />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">VNĐ</span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1.5 italic">Phí này sẽ áp dụng cho các đơn hàng chưa đạt điều kiện miễn phí ship.</p>
                         </div>
                     </div>
 

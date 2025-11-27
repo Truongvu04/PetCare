@@ -8,3 +8,11 @@ backend/.cursorignore
 frontend/pet-app/pet-care.code-workspace
 
 ai-docs/
+add-delivered-status.sql
+fix-delivered-status.ps1
+fix-payment-method.ps1
+fix-prisma.ps1
+hash_password.py
+set-admin-role.sql
+update-payment-method-enum.sql
+ADD_NOTIFICATION_PREFERENCES.md

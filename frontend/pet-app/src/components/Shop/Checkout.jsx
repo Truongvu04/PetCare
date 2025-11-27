@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "./CartContext.jsx";
 import api from "../../api/axiosConfig.js";
 import { useAuth } from "../../hooks/useAuth.js";
 import CartIcon from "./CartIcon.jsx";
+import { Tag, X, CheckCircle } from "lucide-react";
+import { showSuccess, showError, showWarning, showConfirm } from "../../utils/notifications";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -11,23 +13,94 @@ const Checkout = () => {
   const { user } = useAuth();
   const [shippingAddress, setShippingAddress] = useState("");
   const [loading, setLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState("");
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("vnpay");
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   // Calculate totals - getTotal() returns price in smallest unit (already multiplied by 1000)
   const subtotalRaw = getTotal(); // This is already in smallest unit
+  let discountAmount = 0;
+  
+  // Apply coupon discount
+  if (appliedCoupon) {
+    if (appliedCoupon.discount_percent) {
+      discountAmount = (subtotalRaw * appliedCoupon.discount_percent) / 100;
+    } else if (appliedCoupon.discount_amount) {
+      discountAmount = appliedCoupon.discount_amount * 1000; // Convert to smallest unit
+    }
+  }
+  
+  const subtotalAfterDiscount = Math.max(0, subtotalRaw - discountAmount);
   const subtotal = subtotalRaw / 1000; // Convert to dollars for display
-  const tax = subtotalRaw * 0.1; // Tax in smallest unit
-  const shipping = subtotalRaw > 100000 ? 0 : 30000; // Shipping in smallest unit (free if > $100)
-  const total = subtotalRaw + tax + shipping; // Total in smallest unit
+  const tax = subtotalAfterDiscount * 0.1; // Tax in smallest unit
+  const shipping = subtotalAfterDiscount > 100000 ? 0 : 30000; // Shipping in smallest unit (free if > $100)
+  const total = subtotalAfterDiscount + tax + shipping; // Total in smallest unit
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError("Vui lòng nhập mã coupon");
+      return;
+    }
+
+    setValidatingCoupon(true);
+    setCouponError("");
+
+    try {
+      // Get vendor_id from cart items - try multiple paths
+      const firstItem = cartItems[0];
+      const vendorId = 
+        firstItem?.product?.vendors?.vendor_id || 
+        firstItem?.product?.vendor_id ||
+        null;
+      
+      console.log("🔍 Checkout - Applying coupon:", {
+        couponCode: couponCode.toUpperCase(),
+        vendorId,
+        product: firstItem?.product,
+        vendors: firstItem?.product?.vendors
+      });
+      
+      const res = await api.post("/coupons/validate", {
+        code: couponCode.trim().toUpperCase(),
+        vendor_id: vendorId !== null && vendorId !== undefined ? parseInt(vendorId) : null,
+      });
+
+      if (res.data.valid && res.data.coupon) {
+        setAppliedCoupon(res.data.coupon);
+        setCouponError("");
+        showSuccess("Thành công", `Đã áp dụng coupon "${res.data.coupon.code}" thành công!`);
+      } else {
+        setCouponError("Coupon không hợp lệ");
+        setAppliedCoupon(null);
+      }
+    } catch (err) {
+      console.error("Error applying coupon:", err);
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || "Mã coupon không hợp lệ";
+      setCouponError(errorMsg);
+      setAppliedCoupon(null);
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError("");
+  };
 
   const handleCheckout = async () => {
     if (!user) {
-      alert("Vui lòng đăng nhập để đặt hàng");
+      showWarning("Yêu cầu đăng nhập", "Vui lòng đăng nhập để đặt hàng");
       navigate("/login");
       return;
     }
 
     if (!shippingAddress.trim()) {
-      alert("Vui lòng nhập địa chỉ giao hàng");
+      showWarning("Thiếu thông tin", "Vui lòng nhập địa chỉ giao hàng");
       return;
     }
 
@@ -47,7 +120,7 @@ const Checkout = () => {
       });
 
       if (validCartItems.length === 0) {
-        alert("Giỏ hàng không hợp lệ. Vui lòng thử lại.");
+        showError("Lỗi", "Giỏ hàng không hợp lệ. Vui lòng thử lại.");
         setLoading(false);
         return;
       }
@@ -64,23 +137,65 @@ const Checkout = () => {
         itemCount: cartItemsForAPI.length,
       });
 
-      const response = await api.post("/orders", {
+      const orderData = {
         cartItems: cartItemsForAPI,
         shippingAddress: shippingAddress.trim(),
-      });
+        paymentMethod: paymentMethod, // Include payment method
+      };
+
+      if (appliedCoupon) {
+        orderData.couponCode = appliedCoupon.code;
+      }
+
+      console.log("📦 Creating order with data:", orderData);
+      const response = await api.post("/orders", orderData);
 
       console.log("Order created successfully:", response.data);
+      const orderId = response.data.order_id;
 
-      clearCart();
-      navigate(`/order-confirmation`, { state: { orderId: response.data.order_id } });
+      // Handle payment based on selected method
+      if (paymentMethod === "vnpay") {
+        setProcessingPayment(true);
+        try {
+          const paymentResponse = await api.post("/payments/vnpay/create", {
+            orderId: orderId,
+          });
+
+          if (paymentResponse.data.paymentUrl) {
+            // Redirect to VNPAY
+            window.location.href = paymentResponse.data.paymentUrl;
+          } else {
+            throw new Error("Không thể tạo URL thanh toán");
+          }
+        } catch (error) {
+          console.error("Error creating payment:", error);
+          showError("Lỗi", "Lỗi khi tạo thanh toán. Vui lòng thử lại.");
+          setProcessingPayment(false);
+        }
+      } else if (paymentMethod === "cod") {
+        // Cash on Delivery - no payment processing needed
+        clearCart();
+        showSuccess("Đặt hàng thành công", "Đơn hàng của bạn đã được tạo. Bạn sẽ thanh toán khi nhận hàng.");
+        navigate(`/order-confirmation`, { state: { orderId, paymentMethod: "cod" } });
+      } else {
+        // For other payment methods (can be extended later)
+        clearCart();
+        navigate(`/order-confirmation`, { state: { orderId } });
+      }
     } catch (error) {
       console.error("Error creating order:", error);
       const errorMessage = error.response?.data?.message || error.message || "Có lỗi xảy ra khi đặt hàng";
-      alert(`Lỗi khi đặt hàng: ${errorMessage}`);
+      showError("Lỗi đặt hàng", errorMessage);
       
       // If stock issue, suggest refreshing
       if (error.response?.status === 400 && errorMessage.includes("stock")) {
-        if (confirm("Sản phẩm có thể đã hết hàng. Bạn có muốn làm mới trang để cập nhật?")) {
+        const result = await showConfirm(
+          "Sản phẩm hết hàng",
+          "Sản phẩm có thể đã hết hàng. Bạn có muốn làm mới trang để cập nhật?",
+          "Làm mới",
+          "Hủy"
+        );
+        if (result.isConfirmed) {
           window.location.reload();
         }
       }
@@ -128,11 +243,65 @@ const Checkout = () => {
         <div>
           <div className="bg-gray-50 p-6 rounded-lg">
             <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
+            
+            {/* Coupon Section */}
+            <div className="mb-4 p-4 bg-white rounded-lg border border-gray-200">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Mã giảm giá
+              </label>
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between p-2 bg-green-50 rounded border border-green-200">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="text-green-600" size={18} />
+                    <span className="font-medium text-green-700">{appliedCoupon.code}</span>
+                    {appliedCoupon.discount_percent && (
+                      <span className="text-sm text-gray-600">
+                        -{appliedCoupon.discount_percent}%
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleRemoveCoupon}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="Nhập mã coupon"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                    onKeyPress={(e) => e.key === "Enter" && handleApplyCoupon()}
+                  />
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={validatingCoupon}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+                  >
+                    {validatingCoupon ? "..." : "Áp dụng"}
+                  </button>
+                </div>
+              )}
+              {couponError && (
+                <p className="text-red-600 text-sm mt-2">{couponError}</p>
+              )}
+            </div>
+
             <div className="space-y-2 mb-4">
               <div className="flex justify-between">
                 <span>Subtotal</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Discount</span>
+                  <span>-${(discountAmount / 1000).toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>Shipping</span>
                 <span>{shipping === 0 ? "Free" : `$${(shipping / 1000).toFixed(2)}`}</span>
@@ -147,11 +316,52 @@ const Checkout = () => {
               </div>
             </div>
 
+            {/* Payment Method Selection */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phương thức thanh toán
+              </label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="vnpay"
+                    checked={paymentMethod === "vnpay"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="text-green-600"
+                  />
+                  <div className="flex-1">
+                    <span className="text-sm font-medium">VNPAY</span>
+                    <p className="text-xs text-gray-500">Thanh toán trực tuyến qua VNPay</p>
+                  </div>
+                </label>
+                <label className="flex items-center gap-2 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="cod"
+                    checked={paymentMethod === "cod"}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="text-green-600"
+                  />
+                  <div className="flex-1">
+                    <span className="text-sm font-medium">Thanh toán khi nhận hàng (COD)</span>
+                    <p className="text-xs text-gray-500">Thanh toán bằng tiền mặt khi nhận được hàng</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
             <button
               onClick={handleCheckout}
-              disabled={loading || cartItems.length === 0}
+              disabled={loading || cartItems.length === 0 || processingPayment}
               className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 disabled:opacity-50">
-              {loading ? "Processing..." : "Checkout"}
+              {processingPayment
+                ? "Đang chuyển đến cổng thanh toán..."
+                : loading
+                ? "Đang xử lý..."
+                : "Thanh toán"}
             </button>
           </div>
         </div>

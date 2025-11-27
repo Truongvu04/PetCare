@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { User, Lock, Bell, Shield, Loader2, Save, Eye, EyeOff } from 'lucide-react';
 // Đảm bảo đường dẫn import đúng với cấu trúc dự án của bạn
-import { apiGetVendorProfile, apiUpdatePassword } from '../../api/vendorApi'; 
+import { apiGetVendorProfile, apiUpdatePassword } from '../../api/vendorApi';
+import { showSuccess, showError, showWarning } from '../../utils/notifications';
+import api from '../../api/axiosConfig.js'; 
 
 const AccountSettings = () => {
     const [loading, setLoading] = useState(true);
@@ -32,7 +34,45 @@ const AccountSettings = () => {
 
     useEffect(() => {
         fetchAccountInfo();
+        fetchNotificationPreferences();
     }, []);
+
+    const fetchNotificationPreferences = async () => {
+        try {
+            const res = await api.get('/notification-settings');
+            if (res.data) {
+                setNotifications({
+                    emailNotif: res.data.new_products_services !== false, // Default true
+                    pushNotif: res.data.platform_updates !== false, // Default true
+                    orderUpdates: res.data.appointment_reminders !== false // Default true
+                });
+            }
+        } catch (err) {
+            console.error("Lỗi tải notification preferences:", err);
+            // Keep default values (all true)
+        }
+    };
+
+    const handleNotificationChange = async (field, value) => {
+        const newNotifications = { ...notifications, [field]: value };
+        setNotifications(newNotifications);
+        
+        // Save to backend
+        try {
+            const res = await api.put('/notification-settings', {
+                new_products_services: newNotifications.emailNotif,
+                platform_updates: newNotifications.pushNotif,
+                appointment_reminders: newNotifications.orderUpdates
+            });
+            showSuccess("Thành công", "Đã cập nhật cài đặt thông báo");
+        } catch (err) {
+            // Revert on error
+            setNotifications(notifications);
+            console.error("Lỗi cập nhật notification preferences:", err);
+            const errorMessage = err.response?.data?.message || err.message || "Không thể cập nhật cài đặt thông báo";
+            showError("Lỗi", errorMessage);
+        }
+    };
 
     const fetchAccountInfo = async () => {
         try {
@@ -63,11 +103,11 @@ const AccountSettings = () => {
     const handlePasswordChange = async (e) => {
         e.preventDefault();
         if (passData.newPassword !== passData.confirmPassword) {
-            alert("Mật khẩu mới không khớp!");
+            showWarning("Lỗi", "Mật khẩu mới không khớp!");
             return;
         }
         if (passData.newPassword.length < 6) {
-            alert("Mật khẩu mới phải có ít nhất 6 ký tự.");
+            showWarning("Lỗi", "Mật khẩu mới phải có ít nhất 6 ký tự.");
             return;
         }
 
@@ -77,11 +117,11 @@ const AccountSettings = () => {
                 oldPassword: passData.oldPassword,
                 newPassword: passData.newPassword
             });
-            alert("Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
+            showSuccess("Thành công", "Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
             // Reset form
             setPassData({ oldPassword: '', newPassword: '', confirmPassword: '' });
         } catch (err) {
-            alert("Lỗi: " + (err.response?.data?.message || err.message));
+            showError("Lỗi", err.response?.data?.message || err.message);
         } finally {
             setSaving(false);
         }
@@ -234,7 +274,12 @@ const AccountSettings = () => {
                                 <p className="text-xs text-gray-500">Nhận email khi có đơn hàng mới hoặc tin nhắn</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" className="sr-only peer" checked={notifications.emailNotif} onChange={() => setNotifications(p => ({...p, emailNotif: !p.emailNotif}))} />
+                                <input 
+                                    type="checkbox" 
+                                    className="sr-only peer" 
+                                    checked={notifications.emailNotif} 
+                                    onChange={() => handleNotificationChange('emailNotif', !notifications.emailNotif)} 
+                                />
                                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-400"></div>
                             </label>
                         </div>
@@ -244,7 +289,12 @@ const AccountSettings = () => {
                                 <p className="text-xs text-gray-500">Hiển thị popup khi bạn đang mở trang web</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" className="sr-only peer" checked={notifications.pushNotif} onChange={() => setNotifications(p => ({...p, pushNotif: !p.pushNotif}))} />
+                                <input 
+                                    type="checkbox" 
+                                    className="sr-only peer" 
+                                    checked={notifications.pushNotif} 
+                                    onChange={() => handleNotificationChange('pushNotif', !notifications.pushNotif)} 
+                                />
                                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-400"></div>
                             </label>
                         </div>

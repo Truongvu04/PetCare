@@ -26,6 +26,8 @@ import reviewRoutes from "./src/routes/reviewRoutes.js";
 import cartRoutes from "./src/routes/cartRoutes.js";
 import vendorRoutes from './src/routes/vendor.routes.js';
 import paymentsRoutes from "./src/routes/payments.routes.js";
+import notificationSettingsRoutes from "./src/routes/notificationSettings.js";
+import couponRoutes from "./src/routes/coupon.routes.js";
 import "./src/config/passport.js";
 import './src/scheduler/reminderJob.js'; // Đã kích hoạt cron job
 
@@ -69,9 +71,13 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/cart", cartRoutes);
 app.use('/api/v1/vendor', vendorRoutes);
 app.use("/api/payments", paymentsRoutes);
+app.use("/api/notification-settings", notificationSettingsRoutes);
+app.use("/api/coupons", couponRoutes);
 console.log("✅ Payments routes registered at /api/payments");
+console.log("✅ Coupon routes registered at /api/coupons");
 console.log("✅ Cart routes registered at /api/cart");
 console.log("✅ Vendor routes registered at /api/v1/vendor");
+console.log("✅ Notification settings routes registered at /api/notification-settings");
 
 app.get(
   "/auth/google",

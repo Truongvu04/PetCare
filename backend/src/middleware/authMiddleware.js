@@ -40,21 +40,43 @@ export const verifyToken = async (req, res, next) => {
       return res.status(401).json({ message: "User not found" });
     }
 
-    const customer = await prisma.vendors.findUnique({
-      where: { user_id: user.user_id }
-    }).then(v => v ? null : { customer_id: user.user_id });
-
     const vendor = await prisma.vendors.findUnique({
       where: { user_id: user.user_id }
     });
 
-    req.user = user;
+    const customer = vendor ? null : { customer_id: user.user_id };
+
+    // IMPORTANT: Preserve admin role even if user has vendor record
+    // This ensures admin users can access admin routes even if they have vendor data
+    let finalRole = user.role;
+    
+    // Only override role if user has vendor AND role is NOT 'admin' (preserve admin role)
+    if (vendor && user.role !== 'admin') {
+      if (!finalRole || finalRole === null || finalRole === undefined) {
+        // If no role set and has vendor, default to 'vendor'
+        finalRole = 'vendor';
+      } else if (finalRole !== 'vendor') {
+        // User has vendor but role is something else (not admin) - keep original role
+        finalRole = finalRole;
+      }
+    }
+    // If user.role === 'admin', preserve it regardless of vendor existence
+
+    // Create user object with preserved role
+    const userWithRole = {
+      ...user,
+      role: finalRole
+    };
+
+    req.user = userWithRole;
     req.customer = customer;
     req.vendor = vendor;
 
     console.log("✅ Token verified. User:", { 
       user_id: user.user_id, 
       email: user.email,
+      originalRole: user.role,
+      finalRole: finalRole,
       hasCustomer: !!customer,
       hasVendor: !!vendor
     });
