@@ -185,17 +185,17 @@ const Shop = () => {
     <div className="relative">
       <CartIcon showFloating={true} />
       <CustomerLayout currentPage="shop">
-        <div className="mb-8 flex justify-between items-center gap-4">
-          <div className="relative w-full max-w-xl">
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4">
+          <div className="relative w-full sm:max-w-xl">
             <input
               type="text"
               placeholder="Search for products..."
               value={searchQuery}
               onChange={handleSearchChange}
-              className="w-full rounded-full border border-gray-200 pl-12 pr-10 py-3 focus:ring-1 focus:ring-green-500 focus:outline-none shadow-sm"/>
+              className="w-full rounded-full border border-gray-200 pl-10 sm:pl-12 pr-10 py-2.5 sm:py-3 text-sm sm:text-base focus:ring-1 focus:ring-green-500 focus:outline-none shadow-sm"/>
             <Search
-              className="absolute left-4 top-3.5 text-gray-400"
-              size={20}/>
+              className="absolute left-3 sm:left-4 top-2.5 sm:top-3.5 text-gray-400"
+              size={18}/>
           </div>
 
           {/* Nút My Orders (Căn phải) */}
@@ -276,7 +276,7 @@ const Shop = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
                 {paginatedProducts.map((product) => {
                   // Find thumbnail (check for both true and 1)
                   const thumbnail = product.product_images?.find(
@@ -300,8 +300,8 @@ const Shop = () => {
                     <div
                       key={product.product_id}
                       onClick={() => navigate(`/shop/${product.product_id}`)}
-                      className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-3 cursor-pointer group border border-transparent hover:border-green-100">
-                      <div className="w-full h-48 bg-gray-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden relative">
+                      className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-2 sm:p-3 cursor-pointer group border border-transparent hover:border-green-100">
+                      <div className="w-full h-32 sm:h-40 lg:h-48 bg-gray-100 rounded-lg mb-2 sm:mb-3 flex items-center justify-center overflow-hidden relative">
                         <img
                           src={imageUrl}
                           alt={product.name}
@@ -312,14 +312,14 @@ const Shop = () => {
                             }
                           }}/>
                       </div>
-                      <h3 className="font-semibold text-gray-800 line-clamp-2 h-12 mb-1 group-hover:text-green-700 transition-colors">
+                      <h3 className="font-semibold text-xs sm:text-sm lg:text-base text-gray-800 line-clamp-2 h-8 sm:h-10 lg:h-12 mb-1 group-hover:text-green-700 transition-colors">
                         {product.name}
                       </h3>
-                      <p className="text-xs text-gray-500 mb-2">
+                      <p className="text-[10px] sm:text-xs text-gray-500 mb-1 sm:mb-2">
                         {product.vendors?.store_name || "PetCare Shop"}
                       </p>
                       <div className="flex items-center justify-between mt-auto">
-                        <p className="text-lg font-bold text-green-700">
+                        <p className="text-sm sm:text-base lg:text-lg font-bold text-green-700">
                           ${(product.price / 1000).toFixed(2)}
                         </p>
                       </div>

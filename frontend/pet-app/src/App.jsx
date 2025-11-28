@@ -15,7 +15,6 @@ import OrderHistory from "./components/Shop/OrderHistory.jsx";
 import OrderDetail from "./components/Shop/OrderDetail.jsx";
 import ReviewForm from "./components/Shop/ReviewForm.jsx";
 import VetMap from "./components/Map/VetMap.jsx";
-import VeterinaryAutoLocateMapPage from "./components/Map/VeterinaryAutoLocateMapPage.jsx";
 import CartIcon from "./components/Shop/CartIcon.jsx";
 import CustomerLayout from "./components/DashBoard/CustomerLayout.jsx";
 
@@ -240,8 +239,6 @@ function App() {
             <Route path="/order-confirmation" element={<OrderConfirmation />} />
             <Route path="/review" element={<ReviewForm />} />
             <Route path="/vet-map" element={<VetMap />} />
-            <Route path="/vet-map-auto" element={<VeterinaryAutoLocateMapPage />} />
-            <Route path="/vet-map/:clinicId" element={<VeterinaryAutoLocateMapPage />} />
 
             <Route
               path="/mypets"

@@ -133,28 +133,28 @@ const Cart = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 md:p-8 relative">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 relative">
       {/* Floating Cart Button - hidden on cart page */}
       <div className="hidden">
         <CartIcon showFloating={true} />
       </div>
 
       {/* Progress Indicator */}
-      <div className="mb-12">
+      <div className="mb-8 sm:mb-12">
         <div className="flex items-center justify-center w-full max-w-3xl mx-auto">
           <div className="flex flex-col items-center relative z-10">
-            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold mb-2 ring-4 ring-white">1</div>
-            <span className="text-sm font-semibold text-green-700">Cart</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold mb-1 sm:mb-2 ring-2 sm:ring-4 ring-white text-sm sm:text-base">1</div>
+            <span className="text-xs sm:text-sm font-semibold text-green-700">Cart</span>
           </div>
-          <div className="flex-1 h-1 bg-gray-200 -mx-4 relative top-[-14px] z-0"></div>
+          <div className="flex-1 h-1 bg-gray-200 -mx-2 sm:-mx-4 relative top-[-10px] sm:top-[-14px] z-0"></div>
           <div className="flex flex-col items-center relative z-10">
-            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold mb-2 ring-4 ring-white">2</div>
-            <span className="text-sm font-medium text-gray-500">Shipping</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold mb-1 sm:mb-2 ring-2 sm:ring-4 ring-white text-sm sm:text-base">2</div>
+            <span className="text-xs sm:text-sm font-medium text-gray-500">Shipping</span>
           </div>
-          <div className="flex-1 h-1 bg-gray-200 -mx-4 relative top-[-14px] z-0"></div>
+          <div className="flex-1 h-1 bg-gray-200 -mx-2 sm:-mx-4 relative top-[-10px] sm:top-[-14px] z-0"></div>
           <div className="flex flex-col items-center relative z-10">
-            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold mb-2 ring-4 ring-white">3</div>
-            <span className="text-sm font-medium text-gray-500">Payment</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold mb-1 sm:mb-2 ring-2 sm:ring-4 ring-white text-sm sm:text-base">3</div>
+            <span className="text-xs sm:text-sm font-medium text-gray-500">Payment</span>
           </div>
         </div>
       </div>
@@ -167,18 +167,18 @@ const Cart = () => {
         Continue Shopping
       </button>
 
-      <h1 className="text-3xl font-bold mb-8 text-gray-900">Shopping Cart ({cartItems.length} items)</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-900">Shopping Cart ({cartItems.length} items)</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 xl:gap-12">
         {/* Cart Items List */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {cartItems.map((item) => {
             const thumbnail = item.product?.product_images?.find(
               (img) => img.is_thumbnail === true
             );
             return (
-              <div key={item.productId} className="flex gap-6 p-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="w-32 h-32 flex-shrink-0 bg-gray-50 rounded-xl overflow-hidden">
+              <div key={item.productId} className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-6 bg-white border border-gray-100 rounded-xl sm:rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-full sm:w-24 sm:h-24 lg:w-32 lg:h-32 h-48 flex-shrink-0 bg-gray-50 rounded-lg sm:rounded-xl overflow-hidden">
                   <img
                     src={
                       thumbnail

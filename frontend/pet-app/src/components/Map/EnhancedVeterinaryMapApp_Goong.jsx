@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import GeoapifyMapComponent from './GeoapifyMapComponent';
+import GoongMapComponent from './GoongMapComponent';
 import { useGeolocation } from '../../hooks/useGeolocation';
-import { geoapifyService } from '../../services/geoapifyService';
+import { goongService } from '../../services/goongService';
 
 const EnhancedVeterinaryMapApp = () => {
   const { location, loading: locationLoading, error: locationError, getCurrentLocation } = useGeolocation();
@@ -9,7 +9,7 @@ const EnhancedVeterinaryMapApp = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [searchRadius, setSearchRadius] = useState(15000);
+  const [searchRadius, setSearchRadius] = useState(10000);
   const [zoomLevel] = useState(13);
   const [dataSource, setDataSource] = useState('combined');
   const [showFilters, setShowFilters] = useState(false);
@@ -22,15 +22,15 @@ const EnhancedVeterinaryMapApp = () => {
       let result;
       
       switch (dataSource) {
-        case 'geoapify':
-          result = await geoapifyService.getVeterinaryClinics(lat, lng, searchRadius, query);
+        case 'goong':
+          result = await goongService.getVeterinaryClinics(lat, lng, searchRadius, query);
           break;
         case 'local':
-          result = await geoapifyService.getLocalVets(lat, lng, searchRadius / 1000, query);
+          result = await goongService.getLocalVets(lat, lng, searchRadius / 1000, query);
           break;
         case 'combined':
         default:
-          result = await geoapifyService.getCombinedResults(lat, lng, searchRadius, query);
+          result = await goongService.getCombinedResults(lat, lng, searchRadius, query);
           break;
       }
       
@@ -80,7 +80,7 @@ const EnhancedVeterinaryMapApp = () => {
 
   const getDataSourceText = (source) => {
     switch (source) {
-      case 'geoapify': return 'Geoapify';
+      case 'goong': return 'Goong Map';
       case 'local': return 'Dữ liệu local';
       case 'combined': return 'Tất cả nguồn';
       default: return 'Tất cả nguồn';
@@ -89,20 +89,10 @@ const EnhancedVeterinaryMapApp = () => {
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-blue-50 to-green-50">
-      {/* Header với gradient đẹp */}
       <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 text-white p-6 shadow-lg">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-6">
-            {/* <h1 className="text-2xl font-bold mb-2 flex items-center justify-center gap-2">
-              <span className="text-3xl">🏥</span>
-              Tìm Phòng Khám Thú Y
-            </h1> */}
-          </div>
-
-          {/* Search Controls với design đẹp */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
             <div className="flex flex-col lg:flex-row gap-4 items-center">
-              {/* Search Input */}
               <div className="relative flex-grow w-full lg:w-auto">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,7 +109,6 @@ const EnhancedVeterinaryMapApp = () => {
                 />
               </div>
               
-              {/* Action Buttons */}
               <div className="flex gap-3 w-full lg:w-auto">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
@@ -153,7 +142,6 @@ const EnhancedVeterinaryMapApp = () => {
               </div>
             </div>
 
-            {/* Filters Panel */}
             {showFilters && (
               <div className="mt-6 pt-6 border-t border-white/20">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -165,7 +153,7 @@ const EnhancedVeterinaryMapApp = () => {
                       className="w-full px-4 py-2 rounded-lg bg-white/90 text-gray-900 border-0 focus:ring-2 focus:ring-white"
                     >
                       <option value="combined">Tất cả nguồn</option>
-                      <option value="geoapify">Geoapify</option>
+                      <option value="goong">Goong Map</option>
                       <option value="local">Dữ liệu local</option>
                     </select>
                   </div>
@@ -191,7 +179,6 @@ const EnhancedVeterinaryMapApp = () => {
         </div>
       </div>
 
-      {/* Status Messages với design đẹp */}
       <div className="px-6 py-4 space-y-3">
         <div className="max-w-7xl mx-auto">
           {locationError && (
@@ -290,7 +277,6 @@ const EnhancedVeterinaryMapApp = () => {
         </div>
       </div>
 
-      {/* Map Container với shadow đẹp */}
       <div className="flex-1 px-6 pb-6">
         <div className="max-w-7xl mx-auto h-full">
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden h-full border border-gray-200">
@@ -314,7 +300,7 @@ const EnhancedVeterinaryMapApp = () => {
             </div>
             
             <div className="h-full relative">
-              <GeoapifyMapComponent
+              <GoongMapComponent
                 clinics={clinics}
                 userLocation={location}
                 zoomLevel={zoomLevel}
