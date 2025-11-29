@@ -565,12 +565,60 @@ const ProductManagement = () => {
         p.category?.toLowerCase().includes(filter.toLowerCase())
     );
 
-    // Render trạng thái (Logic này chỉ dùng để hiển thị, không cần gửi lên DB nếu DB chưa có cột status)
-    const renderStatus = (stock) => {
-        if (stock > 0) {
-            return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">Đang bán</span>;
+    // Render trạng thái sản phẩm (status từ DB)
+    const renderStatus = (product) => {
+        const status = product.status || 'PENDING';
+        const stock = product.stock || 0;
+        
+        // Status badge
+        let statusBadge = null;
+        switch (status) {
+            case 'APPROVED':
+                statusBadge = (
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
+                        Đã duyệt
+                    </span>
+                );
+                break;
+            case 'REJECTED':
+                statusBadge = (
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+                        Đã từ chối
+                    </span>
+                );
+                break;
+            case 'PENDING':
+            default:
+                statusBadge = (
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 border border-yellow-200">
+                        Chờ duyệt
+                    </span>
+                );
+                break;
         }
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">Hết hàng</span>;
+        
+        // Stock badge
+        const stockBadge = stock > 0 ? (
+            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200 ml-2">
+                Còn hàng
+            </span>
+        ) : (
+            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200 ml-2">
+                Hết hàng
+            </span>
+        );
+        
+        return (
+            <div className="flex flex-col gap-1 items-center">
+                {statusBadge}
+                {stockBadge}
+                {status === 'REJECTED' && product.rejection_reason && (
+                    <span className="text-xs text-red-600 mt-1 max-w-xs text-center" title={product.rejection_reason}>
+                        Lý do: {product.rejection_reason.length > 30 ? product.rejection_reason.substring(0, 30) + '...' : product.rejection_reason}
+                    </span>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -645,7 +693,7 @@ const ProductManagement = () => {
                                             {p.stock > 0 ? <span className="font-medium">{p.stock}</span> : <span className="text-red-500 text-xs font-bold">0</span>}
                                         </td>
                                         <td className="p-4 text-center">
-                                            {renderStatus(p.stock)}
+                                            {renderStatus(p)}
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex justify-end gap-2">

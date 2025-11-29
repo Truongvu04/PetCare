@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, Bell, Shield, Loader2, Save, Eye, EyeOff, Home, ArrowLeft } from 'lucide-react';
+import { User, Lock, Bell, Shield, Loader2, Save, Eye, EyeOff, Home, ArrowLeft, Store, CheckCircle, AlertCircle, Tag, Globe } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { apiGetVendorProfile, apiUpdatePassword } from '../../api/vendorApi';
+import { apiGetVendorProfile, apiUpdatePassword, apiRequestVendorAccount } from '../../api/vendorApi';
 import { showSuccess, showError, showWarning } from '../../utils/notifications';
 import api from '../../api/axiosConfig.js'; 
 
@@ -35,15 +35,74 @@ const AccountSettings = () => {
         orderUpdates: true
     });
 
-    // Check if user is vendor (admin with vendor data is also considered vendor for API purposes)
-    const isVendor = user?.role === 'vendor' || (user?.role === 'admin' && user?.vendor) || !!user?.vendor;
+    // State cho đăng ký vendor
+    const [vendorRequest, setVendorRequest] = useState({
+        store_name: '',
+        phone: '',
+        address: '',
+        logo_url: '',
+        banner_url: '',
+        description: ''
+    });
+    const [vendorStatus, setVendorStatus] = useState(null); // 'pending', 'approved', 'rejected', null
+    const [hasVendorRecord, setHasVendorRecord] = useState(false); // Track xem user có vendor record không
+    const [submittingVendor, setSubmittingVendor] = useState(false);
+
+    // Check if user is vendor - CHỈ dựa vào role từ users table, không check vendors table
+    // Điều này đảm bảo khi admin downgrade user từ vendor về owner, role sẽ đúng
+    const isVendor = user?.role === 'vendor';
+    
+    // Logic hiển thị form đăng ký vendor:
+    // - Nếu không phải vendor (role !== 'vendor')
+    // - VÀ (không phải admin HOẶC admin nhưng chưa có vendor record)
+    const shouldShowVendorForm = !isVendor && (user?.role !== 'admin' || !hasVendorRecord);
 
     useEffect(() => {
         if (user) {
             fetchAccountInfo();
             fetchNotificationPreferences();
+            checkVendorStatus();
+            
+            // Nếu user object có vendor data từ auth context, set hasVendorRecord
+            // Điều này giúp check nhanh mà không cần đợi API call
+            if (user.vendor) {
+                setHasVendorRecord(true);
+            }
         }
     }, [user]);
+
+    const checkVendorStatus = async () => {
+        try {
+            // Kiểm tra xem user có vendor record không
+            // Sử dụng vendorApi thay vì axiosConfig để có đúng endpoint
+            const res = await apiGetVendorProfile();
+            if (res.data) {
+                const status = res.data.status;
+                setVendorStatus(status);
+                setHasVendorRecord(true); // User có vendor record
+                if (status === 'pending') {
+                    setVendorRequest({
+                        store_name: res.data.store_name || '',
+                        phone: res.data.phone || '',
+                        address: res.data.address || '',
+                        logo_url: res.data.logo_url || '',
+                        banner_url: '', // banner_url không tồn tại trong schema
+                        description: res.data.description || ''
+                    });
+                }
+            }
+        } catch (err) {
+            // User chưa có vendor record hoặc chưa đăng ký
+            if (err.response?.status === 404 || err.response?.status === 403) {
+                // 404/403 = không có vendor record
+                setHasVendorRecord(false);
+                setVendorStatus(null);
+            } else {
+                console.error("Lỗi kiểm tra vendor status:", err);
+                // Nếu lỗi khác, giữ nguyên state hiện tại
+            }
+        }
+    };
 
     const fetchNotificationPreferences = async () => {
         try {
@@ -83,27 +142,39 @@ const AccountSettings = () => {
         try {
             setLoading(true);
             
-            if (isVendor) {
-                // Use vendor API if user is vendor
-                const res = await apiGetVendorProfile();
-                const data = res.data;
-                const displayRole = data.role 
-                    ? data.role.charAt(0).toUpperCase() + data.role.slice(1) 
-                    : 'Vendor';
+            // LUÔN dùng role từ users table làm nguồn chính xác
+            // Không dùng vendor API để lấy role vì có thể không sync với users.role
+            const displayRole = user?.role 
+                ? user.role.charAt(0).toUpperCase() + user.role.slice(1) 
+                : 'Customer';
 
-                setProfile({
-                    fullName: data.full_name || user?.full_name || '',
-                    email: data.email || user?.email || '',
-                    phone: data.phone || user?.phone || '',
-                    role: displayRole
-                });
+            if (isVendor) {
+                // Nếu là vendor, có thể lấy thêm thông tin từ vendor API nhưng role vẫn từ users table
+                try {
+                    const res = await apiGetVendorProfile();
+                    const data = res.data;
+                    setProfile({
+                        fullName: data.full_name || user?.full_name || '',
+                        email: data.email || user?.email || '',
+                        phone: data.phone || user?.phone || '',
+                        role: displayRole // LUÔN dùng role từ users table
+                    });
+                } catch (vendorErr) {
+                    // Nếu không lấy được vendor profile, fallback về user info
+                    setProfile({
+                        fullName: user?.full_name || '',
+                        email: user?.email || '',
+                        phone: user?.phone || '',
+                        role: displayRole
+                    });
+                }
             } else {
-                // Use user info from auth context for regular customers
+                // Use user info from auth context
                 setProfile({
                     fullName: user?.full_name || '',
                     email: user?.email || '',
                     phone: user?.phone || '',
-                    role: user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Customer'
+                    role: displayRole
                 });
             }
         } catch (err) {
@@ -159,6 +230,50 @@ const AccountSettings = () => {
 
     const toggleShowPass = (field) => {
         setShowPass(prev => ({ ...prev, [field]: !prev[field] }));
+    };
+
+    const handleVendorRequest = async (e) => {
+        e.preventDefault();
+        
+        // Validation: 3 fields bắt buộc
+        if (!vendorRequest.store_name || vendorRequest.store_name.trim().length === 0) {
+            showWarning("Lỗi", "Vui lòng nhập tên cửa hàng");
+            return;
+        }
+        if (!vendorRequest.phone || vendorRequest.phone.trim().length === 0) {
+            showWarning("Lỗi", "Vui lòng nhập số điện thoại");
+            return;
+        }
+        if (!vendorRequest.address || vendorRequest.address.trim().length === 0) {
+            showWarning("Lỗi", "Vui lòng nhập địa chỉ kho");
+            return;
+        }
+
+        setSubmittingVendor(true);
+        try {
+            await apiRequestVendorAccount({
+                store_name: vendorRequest.store_name.trim(),
+                phone: vendorRequest.phone.trim(),
+                address: vendorRequest.address.trim(),
+                logo_url: vendorRequest.logo_url?.trim() || null,
+                description: vendorRequest.description?.trim() || null
+            });
+            showSuccess("Thành công", "Đăng ký làm vendor thành công! Yêu cầu của bạn đang chờ admin duyệt.");
+            setVendorStatus('pending');
+            setHasVendorRecord(true); // Đã có vendor record sau khi đăng ký thành công
+            setVendorRequest({ 
+                store_name: '', 
+                phone: '', 
+                address: '', 
+                logo_url: '', 
+                banner_url: '', 
+                description: '' 
+            });
+        } catch (err) {
+            showError("Lỗi", err.response?.data?.message || err.message || "Không thể đăng ký làm vendor");
+        } finally {
+            setSubmittingVendor(false);
+        }
     };
 
     if (loading) return (
@@ -348,6 +463,185 @@ const AccountSettings = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* 4. Đăng ký làm Vendor (hiển thị nếu: không phải vendor VÀ (không phải admin HOẶC admin nhưng chưa có vendor record)) */}
+                {shouldShowVendorForm && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <Store size={20} className="text-green-600" /> Đăng ký làm Vendor
+                        </h3>
+                        
+                        {vendorStatus === 'pending' && (
+                            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
+                                <AlertCircle className="text-yellow-600 shrink-0 mt-0.5" size={20} />
+                                <div>
+                                    <p className="font-medium text-yellow-800">Yêu cầu đang chờ duyệt</p>
+                                    <p className="text-sm text-yellow-700 mt-1">Yêu cầu đăng ký làm vendor của bạn đang chờ admin duyệt. Vui lòng đợi trong giây lát.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {vendorStatus === 'rejected' && (
+                            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                                <AlertCircle className="text-red-600 shrink-0 mt-0.5" size={20} />
+                                <div>
+                                    <p className="font-medium text-red-800">Yêu cầu đã bị từ chối</p>
+                                    <p className="text-sm text-red-700 mt-1">Yêu cầu đăng ký làm vendor của bạn đã bị từ chối. Bạn có thể đăng ký lại với thông tin mới.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {vendorStatus !== 'pending' && (
+                            <form onSubmit={handleVendorRequest} className="space-y-8">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                    {/* Cột 1: Thông tin Cơ bản */}
+                                    <div className="lg:col-span-1 space-y-5">
+                                        <h3 className="font-bold text-gray-700 flex items-center gap-2 border-b pb-2">
+                                            <Tag size={18} className="text-green-600"/> Thông tin Cơ bản
+                                        </h3>
+                                        
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                Tên Cửa Hàng <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={vendorRequest.store_name}
+                                                onChange={(e) => setVendorRequest({...vendorRequest, store_name: e.target.value})}
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
+                                                placeholder="VD: Pet Shop Cưng"
+                                                disabled={submittingVendor}
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">Trường bắt buộc</p>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                Số điện thoại <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={vendorRequest.phone}
+                                                onChange={(e) => setVendorRequest({...vendorRequest, phone: e.target.value})}
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
+                                                placeholder="09..."
+                                                disabled={submittingVendor}
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">Trường bắt buộc</p>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                                Địa chỉ kho <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={vendorRequest.address}
+                                                onChange={(e) => setVendorRequest({...vendorRequest, address: e.target.value})}
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
+                                                placeholder="Số nhà, đường, quận..."
+                                                disabled={submittingVendor}
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">Trường bắt buộc</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Cột 2: Hình ảnh & Mô tả */}
+                                    <div className="lg:col-span-2 space-y-6">
+                                        <h3 className="font-bold text-gray-700 flex items-center gap-2 border-b pb-2">
+                                            <Globe size={18} className="text-green-600"/> Hình ảnh & Mô tả
+                                        </h3>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                            {/* Logo */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Logo URL</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="https://..."
+                                                    value={vendorRequest.logo_url}
+                                                    onChange={(e) => setVendorRequest({...vendorRequest, logo_url: e.target.value})}
+                                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
+                                                    disabled={submittingVendor}
+                                                />
+                                                {vendorRequest.logo_url && (
+                                                    <div className="mt-3 border p-1 w-fit rounded-lg bg-white shadow-sm">
+                                                        <img 
+                                                            src={vendorRequest.logo_url} 
+                                                            alt="Logo" 
+                                                            className="w-16 h-16 object-cover rounded-md" 
+                                                            onError={(e) => e.target.style.display = 'none'} 
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Banner */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Banner URL</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="https://..."
+                                                    value={vendorRequest.banner_url}
+                                                    onChange={(e) => setVendorRequest({...vendorRequest, banner_url: e.target.value})}
+                                                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
+                                                    disabled={submittingVendor}
+                                                />
+                                                {vendorRequest.banner_url && (
+                                                    <div className="mt-3 border p-1 rounded-lg bg-white shadow-sm">
+                                                        <img 
+                                                            src={vendorRequest.banner_url} 
+                                                            alt="Banner" 
+                                                            className="w-full h-16 object-cover rounded-md" 
+                                                            onError={(e) => e.target.style.display = 'none'} 
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Mô tả */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Giới thiệu cửa hàng</label>
+                                            <textarea
+                                                rows="4"
+                                                value={vendorRequest.description}
+                                                onChange={(e) => setVendorRequest({...vendorRequest, description: e.target.value})}
+                                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all resize-none bg-gray-50 focus:bg-white"
+                                                placeholder="Chào mừng đến với cửa hàng của chúng tôi..."
+                                                disabled={submittingVendor}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Footer Action */}
+                                <div className="pt-6 flex justify-end border-t border-gray-100">
+                                    <button
+                                        type="submit"
+                                        disabled={submittingVendor || !vendorRequest.store_name.trim() || !vendorRequest.phone.trim() || !vendorRequest.address.trim()}
+                                        className="px-8 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 disabled:bg-green-300 transition-all shadow-lg shadow-green-200 flex items-center gap-2 active:scale-95 transform"
+                                    >
+                                        {submittingVendor ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                Đang gửi...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Store size={20} />
+                                                Gửi yêu cầu đăng ký
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                )}
 
             </div>
         </div>

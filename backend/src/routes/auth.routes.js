@@ -119,24 +119,20 @@ router.post("/login", async (req, res) => {
 
     const customer = vendor ? null : { customer_id: user.user_id };
 
-    // IMPORTANT: Preserve admin role even if user has vendor record
-    // Admin users can have both admin and vendor access
+    // QUAN TRỌNG: LUÔN dùng role từ users table làm nguồn chính xác duy nhất
+    // KHÔNG override role dựa trên vendor record vì:
+    // - Admin có thể downgrade user từ vendor về owner
+    // - Role trong users table là nguồn chính xác nhất
+    // - Vendor record chỉ là metadata, không quyết định role
     let finalRole = user.role;
     
-    // Debug logging
-    console.log("🔍 Role check - Original role:", user.role, "Vendor exists:", !!vendor, "Vendor ID:", vendor?.vendor_id);
-    
-    // Only override role if:
-    // 1. User has vendor record AND
-    // 2. User role is NOT 'admin' (preserve admin role)
-    // 3. User role is null/undefined (set default to 'vendor')
-    if (vendor && user.role !== 'admin') {
-      if (!finalRole || finalRole === null || finalRole === undefined) {
-        // If no role set and has vendor, default to 'vendor'
+    // Chỉ set default role nếu role là null/undefined (chưa được set)
+    if (!finalRole || finalRole === null || finalRole === undefined) {
+      // Nếu có vendor record và role chưa set, có thể set default là vendor
+      // Nhưng chỉ khi role thực sự là null/undefined
+      if (vendor) {
         finalRole = 'vendor';
-        console.log("🔧 Setting default role to 'vendor' because user has vendor record and no role was set");
-        
-        // Only update database if role was null/undefined
+        // Update database để sync
         try {
           await prisma.users.update({
             where: { user_id: user.user_id },
@@ -146,24 +142,14 @@ router.post("/login", async (req, res) => {
         } catch (err) {
           console.warn("⚠️ Failed to update user.role in database:", err.message);
         }
-      } else if (finalRole !== 'vendor') {
-        // User has vendor but role is something else (not admin) - override in response only
-        finalRole = 'vendor';
-        console.log("🔧 Overriding role to 'vendor' in response (vendor_id:", vendor.vendor_id + ") - NOT updating database");
-        // DO NOT update database - preserve original role
+      } else {
+        finalRole = 'owner'; // Default to owner if no vendor
       }
-    } else if (!finalRole || finalRole === null || finalRole === undefined) {
-      // If no role set and no vendor, default to 'owner' (customer)
-      finalRole = 'owner';
-      console.log("🔧 Setting default role to 'owner' because no role was set");
-    } else if (user.role === 'admin' && vendor) {
-      // Admin with vendor - preserve admin role, vendor info available in response
-      console.log("✅ Admin user with vendor record - preserving admin role, vendor info available");
-    } else {
-      console.log("✅ Keeping original role:", finalRole);
     }
+    // Nếu role đã được set (không phải null/undefined), LUÔN dùng role đó
+    // KHÔNG override dựa trên vendor record
 
-    console.log("✅ Login successful:", email, "Original Role:", user.role, "Final Role:", finalRole, "Has vendor:", !!vendor);
+    console.log("✅ Login successful:", email, "Role:", finalRole, "Has vendor:", !!vendor);
 
     res.json({
       message: "Login successful",
@@ -223,21 +209,20 @@ router.get("/me", async (req, res) => {
 
     const customer = vendor ? null : { customer_id: user.user_id };
 
-    // IMPORTANT: Preserve admin role even if user has vendor record
-    // Admin users can have both admin and vendor access
+    // QUAN TRỌNG: LUÔN dùng role từ users table làm nguồn chính xác duy nhất
+    // KHÔNG override role dựa trên vendor record vì:
+    // - Admin có thể downgrade user từ vendor về owner
+    // - Role trong users table là nguồn chính xác nhất
+    // - Vendor record chỉ là metadata, không quyết định role
     let finalRole = user.role;
     
-    // Only override role if:
-    // 1. User has vendor record AND
-    // 2. User role is NOT 'admin' (preserve admin role)
-    // 3. User role is null/undefined (set default to 'vendor')
-    if (vendor && user.role !== 'admin') {
-      if (!finalRole || finalRole === null || finalRole === undefined) {
-        // If no role set and has vendor, default to 'vendor'
+    // Chỉ set default role nếu role là null/undefined (chưa được set)
+    if (!finalRole || finalRole === null || finalRole === undefined) {
+      // Nếu có vendor record và role chưa set, có thể set default là vendor
+      // Nhưng chỉ khi role thực sự là null/undefined
+      if (vendor) {
         finalRole = 'vendor';
-        console.log("🔧 /me: Setting default role to 'vendor' because user has vendor record and no role was set");
-        
-        // Only update database if role was null/undefined
+        // Update database để sync
         try {
           await prisma.users.update({
             where: { user_id: user.user_id },
@@ -247,24 +232,14 @@ router.get("/me", async (req, res) => {
         } catch (err) {
           console.warn("⚠️ /me: Failed to update user.role in database:", err.message);
         }
-      } else if (finalRole !== 'vendor') {
-        // User has vendor but role is something else (not admin) - override in response only
-        finalRole = 'vendor';
-        console.log("🔧 /me: Overriding role to 'vendor' in response - NOT updating database");
-        // DO NOT update database - preserve original role
+      } else {
+        finalRole = 'owner'; // Default to owner if no vendor
       }
-    } else if (!finalRole || finalRole === null) {
-      // If no role set and no vendor, default to 'owner' (customer)
-      finalRole = 'owner';
-      console.log("🔧 /me: Setting default role to 'owner' because no role was set");
-    } else if (user.role === 'admin' && vendor) {
-      // Admin with vendor - preserve admin role, vendor info available in response
-      console.log("✅ /me: Admin user with vendor record - preserving admin role, vendor info available");
-    } else {
-      console.log("✅ /me: Keeping original role:", finalRole);
     }
+    // Nếu role đã được set (không phải null/undefined), LUÔN dùng role đó
+    // KHÔNG override dựa trên vendor record
 
-    console.log("✅ Authenticated user:", user.email, "Original Role:", user.role, "Final Role:", finalRole);
+    console.log("✅ Authenticated user:", user.email, "Role:", finalRole, "Has vendor:", !!vendor);
     res.json({
       ...user,
       role: finalRole, // Use corrected role

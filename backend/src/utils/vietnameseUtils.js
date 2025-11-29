@@ -43,3 +43,5 @@ export const generateSearchPatterns = (query) => {
   return [lowerCaseQuery, normalizedQuery].filter(Boolean);
 };
 
+
+

@@ -15,3 +15,5 @@ CREATE TABLE IF NOT EXISTS `notification_preferences` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+
+

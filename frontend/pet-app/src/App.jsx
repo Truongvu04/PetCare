@@ -50,6 +50,9 @@ import VendorAccountSettings from "./components/Vendor/AccountSettings.jsx";
 import AdminLayout from "./components/Admin/AdminLayout.jsx";
 import AdminDashboard from "./components/Admin/AdminDashboard.jsx";
 import AdminCouponManagement from "./components/Admin/CouponManagement.jsx";
+import UserManagement from "./components/Admin/UserManagement.jsx";
+import ProductModeration from "./components/Admin/ProductModeration.jsx";
+import VendorManagement from "./components/Admin/VendorManagement.jsx";
 
 // AdminProtectedRoute - checks if user has admin role
 const AdminProtectedRouteWrapper = ({ children }) => {
@@ -378,7 +381,9 @@ function App() {
             >
               <Route index element={<AdminDashboard />} />
               <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="vendors" element={<AdminDashboard />} />
+              <Route path="vendors" element={<VendorManagement />} />
+              <Route path="users" element={<UserManagement />} />
+              <Route path="approvals" element={<ProductModeration />} />
               <Route path="coupons" element={<AdminCouponManagement />} />
             </Route>
 

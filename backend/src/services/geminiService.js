@@ -234,3 +234,5 @@ export const generateAIResponse = async (userMessage, userId, petId = null) => {
   }
 };
 
+
+

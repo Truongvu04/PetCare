@@ -60,20 +60,32 @@ const ShopSettings = () => {
         setSaving(true);
         setMessage({ type: '', text: '' });
 
+        // Validation: 3 fields bắt buộc
+        if (!profile.vendorName || profile.vendorName.trim().length === 0) {
+            setMessage({ type: 'error', text: 'Vui lòng nhập tên cửa hàng' });
+            setSaving(false);
+            return;
+        }
+        if (!profile.phone || profile.phone.trim().length === 0) {
+            setMessage({ type: 'error', text: 'Vui lòng nhập số điện thoại' });
+            setSaving(false);
+            return;
+        }
+        if (!profile.address || profile.address.trim().length === 0) {
+            setMessage({ type: 'error', text: 'Vui lòng nhập địa chỉ kho' });
+            setSaving(false);
+            return;
+        }
+
         // Chuẩn bị dữ liệu gửi lên Backend
         // Key ở đây phải khớp với req.body trong vendorController.js
-        // Chỉ gửi các field có giá trị (cho phép để trống các field không bắt buộc)
         const payload = {
             shopName: profile.vendorName.trim(), // Bắt buộc
+            phone: profile.phone.trim(), // Bắt buộc
+            address: profile.address.trim(), // Bắt buộc
         };
         
         // Chỉ thêm các field optional nếu có giá trị hoặc muốn xóa (empty string)
-        if (profile.phone !== undefined && profile.phone !== null) {
-            payload.phone = profile.phone;
-        }
-        if (profile.address !== undefined && profile.address !== null) {
-            payload.address = profile.address;
-        }
         if (profile.description !== undefined && profile.description !== null) {
             payload.description = profile.description;
         }
@@ -158,22 +170,28 @@ const ShopSettings = () => {
                                 <p className="text-xs text-gray-500 mt-1">Trường bắt buộc</p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Số điện thoại</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                    Số điện thoại <span className="text-red-500">*</span>
+                                </label>
                                 <input
-                                    type="text" name="phone"
+                                    type="text" name="phone" required
                                     value={profile.phone} onChange={handleChange}
                                     className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
                                     placeholder="09..."
                                 />
+                                <p className="text-xs text-gray-500 mt-1">Trường bắt buộc</p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Địa chỉ kho</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                    Địa chỉ kho <span className="text-red-500">*</span>
+                                </label>
                                 <input
-                                    type="text" name="address"
+                                    type="text" name="address" required
                                     value={profile.address} onChange={handleChange}
                                     className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
                                     placeholder="Số nhà, đường, quận..."
                                 />
+                                <p className="text-xs text-gray-500 mt-1">Trường bắt buộc</p>
                             </div>
                         </div>
 
@@ -236,8 +254,8 @@ const ShopSettings = () => {
                     <div className="pt-6 flex justify-end border-t border-gray-100">
                         <button
                             type="submit"
-                            disabled={saving}
-                            className="px-8 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 disabled:bg-green-400 transition-all shadow-lg shadow-green-200 flex items-center gap-2 active:scale-95 transform"
+                            disabled={saving || !profile.vendorName.trim() || !profile.phone.trim() || !profile.address.trim()}
+                            className="px-8 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 disabled:bg-green-300 transition-all shadow-lg shadow-green-200 flex items-center gap-2 active:scale-95 transform"
                         >
                             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save size={20} />}
                             {saving ? 'Đang lưu...' : 'Lưu Thay Đổi'}

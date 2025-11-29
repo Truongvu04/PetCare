@@ -1,7 +1,7 @@
 // src/components/Admin/AdminLayout.jsx
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Home, Users, Tag, LogOut, Store, Shield } from 'lucide-react';
+import { Home, Users, Tag, LogOut, Store, Shield, ShieldCheck, Building2 } from 'lucide-react';
 import { getAvatarUrl } from '../../utils/avatarHelper';
 import { performCompleteLogout } from '../../utils/logoutHelper';
 import { useAuth } from '../../hooks/useAuth';
@@ -63,11 +63,17 @@ const Sidebar = () => {
                 <NavLink to="/admin/dashboard" className={getNavLinkClass}>
                     <Home size={20} /> Dashboard
                 </NavLink>
-                <NavLink to="/admin/vendors" className={getNavLinkClass}>
-                    <Users size={20} /> Danh sách Vendors
+                <NavLink to="/admin/users" className={getNavLinkClass}>
+                    <Users size={20} /> Quản lý người dùng
+                </NavLink>
+                <NavLink to="/admin/approvals" className={getNavLinkClass}>
+                    <ShieldCheck size={20} /> Duyệt sản phẩm
                 </NavLink>
                 <NavLink to="/admin/coupons" className={getNavLinkClass}>
                     <Tag size={20} /> Coupons
+                </NavLink>
+                <NavLink to="/admin/vendors" className={getNavLinkClass}>
+                    <Building2 size={20} /> Quản lý Vendor
                 </NavLink>
             </nav>
 
@@ -111,5 +117,7 @@ const AdminLayout = () => {
 };
 
 export default AdminLayout;
+
+
 
 

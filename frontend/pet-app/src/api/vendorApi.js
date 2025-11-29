@@ -91,6 +91,8 @@ VENDOR_API.interceptors.response.use(
 // --- Auth & Profile ---
 export const apiRegisterVendor = (data) => VENDOR_API.post("/register", data);
 export const apiLoginVendor = (data) => VENDOR_API.post("/login", data);
+// User đăng ký làm vendor (user đã tồn tại)
+export const apiRequestVendorAccount = (data) => VENDOR_API.post("/request", data);
 export const apiGetVendorProfile = () => VENDOR_API.get("/profile");
 export const apiUpdateVendorProfile = (data) => VENDOR_API.put("/profile", data);
 export const apiGetAccountInfo = () => VENDOR_API.get("/account"); // Thêm cho AccountSettings

@@ -113,11 +113,15 @@ const OrderDetailModal = ({ order, onClose }) => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
                             <div>
                                 <p className="text-gray-500 text-xs">Khách hàng</p>
-                                <p className="font-medium">{order.user_name}</p>
+                                <p className="font-medium">{order.users?.full_name || order.user_name || "N/A"}</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-500 text-xs">Email</p>
+                                <p className="font-medium">{order.users?.email || "N/A"}</p>
                             </div>
                             <div>
                                 <p className="text-gray-500 text-xs">Số điện thoại</p>
-                                <p className="font-medium">{order.user?.phone || "Chưa cập nhật"}</p>
+                                <p className="font-medium">{order.users?.phone || order.user?.phone || "Chưa cập nhật"}</p>
                             </div>
                             <div className="sm:col-span-2">
                                 <p className="text-gray-500 text-xs">Địa chỉ nhận hàng</p>
@@ -202,7 +206,7 @@ const OrderManagement = () => {
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState(null); 
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("all");
+    const [activeTab, setActiveTab] = useState("pending"); // Tabs: pending, paid, shipped, history
 
     // Hàm lấy dữ liệu đơn hàng từ API
     const fetchOrders = async () => {
@@ -221,11 +225,11 @@ const OrderManagement = () => {
     useEffect(() => { fetchOrders(); }, []);
 
     // Xử lý cập nhật trạng thái
-    const handleStatusUpdate = async (orderId, newStatus) => {
+    const handleStatusUpdate = async (orderId, newStatus, actionName) => {
         // Xác nhận trước khi đổi (tránh bấm nhầm)
         const result = await showConfirm(
-            "Cập nhật trạng thái",
-            `Bạn có chắc muốn chuyển trạng thái đơn hàng #${orderId} sang "${newStatus}"?`
+            actionName || "Cập nhật trạng thái",
+            `Bạn có chắc muốn ${actionName?.toLowerCase() || `chuyển trạng thái đơn hàng #${orderId} sang "${newStatus}"`}?`
         );
         if (!result.isConfirmed) return;
 
@@ -235,23 +239,43 @@ const OrderManagement = () => {
             
             // Gọi API cập nhật thật trong DB
             await apiUpdateOrderStatus(orderId, newStatus);
-            showSuccess("Thành công", `Đã cập nhật trạng thái đơn hàng #${orderId} thành công!`);
+            showSuccess("Thành công", `Đã ${actionName?.toLowerCase() || 'cập nhật trạng thái'} đơn hàng #${orderId} thành công!`);
+            fetchOrders(); // Refresh để đảm bảo dữ liệu đồng bộ
         } catch (err) {
             showError("Lỗi", "Lỗi cập nhật: " + (err.response?.data?.message || err.message));
             fetchOrders(); // Nếu lỗi thì tải lại dữ liệu cũ
         }
     };
 
-    // Logic Lọc & Tìm kiếm
+    // Logic Lọc & Tìm kiếm theo tab
     const filteredOrders = orders.filter(o => {
         const term = searchTerm.toLowerCase();
         const matchesSearch = 
             o.order_id?.toString().includes(term) ||
-            o.user_name?.toLowerCase().includes(term);
+            o.user_name?.toLowerCase().includes(term) ||
+            o.users?.full_name?.toLowerCase().includes(term) ||
+            o.users?.email?.toLowerCase().includes(term);
         
-        const matchesStatus = statusFilter === "all" || o.status?.toLowerCase() === statusFilter.toLowerCase();
+        // Filter theo tab
+        let matchesTab = false;
+        switch (activeTab) {
+            case 'pending':
+                matchesTab = o.status?.toLowerCase() === 'pending';
+                break;
+            case 'paid':
+                matchesTab = o.status?.toLowerCase() === 'paid';
+                break;
+            case 'shipped':
+                matchesTab = o.status?.toLowerCase() === 'shipped';
+                break;
+            case 'history':
+                matchesTab = ['delivered', 'cancelled', 'refunded'].includes(o.status?.toLowerCase());
+                break;
+            default:
+                matchesTab = true;
+        }
 
-        return matchesSearch && matchesStatus;
+        return matchesSearch && matchesTab;
     });
 
     if (loading) return (
@@ -276,41 +300,67 @@ const OrderManagement = () => {
                 </div>
             </div>
 
-            {/* Toolbar: Search & Filter */}
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-                {/* Search */}
-                <div className="bg-white p-2.5 rounded-xl shadow-sm border border-gray-200 flex-1 flex items-center transition-all focus-within:ring-2 focus-within:ring-green-500">
-                    <Search className="text-gray-400 ml-2" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Tìm theo mã đơn hoặc tên khách hàng..."
-                        className="w-full ml-3 outline-none text-gray-700 bg-transparent"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    {searchTerm && (
-                        <button onClick={() => setSearchTerm('')} className="text-gray-400 hover:text-gray-600 px-2">
-                            <X size={16} />
-                        </button>
-                    )}
-                </div>
-
-                {/* Filter Status */}
-                <div className="bg-white p-2.5 rounded-xl shadow-sm border border-gray-200 min-w-[200px] flex items-center gap-2">
-                    <Filter className="text-gray-400 ml-2" size={18} />
-                    <select 
-                        className="w-full outline-none text-gray-700 bg-transparent cursor-pointer"
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
+            {/* Tabs */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
+                <div className="flex border-b border-gray-200">
+                    <button
+                        onClick={() => setActiveTab('pending')}
+                        className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                            activeTab === 'pending'
+                                ? 'text-green-600 border-b-2 border-green-600 bg-green-50'
+                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                        }`}
                     >
-                        <option value="all">Tất cả trạng thái</option>
-                        <option value="pending">Chờ xử lý</option>
-                        <option value="processing">Đang xử lý</option>
-                        <option value="shipped">Đang giao hàng</option>
-                        <option value="delivered">Giao thành công</option>
-                        <option value="cancelled">Đã hủy</option>
-                    </select>
+                        Chờ xác nhận ({orders.filter(o => o.status?.toLowerCase() === 'pending').length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('paid')}
+                        className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                            activeTab === 'paid'
+                                ? 'text-green-600 border-b-2 border-green-600 bg-green-50'
+                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                        }`}
+                    >
+                        Đang xử lý ({orders.filter(o => o.status?.toLowerCase() === 'paid').length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('shipped')}
+                        className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                            activeTab === 'shipped'
+                                ? 'text-green-600 border-b-2 border-green-600 bg-green-50'
+                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                        }`}
+                    >
+                        Đang giao ({orders.filter(o => o.status?.toLowerCase() === 'shipped').length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('history')}
+                        className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                            activeTab === 'history'
+                                ? 'text-green-600 border-b-2 border-green-600 bg-green-50'
+                                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                        }`}
+                    >
+                        Lịch sử ({orders.filter(o => ['delivered', 'cancelled', 'refunded'].includes(o.status?.toLowerCase())).length})
+                    </button>
                 </div>
+            </div>
+
+            {/* Search */}
+            <div className="bg-white p-2.5 rounded-xl shadow-sm border border-gray-200 mb-6 flex items-center transition-all focus-within:ring-2 focus-within:ring-green-500">
+                <Search className="text-gray-400 ml-2" size={20} />
+                <input
+                    type="text"
+                    placeholder="Tìm theo mã đơn hoặc tên khách hàng..."
+                    className="w-full ml-3 outline-none text-gray-700 bg-transparent"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                    <button onClick={() => setSearchTerm('')} className="text-gray-400 hover:text-gray-600 px-2">
+                        <X size={16} />
+                    </button>
+                )}
             </div>
 
             {/* Table */}
@@ -343,7 +393,7 @@ const OrderManagement = () => {
                                             #{order.order_id}
                                         </td>
                                         <td className="p-4 text-gray-600 font-medium">
-                                            {order.user_name}
+                                            {order.users?.full_name || order.user_name || "N/A"}
                                         </td>
                                         <td className="p-4 text-gray-500 text-sm">
                                             <div className="flex items-center gap-1">
@@ -358,32 +408,34 @@ const OrderManagement = () => {
                                             {formatVND(order.total)}
                                         </td>
                                         <td className="p-4">
-                                            {/* Dropdown chọn trạng thái nhanh */}
-                                            <select
-                                                className={`text-xs border rounded-lg p-1.5 outline-none cursor-pointer transition-colors font-medium
-                                                    ${order.status === 'cancelled' ? 'border-red-200 bg-red-50 text-red-700' : 
-                                                      order.status === 'delivered' ? 'border-green-200 bg-green-50 text-green-700' : 
-                                                      'border-gray-300 bg-white focus:ring-2 focus:ring-green-200'}`}
-                                                value={order.status?.toLowerCase() || 'pending'}
-                                                onChange={(e) => handleStatusUpdate(order.order_id, e.target.value)}
-                                                // Không cho sửa nếu đơn đã hủy hoặc đã giao xong (tránh sửa nhầm)
-                                                // disabled={['delivered', 'cancelled'].includes(order.status?.toLowerCase())}
-                                            >
-                                                <option value="pending">Chờ xử lý</option>
-                                                <option value="processing">Đang xử lý</option>
-                                                <option value="shipped">Đang giao</option>
-                                                <option value="delivered">Giao thành công</option>
-                                                <option value="paid">Đã thanh toán</option>
-                                                <option value="cancelled">Đã hủy</option>
-                                            </select>
+                                            {renderStatus(order.status)}
                                         </td>
                                         <td className="p-4 text-right">
-                                            <button 
-                                                onClick={() => setSelectedOrder(order)}
-                                                className="px-3 py-1.5 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition flex items-center gap-1 ml-auto font-medium"
-                                            >
-                                                <Eye size={16} /> Xem
-                                            </button>
+                                            <div className="flex justify-end gap-2">
+                                                {/* Action buttons theo status */}
+                                                {order.status?.toLowerCase() === 'pending' && (
+                                                    <button
+                                                        onClick={() => handleStatusUpdate(order.order_id, 'paid', 'Xác nhận đơn hàng')}
+                                                        className="px-3 py-1.5 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 transition flex items-center gap-1 font-medium"
+                                                    >
+                                                        Xác nhận
+                                                    </button>
+                                                )}
+                                                {order.status?.toLowerCase() === 'paid' && (
+                                                    <button
+                                                        onClick={() => handleStatusUpdate(order.order_id, 'shipped', 'Gửi hàng')}
+                                                        className="px-3 py-1.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition flex items-center gap-1 font-medium"
+                                                    >
+                                                        Gửi hàng
+                                                    </button>
+                                                )}
+                                                <button 
+                                                    onClick={() => setSelectedOrder(order)}
+                                                    className="px-3 py-1.5 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition flex items-center gap-1 font-medium"
+                                                >
+                                                    <Eye size={16} /> Xem
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
