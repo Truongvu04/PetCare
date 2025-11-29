@@ -115,11 +115,14 @@ const Calendar = () => {
     // Add day cells
     const dayCells = [];
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
+      // Create date at noon to avoid timezone issues
+      const date = new Date(year, month, day, 12, 0, 0);
       const dateEvents = getEventsForDate(date);
       const hasEvents = dateEvents.length > 0;
+      const today = new Date();
+      today.setHours(12, 0, 0, 0);
       const isToday =
-        normalizeDateToString(date) === normalizeDateToString(new Date());
+        normalizeDateToString(date) === normalizeDateToString(today);
       const isSelected = selectedDate && 
         normalizeDateToString(date) === normalizeDateToString(selectedDate);
 

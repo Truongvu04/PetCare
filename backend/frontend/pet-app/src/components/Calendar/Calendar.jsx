@@ -22,14 +22,27 @@ const Calendar = () => {
 
   const normalizeDateToString = (date) => {
     if (date instanceof Date) {
+      // Use local date methods to avoid timezone issues
       return createDateString(
-        date.getUTCFullYear(),
-        date.getUTCMonth(),
-        date.getUTCDate()
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
       );
     }
     if (typeof date === "string") {
-      return date.split("T")[0];
+      // Extract date part only (YYYY-MM-DD)
+      const datePart = date.split("T")[0];
+      // If it's already in YYYY-MM-DD format, return as-is
+      if (datePart.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return datePart;
+      }
+      // Otherwise, parse and format
+      const parsed = new Date(datePart);
+      return createDateString(
+        parsed.getFullYear(),
+        parsed.getMonth(),
+        parsed.getDate()
+      );
     }
     return date;
   };

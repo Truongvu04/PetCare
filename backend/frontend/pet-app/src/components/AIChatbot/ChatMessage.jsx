@@ -20,16 +20,81 @@ const formatMessage = (text) => {
 
   let formatted = escapeHtml(text);
 
-  // Convert **text** to <strong>text</strong>
-  formatted = formatted.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  // Remove separator lines (---) before processing
+  formatted = formatted.replace(/^-{3,}$/gm, "");
 
-  // Convert * at start of line to bullet points
-  formatted = formatted.replace(/^\* (.+)$/gm, "• $1");
+  // Remove excessive blank lines (3+ consecutive line breaks)
+  formatted = formatted.replace(/\n{3,}/g, "\n\n");
 
-  // Convert line breaks to <br>
-  formatted = formatted.replace(/\n/g, "<br>");
+  // Split into lines for processing
+  const lines = formatted.split("\n");
+  const processedLines = [];
+  let inParagraph = false;
 
-  return formatted;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const nextLine = i < lines.length - 1 ? lines[i + 1].trim() : "";
+
+    // Skip empty lines
+    if (!line) {
+      if (inParagraph && nextLine) {
+        // End current paragraph if next line exists
+        processedLines.push("</p>");
+        inParagraph = false;
+      }
+      continue;
+    }
+
+    // Handle markdown headings (### Heading)
+    if (line.startsWith("### ")) {
+      if (inParagraph) {
+        processedLines.push("</p>");
+        inParagraph = false;
+      }
+      const heading = line.replace(/^### /, "");
+      processedLines.push(`<strong class="block mt-1.5 mb-0.5 text-base font-semibold">${heading}</strong>`);
+      continue;
+    }
+
+    // Handle bullet points (* item or • item)
+    if (line.match(/^[\*•]\s+/)) {
+      if (!inParagraph) {
+        processedLines.push("<p class='mb-0.5'>");
+        inParagraph = true;
+      }
+      const bulletText = line.replace(/^[\*•]\s+/, "");
+      processedLines.push(`<span class="block ml-2 mb-0">• ${bulletText}</span>`);
+      continue;
+    }
+
+    // Skip separator lines (---) - remove them completely
+    if (line.match(/^-{3,}$/)) {
+      continue;
+    }
+
+    // Regular text line
+    if (!inParagraph) {
+      processedLines.push("<p class='mb-0.5'>");
+      inParagraph = true;
+    }
+
+    // Convert **text** to <strong>text</strong> within the line
+    let processedLine = line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    
+    // Add line break only if next line is not empty and not a special format
+    if (nextLine && !nextLine.startsWith("### ") && !nextLine.match(/^[\*•]\s+/)) {
+      processedLine += " ";
+    }
+    
+    processedLines.push(processedLine);
+  }
+
+  // Close any open paragraph
+  if (inParagraph) {
+    processedLines.push("</p>");
+  }
+
+  return processedLines.join("");
 };
 
 const ChatMessage = ({ message }) => {
@@ -58,11 +123,12 @@ const ChatMessage = ({ message }) => {
         }`}
       >
         <div
-          className="text-sm leading-relaxed"
+          className="text-sm break-words"
+          style={{ lineHeight: "1.5" }}
           dangerouslySetInnerHTML={{ __html: formattedText }}
         />
         <div
-          className={`text-xs mt-1 ${
+          className={`text-xs mt-2 ${
             isUser ? "text-green-100" : "text-gray-500"
           }`}
         >
