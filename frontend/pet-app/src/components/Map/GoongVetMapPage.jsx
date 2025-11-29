@@ -20,6 +20,7 @@ const GoongVetMapPage = () => {
   const [addressInput, setAddressInput] = useState('');
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [searchingAddress, setSearchingAddress] = useState(false);
+  const [routeData, setRouteData] = useState(null);
   const debounceTimeout = React.useRef(null);
 
   const currentLocation = customLocation || location;
@@ -76,16 +77,19 @@ const GoongVetMapPage = () => {
     debounceTimeout.current = setTimeout(async () => {
       setSearchingAddress(true);
       try {
-        const response = await fetch(
-          `https://rsapi.goong.io/Place/AutoComplete?api_key=${import.meta.env.VITE_GOONG_API_KEY}&input=${encodeURIComponent(value)}&limit=5`
-        );
-        const data = await response.json();
+        const result = await goongService.smartSearch({
+          query: value,
+          latitude: location?.latitude || 10.762622,
+          longitude: location?.longitude || 106.660172,
+          radius: 50000
+        });
         
-        if (data.predictions) {
-          const suggestions = data.predictions.map(p => ({
-            name: p.structured_formatting?.main_text || p.description,
-            address: p.description,
-            place_id: p.place_id
+        if (result.success && result.data) {
+          const suggestions = result.data.slice(0, 5).map(p => ({
+            name: p.name,
+            address: p.address,
+            place_id: p.id,
+            coordinates: p.coordinates
           }));
           setAddressSuggestions(suggestions);
         }
@@ -97,34 +101,20 @@ const GoongVetMapPage = () => {
     }, 500);
   };
 
-  const handleSelectAddress = async (suggestion) => {
-    setSearchingAddress(true);
-    try {
-      const response = await fetch(
-        `https://rsapi.goong.io/Place/Detail?api_key=${import.meta.env.VITE_GOONG_API_KEY}&place_id=${suggestion.place_id}`
-      );
-      const data = await response.json();
-      
-      if (data.result?.geometry?.location) {
-        const { lat, lng } = data.result.geometry.location;
-        setCustomLocation({
-          latitude: lat,
-          longitude: lng,
-          isCustom: true,
-          address: suggestion.address || suggestion.name
-        });
-        setShowLocationModal(false);
-        setAddressInput('');
-        setAddressSuggestions([]);
-        setError(null);
-      } else {
-        setError('Không thể lấy tọa độ của địa điểm này');
-      }
-    } catch (err) {
-      console.error('Error getting place details:', err);
-      setError('Lỗi khi lấy thông tin địa điểm');
-    } finally {
-      setSearchingAddress(false);
+  const handleSelectAddress = (suggestion) => {
+    if (suggestion.coordinates?.lat && suggestion.coordinates?.lng) {
+      setCustomLocation({
+        latitude: suggestion.coordinates.lat,
+        longitude: suggestion.coordinates.lng,
+        isCustom: true,
+        address: suggestion.address || suggestion.name
+      });
+      setShowLocationModal(false);
+      setAddressInput('');
+      setAddressSuggestions([]);
+      setError(null);
+    } else {
+      setError('Địa điểm này không có tọa độ');
     }
   };
 
@@ -153,6 +143,36 @@ const GoongVetMapPage = () => {
 
   const handleClinicSelect = (clinic) => {
     setSelectedClinic(clinic);
+    setRouteData(null);
+  };
+
+  const handleGetDirections = async (clinic) => {
+    if (!currentLocation || !clinic.coordinates) {
+      setError('Không thể tìm đường đi');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await goongService.getDirections(
+        currentLocation.latitude,
+        currentLocation.longitude,
+        clinic.coordinates.lat,
+        clinic.coordinates.lng
+      );
+
+      if (result.success) {
+        setRouteData(result.data);
+        setSelectedClinic(clinic);
+      } else {
+        setError('Không thể tìm đường đi');
+      }
+    } catch (err) {
+      console.error('Error getting directions:', err);
+      setError('Lỗi khi tìm đường đi');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getRadiusText = (radius) => {
@@ -271,7 +291,7 @@ const GoongVetMapPage = () => {
 
       <div className="px-4 py-2">
         <div className="max-w-7xl mx-auto">
-          {locationError && (
+          {locationError && !currentLocation && (
             <div className="bg-red-50 border-l-4 border-red-400 p-3 rounded-r-lg shadow-sm mb-2">
               <p className="text-sm text-red-700">
                 <strong>Lỗi vị trí:</strong> {locationError}
@@ -355,16 +375,29 @@ const GoongVetMapPage = () => {
             {clinics.map((clinic, index) => (
               <div
                 key={clinic.id || index}
-                onClick={() => handleClinicSelect(clinic)}
-                className={`p-3 border-b cursor-pointer hover:bg-blue-50 transition ${
+                className={`p-3 border-b ${
                   selectedClinic?.id === clinic.id ? 'bg-blue-100' : ''
                 }`}
               >
-                <h3 className="font-semibold text-gray-900 text-sm">{clinic.name}</h3>
-                <p className="text-xs text-gray-600 mt-1">{clinic.address}</p>
-                {clinic.distance && (
-                  <p className="text-xs text-blue-600 mt-1">📏 {(clinic.distance / 1000).toFixed(1)} km</p>
-                )}
+                <div onClick={() => handleClinicSelect(clinic)} className="cursor-pointer">
+                  <h3 className="font-semibold text-gray-900 text-sm">{clinic.name}</h3>
+                  <p className="text-xs text-gray-600 mt-1">{clinic.address}</p>
+                  {clinic.distance && (
+                    <p className="text-xs text-blue-600 mt-1">📏 {(clinic.distance / 1000).toFixed(1)} km</p>
+                  )}
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleGetDirections(clinic);
+                  }}
+                  className="mt-2 w-full px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-xs font-medium flex items-center justify-center gap-1"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                  Chỉ đường
+                </button>
               </div>
             ))}
             {clinics.length === 0 && !loading && (
@@ -375,7 +408,7 @@ const GoongVetMapPage = () => {
           </div>
         </div>
 
-        <div className="flex-1 bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="flex-1 bg-white rounded-lg shadow-lg overflow-hidden relative">
           <GoongMapComponent
             clinics={clinics}
             userLocation={currentLocation}
@@ -387,7 +420,28 @@ const GoongVetMapPage = () => {
             onClinicSelect={handleClinicSelect}
             showUserMarker={true}
             autoFitBounds={false}
+            routeData={routeData}
           />
+          {routeData && (
+            <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-10">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs text-gray-600">Khoảng cách</p>
+                  <p className="text-sm font-semibold text-gray-900">{routeData.distance?.text || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600">Thời gian</p>
+                  <p className="text-sm font-semibold text-gray-900">{routeData.duration?.text || 'N/A'}</p>
+                </div>
+                <button
+                  onClick={() => setRouteData(null)}
+                  className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                >
+                  Xóa
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import goongjs from "@goongmaps/goong-js";
 import "@goongmaps/goong-js/dist/goong-js.css";
+import polyline from "@mapbox/polyline";
 import LocationFeedbackModal from "./LocationFeedbackModal";
 
 const GoongMapComponent = ({
@@ -13,18 +14,19 @@ const GoongMapComponent = ({
   onMarkerClick,
   onClinicSelect,
   showUserMarker = true,
-  autoFitBounds = false
+  autoFitBounds = false,
+  routeData = null
 }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const markers = useRef([]);
   const userMarker = useRef(null);
+  const routeLayer = useRef(null);
   const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, clinic: null });
 
   // Goong cần Map Tiles Key riêng để hiển thị bản đồ
   // Nếu không có VITE_GOONG_MAP_TILES_KEY, sẽ fallback về VITE_GOONG_API_KEY
-  const GOONG_MAP_TILES_KEY = import.meta.env.VITE_GOONG_MAP_TILES_KEY || import.meta.env.VITE_GOONG_API_KEY;
-  const GOONG_MAPTILES_KEY = import.meta.env.VITE_GOONG_MAPTILES_KEY || "RtbRUAKL7yWvee1MvafHRtPxLdbxaY27UkI5BCb4";
+  const GOONG_MAPTILES_KEY = import.meta.env.VITE_GOONG_MAPTILES_KEY;
   const defaultCenter = [108.2261, 15.6696];
 
   useEffect(() => {
@@ -38,42 +40,16 @@ const GoongMapComponent = ({
       return;
     }
 
-    console.log("🔍 Kiểm tra mapContainer:", {
-      exists: !!mapContainer.current,
-      width: mapContainer.current?.offsetWidth,
-      height: mapContainer.current?.offsetHeight
-    });
-
-    // Ưu tiên dùng GOONG_MAP_TILES_KEY cho map tiles
-    const mapTilesKey = GOONG_MAP_TILES_KEY || GOONG_API_KEY;
-    
-    console.log("🔑 API Keys:", {
-      VITE_GOONG_MAP_TILES_KEY: import.meta.env.VITE_GOONG_MAP_TILES_KEY ? "✅ Có" : "❌ Không có",
-      VITE_GOONG_API_KEY: import.meta.env.VITE_GOONG_API_KEY ? "✅ Có" : "❌ Không có",
-      mapTilesKey: mapTilesKey ? `${mapTilesKey.substring(0, 10)}...` : "KHÔNG CÓ"
-    });
-    
-    if (!mapTilesKey) {
-      console.error("❌ VITE_GOONG_MAP_TILES_KEY hoặc VITE_GOONG_API_KEY không được cấu hình!");
-      console.error("💡 Hướng dẫn:");
-      console.error("   1. Vào https://account.goong.io/");
-      console.error("   2. Tạo API key mới và ENABLE 'Map Tiles' service");
-      console.error("   3. Thêm vào .env: VITE_GOONG_MAP_TILES_KEY=your_key_here");
+    if (!GOONG_MAPTILES_KEY) {
+      console.error("❌ VITE_GOONG_MAPTILES_KEY không được cấu hình!");
       return;
     }
 
-    console.log("🗺️ Đang khởi tạo Goong Map...");
-    console.log("📍 Map Tiles Key:", mapTilesKey ? `${mapTilesKey.substring(0, 10)}...` : "KHÔNG CÓ");
-    
-    // Set accessToken cho Goong JS SDK - key này phải có quyền Map Tiles
-    goongjs.accessToken = mapTilesKey;
+    goongjs.accessToken = GOONG_MAPTILES_KEY;
     
     const center = userLocation 
       ? [userLocation.longitude, userLocation.latitude]
       : defaultCenter;
-
-    console.log("📍 Center:", center);
-    console.log("🔍 Zoom level:", zoomLevel);
 
     try {
       console.log("🚀 Tạo Goong Map instance...");
@@ -147,12 +123,72 @@ const GoongMapComponent = ({
 
     return () => {
       if (map.current) {
-        console.log("🧹 Cleanup: Xóa map instance");
         map.current.remove();
         map.current = null;
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!map.current || !routeData) {
+      if (map.current && routeLayer.current) {
+        if (map.current.getLayer('route')) {
+          map.current.removeLayer('route');
+        }
+        if (map.current.getSource('route')) {
+          map.current.removeSource('route');
+        }
+        routeLayer.current = null;
+      }
+      return;
+    }
+
+    const drawRoute = () => {
+      if (!map.current.loaded()) {
+        map.current.once('load', drawRoute);
+        return;
+      }
+
+      if (map.current.getLayer('route')) {
+        map.current.removeLayer('route');
+      }
+      if (map.current.getSource('route')) {
+        map.current.removeSource('route');
+      }
+
+      const coordinates = polyline.decode(routeData.geometry);
+      const geojson = {
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: coordinates.map(coord => [coord[1], coord[0]])
+        }
+      };
+
+      map.current.addSource('route', {
+        type: 'geojson',
+        data: geojson
+      });
+
+      map.current.addLayer({
+        id: 'route',
+        type: 'line',
+        source: 'route',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#3B82F6',
+          'line-width': 4
+        }
+      });
+
+      routeLayer.current = true;
+    };
+
+    drawRoute();
+  }, [routeData]);
 
   useEffect(() => {
     if (!map.current || !userLocation) return;

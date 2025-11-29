@@ -16,3 +16,4 @@ hash_password.py
 set-admin-role.sql
 update-payment-method-enum.sql
 ADD_NOTIFICATION_PREFERENCES.md
+SETUP_GUIDE.md

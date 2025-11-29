@@ -45,10 +45,35 @@ export async function searchAddress(query) {
       return { success: false, message: "No results found" };
     }
 
+    const placesWithCoords = await Promise.all(
+      data.predictions.slice(0, 5).map(async (place) => {
+        try {
+          const detailResponse = await axios.get(GOONG_PLACE_DETAIL_URL, {
+            params: {
+              api_key: GOONG_API_KEY,
+              place_id: place.place_id,
+            },
+            timeout: 5000,
+          });
+
+          if (detailResponse.data?.result?.geometry?.location) {
+            return {
+              ...place,
+              geometry: detailResponse.data.result.geometry,
+              formatted_address: detailResponse.data.result.formatted_address || place.description,
+            };
+          }
+        } catch (err) {
+          console.warn(`Failed to get details for ${place.place_id}`);
+        }
+        return place;
+      })
+    );
+
     return {
       success: true,
-      data: data.predictions.map(normalizeGoongPlace),
-      total: data.predictions.length,
+      data: placesWithCoords.map(normalizeGoongPlace),
+      total: placesWithCoords.length,
     };
   } catch (err) {
     console.error("[GoongService searchAddress Error]", err.response?.data || err.message);
