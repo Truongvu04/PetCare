@@ -320,7 +320,7 @@ const Shop = () => {
                       </p>
                       <div className="flex items-center justify-between mt-auto">
                         <p className="text-lg font-bold text-green-700">
-                          ${(product.price / 1000).toFixed(2)}
+                          {product.price ? `${product.price.toLocaleString("vi-VN")} VND` : "0 VND"}
                         </p>
                       </div>
                     </div>

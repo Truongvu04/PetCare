@@ -198,10 +198,10 @@ const Cart = () => {
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-bold text-lg text-gray-800 mb-1">{item.product?.name || "Product"}</h3>
-                      <p className="text-sm text-gray-500">Unit Price: ${((item.product?.price || 0) / 1000).toFixed(2)}</p>
+                      <p className="text-sm text-gray-500">Giá đơn vị: {((item.product?.price || 0)).toLocaleString("vi-VN")} VND</p>
                     </div>
                     <p className="font-bold text-lg text-green-700">
-                      ${(((item.product?.price || 0) * item.quantity) / 1000).toFixed(2)}
+                      {(((item.product?.price || 0) * item.quantity)).toLocaleString("vi-VN")} VND
                     </p>
                   </div>
 
@@ -244,34 +244,34 @@ const Cart = () => {
 
             <div className="space-y-4 mb-8">
               <div className="flex justify-between text-gray-600">
-                <span>Subtotal</span>
-                <span className="font-medium">${(subtotalRaw / 1000).toFixed(2)}</span>
+                <span>Tạm tính</span>
+                <span className="font-medium">{subtotalRaw.toLocaleString("vi-VN")} VND</span>
               </div>
               
               {appliedCoupon && discountAmount > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span className="flex items-center gap-2">
-                    Discount ({appliedCoupon.code})
+                    Giảm giá ({appliedCoupon.code})
                     {appliedCoupon.discount_percent && ` ${appliedCoupon.discount_percent}%`}
                   </span>
-                  <span className="font-medium">-${(discountAmount / 1000).toFixed(2)}</span>
+                  <span className="font-medium">-{discountAmount.toLocaleString("vi-VN")} VND</span>
                 </div>
               )}
               
               <div className="flex justify-between text-gray-600">
-                <span>Shipping</span>
-                <span className="font-medium text-green-600">{shipping === 0 ? "Free" : `$${(shipping / 1000).toFixed(2)}`}</span>
+                <span>Phí vận chuyển</span>
+                <span className="font-medium text-green-600">{shipping === 0 ? "Miễn phí" : `${shipping.toLocaleString("vi-VN")} VND`}</span>
               </div>
               <div className="flex justify-between text-gray-600">
-                <span>Estimated Tax</span>
-                <span className="font-medium">${(tax / 1000).toFixed(2)}</span>
+                <span>Thuế ước tính</span>
+                <span className="font-medium">{tax.toLocaleString("vi-VN")} VND</span>
               </div>
               <div className="h-px bg-gray-100 my-4"></div>
               <div className="flex justify-between items-end">
-                <span className="text-lg font-bold text-gray-900">Total</span>
+                <span className="text-lg font-bold text-gray-900">Tổng cộng</span>
                 <div className="text-right">
-                  <span className="text-2xl font-bold text-green-700">${(total / 1000).toFixed(2)}</span>
-                  <p className="text-xs text-gray-400 mt-1">Including VAT</p>
+                  <span className="text-2xl font-bold text-green-700">{total.toLocaleString("vi-VN")} VND</span>
+                  <p className="text-xs text-gray-400 mt-1">Đã bao gồm VAT</p>
                 </div>
               </div>
             </div>

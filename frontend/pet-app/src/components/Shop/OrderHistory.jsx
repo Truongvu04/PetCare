@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
 import api from "../../api/axiosConfig.js";
 import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
-import { Package, Calendar, DollarSign, ArrowRight, Loader2, CheckCircle } from "lucide-react";
+import { Package, Calendar, ArrowRight, Loader2, CheckCircle } from "lucide-react";
 import { showSuccess, showError, showConfirm } from "../../utils/notifications";
 
 const OrderHistory = () => {
@@ -136,9 +136,8 @@ const OrderHistory = () => {
                   </div>
                   <div className="text-right ml-6 flex flex-col items-end gap-3">
                     <div className="flex items-center gap-2">
-                      <DollarSign size={20} className="text-green-600" />
                       <p className="text-2xl font-bold text-green-600">
-                        ${(Number(order.total) / 1000).toFixed(2)}
+                        {Number(order.total).toLocaleString("vi-VN")} VND
                       </p>
                     </div>
                     

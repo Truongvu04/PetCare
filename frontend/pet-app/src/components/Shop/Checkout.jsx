@@ -34,10 +34,10 @@ const Checkout = () => {
   }
   
   const subtotalAfterDiscount = Math.max(0, subtotalRaw - discountAmount);
-  const subtotal = subtotalRaw / 1000; // Convert to dollars for display
-  const tax = subtotalAfterDiscount * 0.1; // Tax in smallest unit
-  const shipping = subtotalAfterDiscount > 100000 ? 0 : 30000; // Shipping in smallest unit (free if > $100)
-  const total = subtotalAfterDiscount + tax + shipping; // Total in smallest unit
+  const subtotal = subtotalRaw; // Price is already in VND (smallest unit)
+  const tax = subtotalAfterDiscount * 0.1; // Tax in VND
+  const shipping = subtotalAfterDiscount > 100000 ? 0 : 30000; // Shipping in VND (free if > 100,000 VND)
+  const total = subtotalAfterDiscount + tax + shipping; // Total in VND
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -233,7 +233,7 @@ const Checkout = () => {
                   <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                 </div>
                 <p className="font-semibold">
-                  ${(((item.product?.price || 0) / 1000) * item.quantity).toFixed(2)}
+                  {(((item.product?.price || 0) * item.quantity)).toLocaleString("vi-VN")} VND
                 </p>
               </div>
             ))}
@@ -293,26 +293,26 @@ const Checkout = () => {
 
             <div className="space-y-2 mb-4">
               <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>Tạm tính</span>
+                <span>{subtotal.toLocaleString("vi-VN")} VND</span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>Discount</span>
-                  <span>-${(discountAmount / 1000).toFixed(2)}</span>
+                  <span>Giảm giá</span>
+                  <span>-{discountAmount.toLocaleString("vi-VN")} VND</span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span>Shipping</span>
-                <span>{shipping === 0 ? "Free" : `$${(shipping / 1000).toFixed(2)}`}</span>
+                <span>Phí vận chuyển</span>
+                <span>{shipping === 0 ? "Miễn phí" : `${shipping.toLocaleString("vi-VN")} VND`}</span>
               </div>
               <div className="flex justify-between">
-                <span>Estimated Tax</span>
-                <span>${(tax / 1000).toFixed(2)}</span>
+                <span>Thuế ước tính</span>
+                <span>{tax.toLocaleString("vi-VN")} VND</span>
               </div>
               <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                <span>Total</span>
-                <span>${(total / 1000).toFixed(2)}</span>
+                <span>Tổng cộng</span>
+                <span>{total.toLocaleString("vi-VN")} VND</span>
               </div>
             </div>
 

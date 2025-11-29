@@ -28,6 +28,10 @@ import Reminders from "./components/Reminders/Reminder.jsx";
 import ReminderList from "./components/Reminders/ReminderList.jsx";
 import EditReminder from "./components/Reminders/EditReminder.jsx";
 import HealthActivity from "./components/HealthyActivity/HealthyActivity.jsx";
+import HealthTracking from "./components/HealthTracking/HealthTracking.jsx";
+import Expenses from "./components/Expenses/Expenses.jsx";
+import Calendar from "./components/Calendar/Calendar.jsx";
+import AIChatbot from "./components/AIChatbot/AIChatbot.jsx";
 import OrderConfirmation from "./components/Shop/OrderConfirmation.jsx";
 import NotificationSettings from "./components/Settings/NotificationSettings.jsx";
 import VendorListings from "./components/Marketplace/VendorListings.jsx";
@@ -287,7 +291,31 @@ function App() {
               path="/health"
               element={
                 <ProtectedRoute>
-                  <HealthActivity />
+                  <HealthTracking />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expenses"
+              element={
+                <ProtectedRoute>
+                  <Expenses />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/calendar"
+              element={
+                <ProtectedRoute>
+                  <Calendar />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ai-chat"
+              element={
+                <ProtectedRoute>
+                  <AIChatbot />
                 </ProtectedRoute>
               }
             />

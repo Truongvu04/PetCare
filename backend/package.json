@@ -32,7 +32,8 @@
     "passport-facebook": "^3.0.0",
     "passport-google-oauth20": "^2.0.0",
     "sweetalert2": "^11.26.3",
-    "twilio": "^5.10.3"
+    "twilio": "^5.10.3",
+    "@google/generative-ai": "^0.21.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10",

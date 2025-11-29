@@ -22,6 +22,10 @@ model Pet {
   created_at      DateTime   @default(now()) @db.Timestamp(6)
   owner           users?     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   reminders       Reminder[]
+  healthRecords   HealthRecord[]
+  expenses        Expense[]
+  calendarEvents  CalendarEvent[]
+  chatHistory     ChatHistory[]
 
   @@index([user_id], map: "pets_user_id_fkey")
   @@map("pets")
@@ -43,6 +47,8 @@ model Reminder {
   updated_at       DateTime?          @default(now()) @updatedAt @db.Timestamp(6)
   end_date         DateTime?          @db.Date
   pet              Pet                @relation(fields: [pet_id], references: [id], onDelete: Cascade, map: "reminders_ibfk_1")
+  // Temporarily commented out to avoid foreign key constraint error
+  // calendarEvents   CalendarEvent[]
 
   @@index([created_at], map: "idx_reminders_created_at")
   @@index([end_date], map: "idx_reminders_end_date")
@@ -243,6 +249,9 @@ model users {
   reviews                  reviews[]
   service_appointments     service_appointments[]
   vendors                  vendors?
+  expenses                 Expense[]
+  calendarEvents           CalendarEvent[]
+  chatHistory              ChatHistory[]
 }
 
 model vendors {
@@ -365,4 +374,105 @@ enum vendors_status {
   pending
   approved
   rejected
+}
+
+enum HealthRecordType {
+  weight
+  vaccination
+  health_note
+}
+
+enum ExpenseCategory {
+  food
+  medicine
+  accessories
+  vet_visit
+  grooming
+  other
+}
+
+enum CalendarEventType {
+  vet_visit
+  expense
+  reminder
+}
+
+model HealthRecord {
+  id              String           @id @default(cuid()) @db.Char(25)
+  pet_id          String           @db.Char(12)
+  record_type     HealthRecordType
+  value           Decimal?         @db.Decimal(5, 2)
+  vaccination_name String?        @db.VarChar(255)
+  health_note     String?         @db.Text
+  record_date     DateTime         @db.Date
+  created_at      DateTime         @default(now()) @db.Timestamp(6)
+  updated_at      DateTime         @default(now()) @updatedAt @db.Timestamp(6)
+  pet             Pet              @relation(fields: [pet_id], references: [id], onDelete: Cascade)
+
+  @@index([pet_id])
+  @@index([record_type])
+  @@index([record_date])
+  @@map("health_records")
+}
+
+model Expense {
+  id           String          @id @default(cuid()) @db.Char(25)
+  pet_id       String          @db.Char(12)
+  user_id      Int
+  category     ExpenseCategory
+  description  String          @db.VarChar(500)
+  amount       Decimal         @db.Decimal(10, 2)
+  expense_date DateTime         @db.Date
+  created_at   DateTime        @default(now()) @db.Timestamp(6)
+  updated_at   DateTime        @default(now()) @updatedAt @db.Timestamp(6)
+  pet          Pet             @relation(fields: [pet_id], references: [id], onDelete: Cascade)
+  user         users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  calendarEvents CalendarEvent[]
+
+  @@index([pet_id])
+  @@index([user_id])
+  @@index([category])
+  @@index([expense_date])
+  @@map("expenses")
+}
+
+model CalendarEvent {
+  id                  String            @id @default(cuid()) @db.Char(25)
+  pet_id              String            @db.Char(12)
+  user_id             Int
+  event_type          CalendarEventType
+  title               String            @db.VarChar(255)
+  description         String?           @db.Text
+  event_date          DateTime          @db.Date
+  related_expense_id  String?           @db.Char(25)
+  related_reminder_id String?           @db.Char(25)
+  created_at          DateTime          @default(now()) @db.Timestamp(6)
+  pet                 Pet               @relation(fields: [pet_id], references: [id], onDelete: Cascade)
+  user                users             @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  expense             Expense?          @relation(fields: [related_expense_id], references: [id], onDelete: SetNull)
+  // Temporarily commented out to avoid foreign key constraint error
+  // reminder            Reminder?         @relation(fields: [related_reminder_id], references: [reminder_id], onDelete: SetNull)
+
+  @@index([pet_id])
+  @@index([user_id])
+  @@index([event_type])
+  @@index([event_date])
+  @@map("calendar_events")
+}
+
+model ChatHistory {
+  id             String    @id @default(cuid()) @db.Char(25)
+  user_id        Int
+  pet_id         String?   @db.Char(12)
+  message        String    @db.Text
+  response       String?   @db.Text
+  is_user_message Boolean  @default(true)
+  created_at     DateTime  @default(now()) @db.Timestamp(6)
+  user           users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  pet            Pet?      @relation(fields: [pet_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([pet_id])
+  @@index([created_at])
+  @@map("chat_history")
 }

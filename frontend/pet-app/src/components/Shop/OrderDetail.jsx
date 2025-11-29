@@ -102,8 +102,8 @@ const OrderDetail = () => {
             </p>
           </div>
           <div className="border-b border-gray-100 pb-4">
-            <p className="text-sm font-medium text-green-700 mb-1 uppercase tracking-wide">Total Amount</p>
-            <p className="text-lg font-semibold text-gray-900">${(Number(order.total) / 1000).toFixed(2)}</p>
+            <p className="text-sm font-medium text-green-700 mb-1 uppercase tracking-wide">Tổng tiền</p>
+            <p className="text-lg font-semibold text-gray-900">{Number(order.total).toLocaleString("vi-VN")} VND</p>
           </div>
           <div className="border-b border-gray-100 pb-4">
             <p className="text-sm font-medium text-green-700 mb-1 uppercase tracking-wide">Payment Method</p>
@@ -150,7 +150,7 @@ const OrderDetail = () => {
                     {item.quantity}
                   </td>
                   <td className="px-6 py-4 text-right font-medium text-green-600">
-                    ${(Number(item.price) / 1000).toFixed(2)}
+                    {Number(item.price).toLocaleString("vi-VN")} VND
                   </td>
                 </tr>
               ))}

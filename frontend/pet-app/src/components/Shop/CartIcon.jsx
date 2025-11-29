@@ -10,9 +10,9 @@ const CartIcon = ({ className = "", showFloating = false }) => {
   
   const itemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
   const totalPrice = cartItems.reduce(
-    (total, item) => total + ((item.product?.price || 0) / 1000) * item.quantity,
+    (total, item) => total + (item.product?.price || 0) * item.quantity,
     0
-  ).toFixed(2);
+  );
 
   if (showFloating) {
     return (
@@ -36,7 +36,7 @@ const CartIcon = ({ className = "", showFloating = false }) => {
                 {itemCount} {itemCount === 1 ? 'item' : 'items'} in cart
               </div>
               <div className="text-sm text-green-600 font-bold">
-                Total: ${totalPrice}
+                Total: {totalPrice.toLocaleString("vi-VN")} VND
               </div>
               <div className="text-xs text-gray-500 mt-1">
                 Click to view cart
@@ -71,7 +71,7 @@ const CartIcon = ({ className = "", showFloating = false }) => {
                 {itemCount} {itemCount === 1 ? 'item' : 'items'}
               </div>
               <div className="text-sm text-green-600 font-bold">
-                ${totalPrice}
+                {totalPrice.toLocaleString("vi-VN")} VND
               </div>
             </div>
           )}
