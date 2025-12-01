@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
@@ -15,6 +15,8 @@ import {
   FileText,
   Store,
   Shield,
+  Menu,
+  X,
 } from "lucide-react";
 import { getAvatarUrl } from "../../utils/avatarHelper.js";
 
@@ -22,6 +24,7 @@ const CustomerLayout = ({ children, currentPage = "dashboard" }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const menuItems = [
     { name: "Dashboard", icon: <Home size={18} />, path: "/dashboard", key: "dashboard" },
@@ -68,8 +71,26 @@ const CustomerLayout = ({ children, currentPage = "dashboard" }) => {
   return (
     <div className="h-screen bg-[#fafafa] overflow-hidden">
       <div className="flex h-full">
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md"
+        >
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+
+        {/* Mobile Overlay */}
+        {isMobileMenuOpen && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+
         {/* Fixed Sidebar */}
-        <aside className="w-64 h-screen fixed left-0 top-0 border-r border-gray-200 bg-white flex flex-col z-10">
+        <aside className={`w-64 h-screen fixed left-0 top-0 border-r border-gray-200 bg-white flex flex-col z-40 transition-transform duration-300 ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}>
           <div className="p-6 flex flex-col h-full overflow-y-auto">
             {/* Header Section */}
             <div className="flex items-center space-x-3 mb-8 shrink-0">
@@ -159,9 +180,9 @@ const CustomerLayout = ({ children, currentPage = "dashboard" }) => {
         </aside>
 
         {/* Main Content Container - Scrollable (except for ai-chat) */}
-        <div className={`flex-1 ml-64 h-full ${currentPage === "ai-chat" ? "overflow-hidden" : "overflow-y-auto"}`}>
+        <div className={`flex-1 lg:ml-64 h-full ${currentPage === "ai-chat" ? "overflow-hidden" : "overflow-y-auto"}`}>
           <div className={`${currentPage === "ai-chat" ? "h-full px-6 py-6" : "max-w-[calc(1280px-16rem)]"} mx-auto`}>
-            <main className={`${currentPage === "ai-chat" ? "h-full overflow-hidden" : "p-10 min-h-full"}`}>
+            <main className={`${currentPage === "ai-chat" ? "h-full overflow-hidden" : "p-4 sm:p-6 lg:p-10 min-h-full pt-16 lg:pt-10"}`}>
               {children}
             </main>
           </div>

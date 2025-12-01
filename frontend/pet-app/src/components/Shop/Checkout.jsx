@@ -205,15 +205,15 @@ const Checkout = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-8 relative">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 relative">
       {/* Floating Cart Button - hidden on checkout page */}
       <div className="hidden">
         <CartIcon showFloating={true} />
       </div>
       
-      <h1 className="text-2xl font-bold mb-6">Checkout</h1>
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Checkout</h1>
 
-      <div className="grid grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
         <div>
           <h2 className="text-lg font-semibold mb-4">Shipping Address</h2>
           <textarea

@@ -17,7 +17,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./src/routes/auth.routes.js";
 import petRoutes from "./src/routes/pets.js";
 import reminderRoutes from "./src/routes/reminder.js";
-import geoapifyRoutes from "./src/routes/geoapify.routes.js";
+import goongRoutes from "./src/routes/goong.routes.js";
 import productRoutes from "./src/routes/productRoutes.js";
 import orderRoutes from "./src/routes/orderRoutes.js";
 import serviceRoutes from "./src/routes/serviceRoutes.js";
@@ -67,7 +67,7 @@ app.use(passport.initialize());
 app.use("/api/auth", authRoutes);
 app.use("/api/pets", petRoutes);
 app.use("/api/reminders", reminderRoutes);
-app.use("/api/geoapify", geoapifyRoutes);
+app.use("/api/goong", goongRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/services", serviceRoutes);
@@ -93,6 +93,7 @@ console.log("✅ Expense routes registered at /api/expenses");
 console.log("✅ Calendar routes registered at /api/calendar");
 console.log("✅ AI routes registered at /api/ai");
 console.log("✅ Recommendation routes registered at /api/recommendations");
+console.log("✅ Goong routes registered at /api/goong");
 
 app.get(
   "/auth/google",

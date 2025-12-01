@@ -1,10 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-export const geoapifyService = {
-  // =======================
-  // Tự động tìm phòng khám gần tọa độ
-  // =======================
-  async autoLocateVeterinaryClinics(latitude, longitude, radius = 15000) {
+export const goongService = {
+  async autoLocateVeterinaryClinics(latitude, longitude, radius = 10000) {
     try {
       const params = new URLSearchParams({
         lat: latitude.toString(),
@@ -12,7 +9,7 @@ export const geoapifyService = {
         radius: radius.toString(),
       });
 
-      const response = await fetch(`${API_BASE_URL}/geoapify/auto-locate?${params}`);
+      const response = await fetch(`${API_BASE_URL}/goong/auto-locate?${params}`);
       const data = await response.json();
 
       if (!response.ok) throw new Error(data.message || `HTTP error ${response.status}`);
@@ -23,10 +20,7 @@ export const geoapifyService = {
     }
   },
 
-  // =======================
-  // Smart Search nâng cao
-  // =======================
-  async smartSearchEnhanced({ query = '', latitude, longitude, radius = 15000 }) {
+  async smartSearchEnhanced({ query = '', latitude, longitude, radius = 10000 }) {
     try {
       const body = {
         ...(query.trim() !== '' ? { query } : {}),
@@ -35,7 +29,7 @@ export const geoapifyService = {
         radius,
       };
 
-      const response = await fetch(`${API_BASE_URL}/geoapify/smart-search-enhanced`, {
+      const response = await fetch(`${API_BASE_URL}/goong/smart-search-enhanced`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -50,10 +44,7 @@ export const geoapifyService = {
     }
   },
 
-  // =======================
-  // Lấy danh sách phòng khám
-  // =======================
-  async getVeterinaryClinics(latitude, longitude, radius = 15000, query = '') {
+  async getVeterinaryClinics(latitude, longitude, radius = 10000, query = '') {
     try {
       const params = new URLSearchParams({
         lat: latitude.toString(),
@@ -62,7 +53,7 @@ export const geoapifyService = {
       });
       if (query.trim() !== '') params.append('query', query);
 
-      const response = await fetch(`${API_BASE_URL}/geoapify/vet-clinics?${params}`);
+      const response = await fetch(`${API_BASE_URL}/goong/vet-clinics?${params}`);
       const data = await response.json();
 
       if (!response.ok) throw new Error(data.message || `HTTP error ${response.status}`);
@@ -73,13 +64,10 @@ export const geoapifyService = {
     }
   },
 
-  // =======================
-  // Geocode - chuyển địa chỉ thành tọa độ
-  // =======================
   async geocodeAddress(address) {
     try {
       const params = new URLSearchParams({ address });
-      const response = await fetch(`${API_BASE_URL}/geoapify/geocode?${params}`);
+      const response = await fetch(`${API_BASE_URL}/goong/geocode?${params}`);
       const data = await response.json();
 
       if (!response.ok) throw new Error(data.message || `HTTP error ${response.status}`);
@@ -90,13 +78,10 @@ export const geoapifyService = {
     }
   },
 
-  // =======================
-  // Tìm phòng khám theo địa chỉ
-  // =======================
-  async findVetsByAddress(address, radius = 15000) {
+  async findVetsByAddress(address, radius = 10000) {
     try {
       const params = new URLSearchParams({ address, radius: radius.toString() });
-      const response = await fetch(`${API_BASE_URL}/geoapify/vets-by-address?${params}`);
+      const response = await fetch(`${API_BASE_URL}/goong/vets-by-address?${params}`);
       const data = await response.json();
 
       if (!response.ok) throw new Error(data.message || `HTTP error ${response.status}`);
@@ -107,10 +92,7 @@ export const geoapifyService = {
     }
   },
 
-  // =======================
-  // Smart search chuẩn cho tất cả loại tìm kiếm
-  // =======================
-  async smartSearch({ query = '', latitude, longitude, radius = 15000, filters = {} }) {
+  async smartSearch({ query = '', latitude, longitude, radius = 10000, filters = {} }) {
     try {
       const body = {
         ...(query.trim() !== '' ? { query } : {}),
@@ -120,7 +102,7 @@ export const geoapifyService = {
         ...filters,
       };
 
-      const response = await fetch(`${API_BASE_URL}/geoapify/smart-search`, {
+      const response = await fetch(`${API_BASE_URL}/goong/smart-search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -135,48 +117,41 @@ export const geoapifyService = {
     }
   },
 
-  // =======================
-  // Backward compatibility
-  // =======================
-  async enhancedSearch(searchOptions) {
-    return this.smartSearch(searchOptions);
-  },
-
-  // =======================
-  // Tìm kiếm địa điểm tổng quát
-  // =======================
-  async searchPlaces(text, latitude = null, longitude = null, radius = 15000) {
+  async getDirections(startLat, startLng, endLat, endLng, vehicle = 'car') {
     try {
-      const params = new URLSearchParams({ text, radius: radius.toString() });
-      if (latitude && longitude) {
-        params.append('lat', latitude.toString());
-        params.append('lon', longitude.toString());
-      }
+      const params = new URLSearchParams({
+        startLat: startLat.toString(),
+        startLng: startLng.toString(),
+        endLat: endLat.toString(),
+        endLng: endLng.toString(),
+        vehicle,
+      });
 
-      const response = await fetch(`${API_BASE_URL}/geoapify/search-places?${params}`);
+      const response = await fetch(`${API_BASE_URL}/goong/directions?${params}`);
       const data = await response.json();
 
       if (!response.ok) throw new Error(data.message || `HTTP error ${response.status}`);
       return data;
     } catch (error) {
-      console.error('Error searching places:', error.message);
-      return { success: false, data: [], error: error.message };
+      console.error('Error getting directions:', error.message);
+      return { success: false, error: error.message };
     }
   },
 
-  // =======================
-  // Kết hợp kết quả Geoapify + Local Vets
-  // =======================
-  async getCombinedResults(latitude, longitude, radius = 15000, query = '') {
+  async getCombinedResults(latitude, longitude, radius = 10000, query = '') {
     try {
-      const [geoapifyResults, localResults] = await Promise.allSettled([
+      const [goongResults, localResults] = await Promise.allSettled([
         this.getVeterinaryClinics(latitude, longitude, radius, query),
-        this.getLocalVets(latitude, longitude, radius, query),
+        this.getLocalVets(latitude, longitude, radius / 1000, query),
       ]);
 
       const combined = [];
-      if (geoapifyResults.status === 'fulfilled' && geoapifyResults.value.success) combined.push(...geoapifyResults.value.data);
-      if (localResults.status === 'fulfilled' && localResults.value.success) combined.push(...localResults.value.data);
+      if (goongResults.status === 'fulfilled' && goongResults.value.success) {
+        combined.push(...goongResults.value.data);
+      }
+      if (localResults.status === 'fulfilled' && localResults.value.success) {
+        combined.push(...localResults.value.data);
+      }
 
       return {
         success: true,
@@ -189,28 +164,21 @@ export const geoapifyService = {
     }
   },
 
-  // =======================
-  // Lấy bác sĩ/vet local (local database)
-  // =======================
   async getLocalVets(latitude, longitude, radius = 15, query = '') {
     try {
-      const params = new URLSearchParams({ lat: latitude, lng: longitude, radius: radius.toString() });
-      if (query.trim() !== '') params.append('query', query);
-
-      const response = await fetch(`${API_BASE_URL}/vets/nearby?${params}`);
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || `HTTP error ${response.status}`);
-      return data;
+      console.log('⚠️ Local vets API chưa được triển khai, trả về empty array');
+      return { 
+        success: true, 
+        data: [],
+        total: 0,
+        message: 'Local vets API chưa sẵn sàng'
+      };
     } catch (error) {
       console.error('Error fetching local vets:', error.message);
-      return { success: false, data: [] };
+      return { success: false, data: [], total: 0 };
     }
   },
 
-  // =======================
-  // Loại bỏ trùng lặp
-  // =======================
   removeDuplicates(clinics) {
     const seen = new Set();
     return clinics.filter(clinic => {
@@ -221,9 +189,6 @@ export const geoapifyService = {
     });
   },
 
-  // =======================
-  // Tính khoảng cách (km)
-  // =======================
   calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
