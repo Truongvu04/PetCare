@@ -33,6 +33,16 @@ const Shop = () => {
     const fetchProducts = async () => {
       try {
         const response = await api.get("/products");
+        console.log("📦 Products fetched:", response.data.length, "items");
+        // Debug: Log first product structure
+        if (response.data.length > 0) {
+          console.log("🔍 First product structure:", {
+            product_id: response.data[0].product_id,
+            name: response.data[0].name,
+            product_images: response.data[0].product_images,
+            has_images: !!response.data[0].product_images?.length
+          });
+        }
         setProducts(response.data);
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -286,13 +296,28 @@ const Shop = () => {
                   // Build image URL with proper handling
                   let imageUrl = "https://via.placeholder.com/200?text=No+Image";
                   if (thumbnail?.image_url) {
-                    const url = thumbnail.image_url.trim();
-                    if (url.startsWith('http://') || url.startsWith('https://')) {
-                      imageUrl = url;
-                    } else if (url.startsWith('/')) {
-                      imageUrl = `http://localhost:5000${url}`;
-                    } else {
-                      imageUrl = `http://localhost:5000/uploads/${url}`;
+                    const url = String(thumbnail.image_url).trim();
+                    // Remove any leading/trailing whitespace and ensure proper format
+                    if (url) {
+                      if (url.startsWith('http://') || url.startsWith('https://')) {
+                        imageUrl = url;
+                      } else if (url.startsWith('/')) {
+                        // Ensure URL starts with /uploads/ if it's just /uploads
+                        imageUrl = `http://localhost:5000${url}`;
+                      } else {
+                        // If no leading slash, assume it's a filename and add /uploads/
+                        imageUrl = `http://localhost:5000/uploads/${url}`;
+                      }
+                    }
+                  } else {
+                    // Debug: Log when no image URL is found
+                    if (process.env.NODE_ENV === 'development') {
+                      console.warn(`⚠️ No image URL for product ${product.product_id} (${product.name}):`, {
+                        has_product_images: !!product.product_images,
+                        product_images_length: product.product_images?.length || 0,
+                        product_images: product.product_images,
+                        thumbnail: thumbnail
+                      });
                     }
                   }
 
@@ -307,8 +332,19 @@ const Shop = () => {
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           onError={(e) => {
+                            console.error(`Failed to load image for product ${product.product_id}:`, {
+                              attemptedUrl: e.target.src,
+                              product_images: product.product_images,
+                              thumbnail
+                            });
                             if (e.target.src !== "https://via.placeholder.com/200?text=No+Image") {
                               e.target.src = "https://via.placeholder.com/200?text=No+Image";
+                            }
+                          }}
+                          onLoad={() => {
+                            // Debug: Log successful image loads
+                            if (process.env.NODE_ENV === 'development') {
+                              console.log(`✅ Image loaded for product ${product.product_id}:`, imageUrl);
                             }
                           }}/>
                       </div>
