@@ -7,6 +7,7 @@ import { useAuth } from "./hooks/useAuth.js";
 
 import HomePage from "./components/Home/HomePage.jsx";
 import IntroPage from "./components/Home/IntroPage.jsx";
+import LoginPage from "./components/Auth/LoginPage.jsx";
 import Shop from "./components/Shop/Shop.jsx";
 import ProductDetail from "./components/Shop/ProductDetail.jsx";
 import Cart from "./components/Shop/Cart.jsx";
@@ -218,6 +219,7 @@ function App() {
           <Routes>
             <Route path="/intropage" element={<IntroPage />} />
             <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/shops" element={<Shop />} />
             <Route path="/vendors" element={<VendorListings />} />

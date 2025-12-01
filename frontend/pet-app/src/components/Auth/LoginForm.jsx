@@ -34,7 +34,7 @@ const FacebookIcon = () => (
 const inputClass =
   "w-full bg-gray-50 border border-transparent px-5 py-3 rounded-2xl text-sm transition-all duration-300 focus:border-green-500 focus:ring-2 focus:ring-green-300 outline-none placeholder-gray-500";
 
-function LoginForm({ onClose }) {
+function LoginForm({ onClose, redirectTo = "/" }) {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [isRegister, setIsRegister] = useState(false);
@@ -137,12 +137,14 @@ function LoginForm({ onClose }) {
       showToast(`Welcome back, ${displayName}! (${roleLabel})`, "success");
       confetti({ particleCount: 120, spread: 90 });
 
-      // Auto-redirect to home page after successful login
+      // Auto-redirect after successful login
       setTimeout(() => {
-        if (onClose) onClose(); // Close modal if exists
-        
-        // Always redirect to home page regardless of role
-        navigate("/");
+        if (onClose) {
+          onClose(); // Close modal if exists (will handle redirect)
+        } else {
+          // If no onClose handler, redirect to the target URL or home
+          navigate(redirectTo || "/", { replace: true });
+        }
       }, 1000); // Increased from 800ms to 1000ms to ensure AuthProvider state is updated
     } catch (err) {
       if (err.response?.status === 401) {
@@ -210,10 +212,14 @@ function LoginForm({ onClose }) {
           showToast(`Welcome back, ${displayName}! (${roleLabel})`, "success");
           confetti({ particleCount: 100, spread: 70 });
           
-          // Auto-redirect to home page after successful login
+          // Auto-redirect after successful login
           setTimeout(() => {
-            // Always redirect to home page regardless of role
-            navigate("/");
+            if (onClose) {
+              onClose(); // Close modal if exists (will handle redirect)
+            } else {
+              // If no onClose handler, redirect to the target URL or home
+              navigate(redirectTo || "/", { replace: true });
+            }
           }, 1000); // Increased from 800ms to 1000ms to ensure AuthProvider state is updated
         })
         .catch(() => showToast("Invalid Google login", "error"));
