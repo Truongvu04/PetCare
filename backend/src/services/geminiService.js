@@ -1,11 +1,56 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "../config/prisma.js";
+import NodeCache from "node-cache";
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 // Model: Gemini 2.5 Flash (latest stable version)
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+// Cache for products and services context (TTL: 5 minutes)
+const contextCache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
+
+// Retry configuration
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 1000; // 1 second
+const MAX_RETRY_DELAY = 10000; // 10 seconds
+
+/**
+ * Sleep utility for retry delays
+ */
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Retry with exponential backoff
+ */
+const retryWithBackoff = async (fn, retries = MAX_RETRIES) => {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      // Only retry on 429 (rate limit) or 503 (service unavailable)
+      const isRetryable = error.status === 429 || error.status === 503;
+      
+      if (!isRetryable || attempt === retries) {
+        throw error;
+      }
+
+      // Exponential backoff: delay = INITIAL_RETRY_DELAY * 2^attempt
+      const delay = Math.min(
+        INITIAL_RETRY_DELAY * Math.pow(2, attempt),
+        MAX_RETRY_DELAY
+      );
+
+      console.warn(
+        `API request failed (attempt ${attempt + 1}/${retries + 1}). Retrying in ${delay}ms...`,
+        error.message
+      );
+
+      await sleep(delay);
+    }
+  }
+};
 
 /**
  * Get pet context for AI prompt
@@ -105,14 +150,26 @@ const getRemindersContext = async (userId, petId = null) => {
 };
 
 /**
- * Get products context for AI prompt
+ * Get products context for AI prompt (with caching)
+ * Optimized: Reduced to 20 products to save tokens
  */
 const getProductsContext = async () => {
+  const cacheKey = "products_context";
+  
+  // Check cache first
+  const cached = contextCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   try {
     const products = await prisma.products.findMany({
-      take: 50, // Limit to 50 products
+      take: 20, // Reduced from 50 to 20 to save tokens
+      orderBy: {
+        created_at: "desc", // Get latest products
+      },
       include: {
-        vendor: {
+        vendors: {
           select: {
             store_name: true,
           },
@@ -120,18 +177,37 @@ const getProductsContext = async () => {
       },
     });
 
-    if (products.length === 0) return "";
+    if (products.length === 0) {
+      contextCache.set(cacheKey, "");
+      return "";
+    }
 
-    let context = "\nSản phẩm có sẵn trong cửa hàng:\n";
+    // Group by category to reduce token usage
+    const grouped = {};
     products.forEach((product) => {
-      const priceInVND = parseFloat(product.price).toLocaleString("vi-VN");
-      context += `- ${product.name} (${product.category || "Không phân loại"}): ${priceInVND} VND`;
-      if (product.vendor?.store_name) {
-        context += ` - Cửa hàng: ${product.vendor.store_name}`;
+      const category = product.category || "Khác";
+      if (!grouped[category]) {
+        grouped[category] = [];
       }
-      context += "\n";
+      grouped[category].push({
+        name: product.name,
+        price: parseFloat(product.price),
+        store: product.vendors?.store_name,
+      });
     });
 
+    let context = "\nSản phẩm có sẵn:\n";
+    Object.keys(grouped).forEach((category) => {
+      context += `${category}: `;
+      const items = grouped[category]
+        .slice(0, 5) // Max 5 items per category
+        .map((p) => `${p.name} (${p.price.toLocaleString("vi-VN")}đ)`)
+        .join(", ");
+      context += items + "\n";
+    });
+
+    // Cache the result
+    contextCache.set(cacheKey, context);
     return context;
   } catch (error) {
     console.error("Error fetching products context:", error);
@@ -140,14 +216,26 @@ const getProductsContext = async () => {
 };
 
 /**
- * Get services context for AI prompt
+ * Get services context for AI prompt (with caching)
+ * Optimized: Reduced to 15 services and compact format
  */
 const getServicesContext = async () => {
+  const cacheKey = "services_context";
+  
+  // Check cache first
+  const cached = contextCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   try {
     const services = await prisma.services.findMany({
-      take: 30, // Limit to 30 services
+      take: 15, // Reduced from 30 to 15 to save tokens
+      orderBy: {
+        created_at: "desc", // Get latest services
+      },
       include: {
-        vendor: {
+        vendors: {
           select: {
             store_name: true,
           },
@@ -155,21 +243,24 @@ const getServicesContext = async () => {
       },
     });
 
-    if (services.length === 0) return "";
+    if (services.length === 0) {
+      contextCache.set(cacheKey, "");
+      return "";
+    }
 
+    // Compact format to save tokens
     let context = "\nDịch vụ có sẵn:\n";
     services.forEach((service) => {
-      const priceInVND = parseFloat(service.price).toLocaleString("vi-VN");
-      context += `- ${service.name} (${service.category || "Không phân loại"}): ${priceInVND} VND`;
+      const price = parseFloat(service.price).toLocaleString("vi-VN");
+      context += `- ${service.name}: ${price}đ`;
       if (service.duration) {
-        context += ` - Thời gian: ${service.duration} phút`;
-      }
-      if (service.vendor?.store_name) {
-        context += ` - Cửa hàng: ${service.vendor.store_name}`;
+        context += ` (${service.duration}ph)`;
       }
       context += "\n";
     });
 
+    // Cache the result
+    contextCache.set(cacheKey, context);
     return context;
   } catch (error) {
     console.error("Error fetching services context:", error);
@@ -213,26 +304,48 @@ Hãy trả lời một cách chi tiết và hữu ích:`;
 };
 
 /**
- * Generate AI response using Gemini
+ * Generate AI response using Gemini with retry logic
  */
 export const generateAIResponse = async (userMessage, userId, petId = null) => {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is not set in environment variables");
+  }
+
+  const prompt = await buildPrompt(userMessage, userId, petId);
+
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not set in environment variables");
-    }
+    // Retry with exponential backoff for rate limit errors
+    const result = await retryWithBackoff(async () => {
+      const response = await model.generateContent(prompt);
+      return await response.response.text();
+    });
 
-    const prompt = await buildPrompt(userMessage, userId, petId);
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    return text;
+    return result;
   } catch (error) {
     console.error("Error generating AI response:", error);
+
+    // Provide fallback message for rate limit errors
+    if (error.status === 429) {
+      throw new Error(
+        "Xin lỗi, hệ thống AI đang quá tải. Vui lòng thử lại sau vài phút. " +
+        "Nếu vấn đề vẫn tiếp tục, vui lòng liên hệ hỗ trợ."
+      );
+    }
+
+    // Re-throw other errors
     throw error;
   }
 };
+
+/**
+ * Clear context cache (useful for testing or manual cache invalidation)
+ */
+export const clearContextCache = () => {
+  contextCache.flushAll();
+  console.log("Context cache cleared");
+};
+
+
 
 
 
