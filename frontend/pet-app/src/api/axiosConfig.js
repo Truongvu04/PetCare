@@ -5,8 +5,11 @@ import { performCompleteLogout } from "../utils/logoutHelper.js";
 const api = axios.create({
   baseURL: "http://localhost:5000/api", // ⚠️ sửa port nếu backend của bạn khác
   headers: {
-    "Content-Type": "application/json",
+    "Content-Type": "application/json; charset=UTF-8",
+    "Accept": "application/json; charset=UTF-8",
   },
+  responseType: "json",
+  responseEncoding: "utf8",
 });
 
 // ✅ Tự động gắn token vào tất cả request nếu có trong localStorage

@@ -57,9 +57,15 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
-app.use(bodyParser.json());
-app.use(express.urlencoded({ extended: true }));
+// Set charset UTF-8 for all responses
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+  next();
+});
+
+app.use(express.json({ charset: 'utf-8' }));
+app.use(bodyParser.json({ charset: 'utf-8' }));
+app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(passport.initialize());
