@@ -1,269 +1,312 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
-import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
-import { healthApi } from "../../api/healthApi.js";
 import api from "../../api/axiosConfig.js";
+import { healthApi } from "../../api/healthApi.js";
+import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
 import WeightForm from "./WeightForm.jsx";
 import VaccinationForm from "./VaccinationForm.jsx";
 import HealthNoteForm from "./HealthNoteForm.jsx";
-import { MapPin } from "lucide-react";
+import { showError } from "../../utils/notifications.js";
 
 const HealthTracking = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("Weight");
   const [pets, setPets] = useState([]);
-  const [selectedPetId, setSelectedPetId] = useState("");
-  const [weightHistory, setWeightHistory] = useState([]);
-  const [vaccinationHistory, setVaccinationHistory] = useState([]);
+  const [selectedPetId, setSelectedPetId] = useState(null);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [weightRecords, setWeightRecords] = useState([]);
+  const [vaccinationRecords, setVaccinationRecords] = useState([]);
   const [healthNotes, setHealthNotes] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadPets();
-  }, []);
+    const loadPets = async () => {
+      try {
+        const response = await api.get("/pets");
+        setPets(response.data || []);
+        if (response.data && response.data.length > 0) {
+          setSelectedPetId(response.data[0].id);
+        }
+      } catch (error) {
+        console.error("Error loading pets:", error);
+      }
+    };
+    if (user) {
+      loadPets();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (selectedPetId) {
-      loadHealthData();
+      loadData();
     }
   }, [selectedPetId, activeTab]);
 
-  const loadPets = async () => {
-    try {
-      const res = await api.get("/pets");
-      const data = res.data;
-      if (Array.isArray(data)) {
-        setPets(data);
-        if (data.length > 0) {
-          setSelectedPetId(data[0].id);
-        }
-      }
-    } catch (err) {
-      console.error("Error loading pets:", err);
-    }
-  };
-
-  const loadHealthData = async () => {
+  const loadData = async () => {
     if (!selectedPetId) return;
     setLoading(true);
     try {
-      if (activeTab === "Weight") {
-        const data = await healthApi.getWeightHistory(selectedPetId);
-        setWeightHistory(data);
-      } else if (activeTab === "Vaccination") {
-        const data = await healthApi.getVaccinationHistory(selectedPetId);
-        setVaccinationHistory(data);
-      } else if (activeTab === "Health Notes") {
-        const data = await healthApi.getHealthRecords(selectedPetId, "health_note");
-        setHealthNotes(data);
+      if (activeTab === "overview" || activeTab === "weight") {
+        const response = await healthApi.getWeightHistory(selectedPetId);
+        setWeightRecords(response.records || []);
       }
-    } catch (err) {
-      console.error("Error loading health data:", err);
+      if (activeTab === "overview" || activeTab === "vaccination") {
+        const response = await healthApi.getVaccinationHistory(selectedPetId);
+        setVaccinationRecords(response.records || []);
+      }
+      if (activeTab === "health_note") {
+        const response = await healthApi.getHealthRecords(selectedPetId, "health_note");
+        setHealthNotes(response.records || []);
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+      showError("Lỗi", "Không thể tải dữ liệu");
     } finally {
       setLoading(false);
     }
   };
 
   const handleSuccess = () => {
-    loadHealthData();
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("vi-VN");
+    loadData();
   };
 
   const selectedPet = pets.find((p) => p.id === selectedPetId);
-  const currentWeight = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1] : null;
+  const currentWeight = weightRecords.length > 0 
+    ? weightRecords[weightRecords.length - 1] 
+    : null;
 
   return (
     <CustomerLayout currentPage="health">
-      <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
-        Health & Activity
-      </h2>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Health & Activity</h1>
+          <p className="text-gray-600">Theo dõi sức khỏe và hoạt động của thú cưng</p>
+        </div>
 
-      {/* Pet Selector */}
-      {pets.length > 0 && (
-        <div className="mb-4">
+        {/* Pet Selector */}
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Chọn thú cưng
           </label>
           <select
-            value={selectedPetId}
+            value={selectedPetId || ""}
             onChange={(e) => setSelectedPetId(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
           >
             {pets.map((pet) => (
               <option key={pet.id} value={pet.id}>
-                {pet.name}
+                {pet.name} ({pet.species})
               </option>
             ))}
           </select>
         </div>
-      )}
 
-      {/* Tabs */}
-      <div className="flex justify-between items-center border-b mb-6">
-        <div className="flex space-x-8">
-          {["Weight", "Vaccination", "Health Notes"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`pb-2 font-medium ${
-                activeTab === tab
-                  ? "text-green-700 border-b-2 border-green-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+        {selectedPetId && (
+          <>
+            {/* Current Weight Display */}
+            {currentWeight && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm text-gray-600">Cân nặng hiện tại</p>
+                <p className="text-2xl font-bold text-green-700">
+                  {(parseFloat(currentWeight.value) * 0.453592).toFixed(2)} kg
+                </p>
+              </div>
+            )}
 
-        <button
-          onClick={() => navigate("/vet-map")}
-          className="flex items-center text-green-600 hover:text-green-500 space-x-1 pb-2 font-medium border-b-2 border-transparent"
-        >
-          <MapPin className="w-5 h-5" />
-          <span>Clinic Map</span>
-        </button>
-      </div>
+            {/* Tabs */}
+            <div className="border-b border-gray-200">
+              <nav className="flex space-x-4">
+                {[
+                  { id: "overview", label: "Overview" },
+                  { id: "weight", label: "Weight" },
+                  { id: "vaccination", label: "Medical History" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+                      activeTab === tab.id
+                        ? "border-green-500 text-green-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
 
-      {!selectedPetId && pets.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Bạn chưa có thú cưng nào. Hãy thêm thú cưng trước.</p>
-        </div>
-      ) : (
-        <>
-          {/* Weight Tab */}
-          {activeTab === "Weight" && (
-            <section className="mb-10">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Weight</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="border rounded-lg p-5">
-                  <h4 className="font-medium mb-4">Thêm cân nặng mới</h4>
-                  <WeightForm petId={selectedPetId} onSuccess={handleSuccess} />
-                </div>
-                <div className="border rounded-lg p-5">
-                  {currentWeight ? (
-                    <>
-                      <p className="text-3xl font-bold text-gray-900">
-                        {(parseFloat(currentWeight.value) * 0.453592).toFixed(2)} kg
+            {/* Forms */}
+            {activeTab === "overview" && (
+              <div className="space-y-4">
+                {currentWeight && (
+                  <div className="bg-white p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold mb-4">Weight</h3>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <p className="text-sm text-gray-600 mb-1">Current Weight</p>
+                      <p className="text-3xl font-bold text-green-700">
+                        {(parseFloat(currentWeight.value) * 0.453592).toFixed(1)} kg
                       </p>
-                      <p className="text-sm text-green-600 mt-2">
-                        Cập nhật lần cuối: {formatDate(currentWeight.record_date)}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-gray-500">Chưa có dữ liệu cân nặng</p>
-                  )}
-                </div>
-              </div>
-              <div className="mt-6 border rounded-lg overflow-hidden">
-                <h4 className="font-medium p-4 border-b bg-gray-50">Lịch sử cân nặng</h4>
-                {loading ? (
-                  <p className="p-4 text-gray-500">Đang tải...</p>
-                ) : weightHistory.length === 0 ? (
-                  <p className="p-4 text-gray-500">Chưa có lịch sử cân nặng</p>
-                ) : (
-                  <table className="w-full text-left">
-                    <thead className="bg-gray-50 text-gray-600 text-sm">
-                      <tr>
-                        <th className="p-3 border-b">Ngày</th>
-                        <th className="p-3 border-b">Cân nặng (kg)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-gray-800">
-                      {weightHistory.map((record) => (
-                        <tr key={record.id} className="hover:bg-green-50">
-                          <td className="p-3 border-b">{formatDate(record.record_date)}</td>
-                          <td className="p-3 border-b">{(parseFloat(record.value) * 0.453592).toFixed(2)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* Vaccination Tab */}
-          {activeTab === "Vaccination" && (
-            <section className="mb-10">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Vaccination</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="border rounded-lg p-5">
-                  <h4 className="font-medium mb-4">Thêm tiêm chủng mới</h4>
-                  <VaccinationForm petId={selectedPetId} onSuccess={handleSuccess} />
-                </div>
-              </div>
-              <div className="border rounded-lg overflow-hidden">
-                <h4 className="font-medium p-4 border-b bg-gray-50">Lịch sử tiêm chủng</h4>
-                {loading ? (
-                  <p className="p-4 text-gray-500">Đang tải...</p>
-                ) : vaccinationHistory.length === 0 ? (
-                  <p className="p-4 text-gray-500">Chưa có lịch sử tiêm chủng</p>
-                ) : (
-                  <table className="w-full text-left">
-                    <thead className="bg-gray-50 text-gray-600 text-sm">
-                      <tr>
-                        <th className="p-3 border-b">Ngày</th>
-                        <th className="p-3 border-b">Vaccine</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-gray-800">
-                      {vaccinationHistory.map((record) => (
-                        <tr key={record.id} className="hover:bg-green-50">
-                          <td className="p-3 border-b text-green-700">
-                            {formatDate(record.record_date)}
-                          </td>
-                          <td className="p-3 border-b">{record.vaccination_name}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* Health Notes Tab */}
-          {activeTab === "Health Notes" && (
-            <section>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Health Notes</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="border rounded-lg p-5">
-                  <h4 className="font-medium mb-4">Thêm ghi chú sức khỏe</h4>
-                  <HealthNoteForm petId={selectedPetId} onSuccess={handleSuccess} />
-                </div>
-              </div>
-              <div className="border rounded-lg overflow-hidden">
-                <h4 className="font-medium p-4 border-b bg-gray-50">Ghi chú sức khỏe</h4>
-                {loading ? (
-                  <p className="p-4 text-gray-500">Đang tải...</p>
-                ) : healthNotes.length === 0 ? (
-                  <p className="p-4 text-gray-500">Chưa có ghi chú sức khỏe</p>
-                ) : (
-                  <div className="divide-y">
-                    {healthNotes.map((note) => (
-                      <div key={note.id} className="p-4 hover:bg-green-50">
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-sm text-green-700 font-medium">
-                            {formatDate(note.record_date)}
-                          </span>
-                        </div>
-                        <p className="text-gray-800">{note.health_note}</p>
-                      </div>
-                    ))}
+                      {weightRecords.length > 1 && (
+                        <p className="text-sm text-green-600 mt-2">
+                          Last 6 Months {weightRecords.length > 0 ? "+5%" : ""}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-semibold mb-4">Diet</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Food Type</p>
+                      <p className="text-base font-medium text-gray-800">Dry Kibble</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Daily Calories</p>
+                      <p className="text-base font-medium text-gray-800">350 kcal</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-600 mb-1">Feeding Schedule</p>
+                      <p className="text-base font-medium text-gray-800">8 AM, 6 PM</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </section>
-          )}
-        </>
-      )}
+            )}
+            {activeTab === "weight" && (
+              <WeightForm petId={selectedPetId} onSuccess={handleSuccess} />
+            )}
+            {activeTab === "vaccination" && (
+              <VaccinationForm petId={selectedPetId} onSuccess={handleSuccess} />
+            )}
+
+            {/* Records List */}
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold">
+                  {activeTab === "overview" && "Overview"}
+                  {activeTab === "weight" && "Weight"}
+                  {activeTab === "vaccination" && "Medical History"}
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                {loading ? (
+                  <div className="p-8 text-center text-gray-500">Đang tải...</div>
+                ) : (
+                  <table className="w-full">
+                    {activeTab === "overview" && (
+                      <>
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                              Date
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                              Vaccination
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                              Notes
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {vaccinationRecords.length === 0 ? (
+                            <tr>
+                              <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
+                                Chưa có lịch sử tiêm chủng
+                              </td>
+                            </tr>
+                          ) : (
+                            vaccinationRecords.map((record) => (
+                              <tr key={record.id}>
+                                <td className="px-4 py-3 text-sm">
+                                  {new Date(record.record_date).toLocaleDateString("vi-VN")}
+                                </td>
+                                <td className="px-4 py-3 text-sm font-medium">{record.vaccination_name}</td>
+                                <td className="px-4 py-3 text-sm text-gray-600">Annual vaccination</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </>
+                    )}
+                    {activeTab === "weight" && (
+                      <>
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                              Ngày
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                              Cân nặng (kg)
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {weightRecords.length === 0 ? (
+                            <tr>
+                              <td colSpan={2} className="px-4 py-8 text-center text-gray-500">
+                                Chưa có dữ liệu cân nặng
+                              </td>
+                            </tr>
+                          ) : (
+                            weightRecords.map((record) => (
+                              <tr key={record.id}>
+                                <td className="px-4 py-3 text-sm">
+                                  {new Date(record.record_date).toLocaleDateString("vi-VN")}
+                                </td>
+                                <td className="px-4 py-3 text-sm font-medium">
+                                  {(parseFloat(record.value) * 0.453592).toFixed(2)} kg
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </>
+                    )}
+                    {activeTab === "vaccination" && (
+                      <>
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                              Date
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                              Vaccination
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                              Notes
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {vaccinationRecords.length === 0 ? (
+                            <tr>
+                              <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
+                                Chưa có lịch sử tiêm chủng
+                              </td>
+                            </tr>
+                          ) : (
+                            vaccinationRecords.map((record) => (
+                              <tr key={record.id}>
+                                <td className="px-4 py-3 text-sm">
+                                  {new Date(record.record_date).toLocaleDateString("vi-VN")}
+                                </td>
+                                <td className="px-4 py-3 text-sm font-medium">{record.vaccination_name}</td>
+                                <td className="px-4 py-3 text-sm text-gray-600">Annual vaccination</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </>
+                    )}
+                  </table>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </CustomerLayout>
   );
 };

@@ -8,9 +8,16 @@ import {
 
 const router = express.Router();
 
-router.get("/", verifyToken, getCalendarEvents);
-router.get("/upcoming", verifyToken, getUpcomingExpenses);
-router.post("/events", verifyToken, createCalendarEvent);
+// All routes require authentication
+router.use(verifyToken);
+
+router.get("/", getCalendarEvents);
+router.get("/upcoming", getUpcomingExpenses);
+router.post("/events", createCalendarEvent);
 
 export default router;
+
+
+
+
 

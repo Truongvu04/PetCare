@@ -231,10 +231,11 @@ const VendorDashboard = () => {
                     <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
                     <p className="mt-1 text-gray-600">Xin chào, <span className="font-semibold text-green-600">{vendorName}</span></p>
                 </div>
-                <button onClick={() => navigate('/vendor/notifications')} className="relative p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 transition">
+                {/* Notification button hidden as requested */}
+                {/* <button onClick={() => navigate('/vendor/notifications')} className="relative p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 transition">
                     <Bell className="w-6 h-6 text-gray-600" />
                     {notifications.length > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>}
-                </button>
+                </button> */}
             </div>
 
             {/* Stats */}

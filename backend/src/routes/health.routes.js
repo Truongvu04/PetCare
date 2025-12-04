@@ -11,12 +11,19 @@ import {
 
 const router = express.Router();
 
-router.post("/", verifyToken, createHealthRecord);
-router.get("/pet/:petId", verifyToken, getHealthRecords);
-router.get("/pet/:petId/weight", verifyToken, getWeightHistory);
-router.get("/pet/:petId/vaccination", verifyToken, getVaccinationHistory);
-router.put("/:recordId", verifyToken, updateHealthRecord);
-router.delete("/:recordId", verifyToken, deleteHealthRecord);
+// All routes require authentication
+router.use(verifyToken);
+
+router.post("/", createHealthRecord);
+router.get("/pet/:petId", getHealthRecords);
+router.get("/pet/:petId/weight", getWeightHistory);
+router.get("/pet/:petId/vaccination", getVaccinationHistory);
+router.put("/:recordId", updateHealthRecord);
+router.delete("/:recordId", deleteHealthRecord);
 
 export default router;
+
+
+
+
 

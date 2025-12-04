@@ -49,6 +49,7 @@ const CustomerLayout = ({ children, currentPage = "dashboard" }) => {
     if (path === "/orders" || path.startsWith("/orders/")) return "orders";
     if (path === "/shops" || path.startsWith("/shop/")) return "shop";
     if (path === "/settings" || path.startsWith("/settings/")) return "settings";
+    if (path === "/ai-chat") return "ai-chat";
     return currentPage;
   };
 
@@ -163,7 +164,14 @@ const CustomerLayout = ({ children, currentPage = "dashboard" }) => {
                 <span>Về trang chủ</span>
               </button>
               {/* Chat button */}
-              <button className="w-full flex items-center space-x-2 text-left px-3 py-2 rounded-lg text-gray-900 hover:text-green-700 transition">
+              <button 
+                onClick={() => navigate("/ai-chat")}
+                className={`w-full flex items-center space-x-2 text-left px-3 py-2 rounded-lg transition ${
+                  currentKey === "ai-chat"
+                    ? "bg-green-100 text-green-800 font-medium"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
                 <MessageCircle size={18} />
                 <span>Chat</span>
               </button>
@@ -171,10 +179,10 @@ const CustomerLayout = ({ children, currentPage = "dashboard" }) => {
           </div>
         </aside>
 
-        {/* Main Content Container - Scrollable */}
-        <div className="flex-1 lg:ml-64 h-full overflow-y-auto">
-          <div className="max-w-[calc(1280px-16rem)] mx-auto">
-            <main className="p-4 sm:p-6 lg:p-10 min-h-full pt-16 lg:pt-10">
+        {/* Main Content Container - Scrollable (except for ai-chat) */}
+        <div className={`flex-1 lg:ml-64 h-full ${currentPage === "ai-chat" ? "overflow-hidden" : "overflow-y-auto"}`}>
+          <div className={`${currentPage === "ai-chat" ? "h-full px-6 py-6" : "max-w-[calc(1280px-16rem)]"} mx-auto`}>
+            <main className={`${currentPage === "ai-chat" ? "h-full overflow-hidden" : "p-4 sm:p-6 lg:p-10 min-h-full pt-16 lg:pt-10"}`}>
               {children}
             </main>
           </div>

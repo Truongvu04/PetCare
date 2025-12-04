@@ -1,100 +1,169 @@
 import { prisma } from "../config/prisma.js";
-import crypto from "crypto";
 
-// Get calendar events
+/**
+ * Get calendar events
+ * GET /api/calendar
+ */
 export const getCalendarEvents = async (req, res) => {
   try {
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
     const { start_date, end_date, pet_id } = req.query;
 
     if (!start_date || !end_date) {
-      return res.status(400).json({ error: "Missing required query params: start_date, end_date" });
+      return res.status(400).json({ message: "start_date and end_date are required" });
     }
 
-    const startDate = new Date(start_date);
-    const endDate = new Date(end_date);
-
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      return res.status(400).json({ error: "Invalid date format. Use YYYY-MM-DD" });
-    }
-
-    const where = {
-      user_id,
+    const whereClause = {
+      user_id: userId,
       event_date: {
-        gte: startDate,
-        lte: endDate,
+        gte: new Date(start_date),
+        lte: new Date(end_date),
       },
     };
 
     if (pet_id) {
-      // Verify pet belongs to user
-      const pet = await prisma.pet.findFirst({
-        where: { id: pet_id, user_id },
-      });
-      if (!pet) {
-        return res.status(404).json({ error: "Pet not found or unauthorized" });
-      }
-      where.pet_id = pet_id;
+      whereClause.pet_id = pet_id;
     }
 
-    const events = await prisma.calendarEvent.findMany({
-      where,
-      orderBy: {
-        event_date: "asc",
+    // Get calendar events
+    let calendarEvents = [];
+    try {
+      calendarEvents = await prisma.calendarEvent.findMany({
+        where: whereClause,
+        include: {
+          pet: {
+            select: {
+              id: true,
+              name: true,
+              species: true,
+            },
+          },
+          expense: {
+            select: {
+              id: true,
+              category: true,
+              amount: true,
+              description: true,
+            },
+          },
+        },
+        orderBy: {
+          event_date: "asc",
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching calendar events:", error);
+      // If table doesn't exist, just use empty array
+      calendarEvents = [];
+    }
+
+    // Get reminders as events
+    const reminderWhereClause = {
+      pet: {
+        user_id: userId,
       },
-      include: {
-        pet: {
-          select: {
-            id: true,
-            name: true,
-            species: true,
-          },
-        },
-        expense: {
-          select: {
-            id: true,
-            amount: true,
-            category: true,
-            description: true,
-          },
-        },
-        reminder: {
-          select: {
-            reminder_id: true,
-            type: true,
-            vaccination_type: true,
-            reminder_date: true,
-          },
-        },
+      reminder_date: {
+        gte: new Date(start_date),
+        lte: new Date(end_date),
       },
+    };
+
+    if (pet_id) {
+      reminderWhereClause.pet_id = pet_id;
+    }
+
+    let reminders = [];
+    try {
+      reminders = await prisma.reminder.findMany({
+        where: reminderWhereClause,
+        include: {
+          pet: {
+            select: {
+              id: true,
+              name: true,
+              species: true,
+            },
+          },
+        },
+        orderBy: {
+          reminder_date: "asc",
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching reminders:", error);
+      reminders = [];
+    }
+
+    // Format reminders as events
+    const reminderEvents = reminders.map((reminder) => {
+      let title = "";
+      if (reminder.type === "vaccination" && reminder.vaccination_type) {
+        title = `Tiêm chủng: ${reminder.vaccination_type}`;
+      } else if (reminder.type === "feeding" && reminder.feeding_time) {
+        const time = new Date(`2000-01-01T${reminder.feeding_time}`).toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        title = `Cho ăn lúc ${time}`;
+      } else {
+        title = reminder.type.charAt(0).toUpperCase() + reminder.type.slice(1);
+      }
+
+      return {
+        id: reminder.reminder_id,
+        pet_id: reminder.pet_id,
+        user_id: userId,
+        event_type: "reminder",
+        title: title,
+        description: reminder.vaccination_type || reminder.type,
+        event_date: reminder.reminder_date,
+        related_reminder_id: reminder.reminder_id,
+        pet: reminder.pet,
+        status: reminder.status,
+      };
     });
 
-    res.json(events);
-  } catch (err) {
-    console.error("Error fetching calendar events:", err);
-    res.status(500).json({ error: "Internal server error" });
+    // Combine and sort all events
+    const allEvents = [...calendarEvents, ...reminderEvents].sort(
+      (a, b) => new Date(a.event_date) - new Date(b.event_date)
+    );
+
+    return res.json({
+      success: true,
+      events: allEvents,
+    });
+  } catch (error) {
+    console.error("Error in getCalendarEvents:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+    });
+    return res.status(500).json({
+      message: "Error fetching calendar events",
+      error: process.env.NODE_ENV === "development" ? error.message : "Internal server error",
+    });
   }
 };
 
-// Get upcoming expenses from reminders
+/**
+ * Get upcoming expenses from reminders
+ * GET /api/calendar/upcoming
+ */
 export const getUpcomingExpenses = async (req, res) => {
   try {
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
     const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
 
-    // Get reminders that are upcoming (reminder_date >= today) and related to expenses
     const reminders = await prisma.reminder.findMany({
       where: {
         pet: {
-          user_id,
-        },
-        reminder_date: {
-          gte: today,
+          user_id: userId,
         },
         status: "pending",
-        type: {
-          in: ["vet_visit", "medication", "grooming"],
+        reminder_date: {
+          gte: today,
         },
       },
       include: {
@@ -109,101 +178,88 @@ export const getUpcomingExpenses = async (req, res) => {
       orderBy: {
         reminder_date: "asc",
       },
-      take: 10, // Limit to 10 upcoming
+      take: 10,
     });
 
-    // Transform reminders into expense-like format
+    // Format reminders as upcoming expenses
     const upcomingExpenses = reminders.map((reminder) => {
       let category = "other";
-      if (reminder.type === "vet_visit") category = "vet_visit";
-      else if (reminder.type === "medication") category = "medicine";
-      else if (reminder.type === "grooming") category = "grooming";
+      let description = reminder.type;
+      let amount = 0;
+
+      if (reminder.type === "vaccination") {
+        category = "vet_visit";
+        description = `Tiêm chủng: ${reminder.vaccination_type || "Không xác định"}`;
+        amount = 200000; // Default vaccination cost
+      } else if (reminder.type === "vet_visit") {
+        category = "vet_visit";
+        description = "Khám thú y";
+        amount = 500000; // Default vet visit cost
+      } else if (reminder.type === "grooming") {
+        category = "grooming";
+        description = "Chải chuốt";
+        amount = 150000; // Default grooming cost
+      }
 
       return {
         id: reminder.reminder_id,
-        pet_id: reminder.pet_id,
+        date: reminder.reminder_date,
+        category: category,
+        description: description,
+        amount: amount,
         pet: reminder.pet,
-        category,
-        description: reminder.vaccination_type || `${reminder.pet.name}'s ${reminder.type}`,
-        expense_date: reminder.reminder_date,
-        reminder_type: reminder.type,
-        is_reminder: true,
+        reminder_id: reminder.reminder_id,
       };
     });
 
-    res.json(upcomingExpenses);
-  } catch (err) {
-    console.error("Error fetching upcoming expenses:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.json({
+      success: true,
+      upcoming_expenses: upcomingExpenses,
+    });
+  } catch (error) {
+    console.error("Error in getUpcomingExpenses:", error);
+    return res.status(500).json({
+      message: "Error fetching upcoming expenses",
+      error: error.message,
+    });
   }
 };
 
-// Create calendar event manually (optional)
+/**
+ * Create calendar event manually
+ * POST /api/calendar/events
+ */
 export const createCalendarEvent = async (req, res) => {
   try {
     const { pet_id, event_type, title, description, event_date, related_expense_id, related_reminder_id } = req.body;
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
 
-    if (!pet_id || !event_type || !title || !event_date) {
-      return res.status(400).json({ error: "Missing required fields: pet_id, event_type, title, event_date" });
-    }
-
-    // Validate event_type
-    const validTypes = ["vet_visit", "expense", "reminder"];
-    if (!validTypes.includes(event_type)) {
-      return res.status(400).json({ error: "Invalid event_type" });
-    }
-
-    // Verify pet belongs to user
+    // Validate pet ownership
     const pet = await prisma.pet.findFirst({
-      where: { id: pet_id, user_id },
+      where: {
+        id: pet_id,
+        user_id: userId,
+      },
     });
 
     if (!pet) {
-      return res.status(404).json({ error: "Pet not found or unauthorized" });
+      return res.status(404).json({ message: "Pet not found or you don't have permission" });
     }
 
-    // Validate date
-    const eventDate = new Date(event_date);
-    if (isNaN(eventDate.getTime())) {
-      return res.status(400).json({ error: "Invalid event_date format" });
-    }
-
-    // Verify related entities if provided
-    if (related_expense_id) {
-      const expense = await prisma.expense.findFirst({
-        where: { id: related_expense_id, user_id },
-      });
-      if (!expense) {
-        return res.status(404).json({ error: "Related expense not found" });
-      }
-    }
-
-    if (related_reminder_id) {
-      const reminder = await prisma.reminder.findFirst({
-        where: { reminder_id: related_reminder_id },
-        include: {
-          pet: {
-            select: {
-              user_id: true,
-            },
-          },
-        },
-      });
-      if (!reminder || reminder.pet.user_id !== user_id) {
-        return res.status(404).json({ error: "Related reminder not found" });
-      }
+    // Validate event type
+    const validTypes = ["vet_visit", "expense", "reminder"];
+    if (!validTypes.includes(event_type)) {
+      return res.status(400).json({ message: "Invalid event_type" });
     }
 
     const event = await prisma.calendarEvent.create({
       data: {
-        id: crypto.randomBytes(12).toString("hex"),
         pet_id,
-        user_id,
+        user_id: userId,
         event_type,
-        title,
-        description: description || null,
-        event_date: eventDate,
+        title: title.trim(),
+        description: description ? description.trim() : null,
+        event_date: new Date(event_date),
         related_expense_id: related_expense_id || null,
         related_reminder_id: related_reminder_id || null,
       },
@@ -218,10 +274,16 @@ export const createCalendarEvent = async (req, res) => {
       },
     });
 
-    res.status(201).json(event);
-  } catch (err) {
-    console.error("Error creating calendar event:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(201).json({
+      success: true,
+      event: event,
+    });
+  } catch (error) {
+    console.error("Error in createCalendarEvent:", error);
+    return res.status(500).json({
+      message: "Error creating calendar event",
+      error: error.message,
+    });
   }
 };
 

@@ -28,6 +28,11 @@ import vendorRoutes from './src/routes/vendor.routes.js';
 import paymentsRoutes from "./src/routes/payments.routes.js";
 import notificationSettingsRoutes from "./src/routes/notificationSettings.js";
 import couponRoutes from "./src/routes/coupon.routes.js";
+import healthRoutes from "./src/routes/health.routes.js";
+import expenseRoutes from "./src/routes/expense.routes.js";
+import calendarRoutes from "./src/routes/calendar.routes.js";
+import aiRoutes from "./src/routes/ai.routes.js";
+import recommendationRoutes from "./src/routes/recommendation.routes.js";
 import "./src/config/passport.js";
 import './src/scheduler/reminderJob.js'; // Đã kích hoạt cron job
 
@@ -52,9 +57,15 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
-app.use(bodyParser.json());
-app.use(express.urlencoded({ extended: true }));
+// Set charset UTF-8 for all responses
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+  next();
+});
+
+app.use(express.json({ charset: 'utf-8' }));
+app.use(bodyParser.json({ charset: 'utf-8' }));
+app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(passport.initialize());
@@ -73,11 +84,21 @@ app.use('/api/v1/vendor', vendorRoutes);
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/notification-settings", notificationSettingsRoutes);
 app.use("/api/coupons", couponRoutes);
+app.use("/api/health", healthRoutes);
+app.use("/api/expenses", expenseRoutes);
+app.use("/api/calendar", calendarRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/recommendations", recommendationRoutes);
 console.log("✅ Payments routes registered at /api/payments");
 console.log("✅ Coupon routes registered at /api/coupons");
 console.log("✅ Cart routes registered at /api/cart");
 console.log("✅ Vendor routes registered at /api/v1/vendor");
 console.log("✅ Notification settings routes registered at /api/notification-settings");
+console.log("✅ Health routes registered at /api/health");
+console.log("✅ Expense routes registered at /api/expenses");
+console.log("✅ Calendar routes registered at /api/calendar");
+console.log("✅ AI routes registered at /api/ai");
+console.log("✅ Recommendation routes registered at /api/recommendations");
 console.log("✅ Goong routes registered at /api/goong");
 
 app.get(

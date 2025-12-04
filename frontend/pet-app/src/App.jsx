@@ -7,6 +7,7 @@ import { useAuth } from "./hooks/useAuth.js";
 
 import HomePage from "./components/Home/HomePage.jsx";
 import IntroPage from "./components/Home/IntroPage.jsx";
+import LoginPage from "./components/Auth/LoginPage.jsx";
 import Shop from "./components/Shop/Shop.jsx";
 import ProductDetail from "./components/Shop/ProductDetail.jsx";
 import Cart from "./components/Shop/Cart.jsx";
@@ -27,6 +28,10 @@ import Reminders from "./components/Reminders/Reminder.jsx";
 import ReminderList from "./components/Reminders/ReminderList.jsx";
 import EditReminder from "./components/Reminders/EditReminder.jsx";
 import HealthActivity from "./components/HealthyActivity/HealthyActivity.jsx";
+import HealthTracking from "./components/HealthTracking/HealthTracking.jsx";
+import Expenses from "./components/Expenses/Expenses.jsx";
+import Calendar from "./components/Calendar/Calendar.jsx";
+import AIChatbot from "./components/AIChatbot/AIChatbot.jsx";
 import OrderConfirmation from "./components/Shop/OrderConfirmation.jsx";
 import NotificationSettings from "./components/Settings/NotificationSettings.jsx";
 import VendorListings from "./components/Marketplace/VendorListings.jsx";
@@ -214,6 +219,7 @@ function App() {
           <Routes>
             <Route path="/intropage" element={<IntroPage />} />
             <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/shops" element={<Shop />} />
             <Route path="/vendors" element={<VendorListings />} />
@@ -284,7 +290,31 @@ function App() {
               path="/health"
               element={
                 <ProtectedRoute>
-                  <HealthActivity />
+                  <HealthTracking />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expenses"
+              element={
+                <ProtectedRoute>
+                  <Expenses />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/calendar"
+              element={
+                <ProtectedRoute>
+                  <Calendar />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ai-chat"
+              element={
+                <ProtectedRoute>
+                  <AIChatbot />
                 </ProtectedRoute>
               }
             />

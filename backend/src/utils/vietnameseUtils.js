@@ -1,10 +1,8 @@
 /**
- * Normalize Vietnamese text by removing accents
- * This allows searching for both "mèo" and "meo", "chó" and "cho", etc.
+ * Remove Vietnamese accents from a string
  */
-export function removeVietnameseAccents(str) {
+export const removeVietnameseAccents = (str) => {
   if (!str) return "";
-  
   const accents = {
     'à': 'a', 'á': 'a', 'ạ': 'a', 'ả': 'a', 'ã': 'a',
     'â': 'a', 'ầ': 'a', 'ấ': 'a', 'ậ': 'a', 'ẩ': 'a', 'ẫ': 'a',
@@ -33,31 +31,19 @@ export function removeVietnameseAccents(str) {
     'Ỳ': 'Y', 'Ý': 'Y', 'Ỵ': 'Y', 'Ỷ': 'Y', 'Ỹ': 'Y',
     'Đ': 'D'
   };
-
-  return str
-    .split('')
-    .map(char => accents[char] || char)
-    .join('')
-    .toLowerCase();
-}
+  return str.split('').map(char => accents[char] || char).join('').toLowerCase();
+};
 
 /**
- * Generate search patterns for Vietnamese text
- * Returns both original and accent-removed versions
+ * Generate search patterns for Vietnamese text (with and without accents)
  */
-export function generateSearchPatterns(text) {
-  if (!text) return [];
-  
-  const normalized = removeVietnameseAccents(text);
-  const original = text.toLowerCase();
-  
-  // Return both versions to search for
-  const patterns = [original];
-  if (normalized !== original) {
-    patterns.push(normalized);
-  }
-  
-  return patterns;
-}
+export const generateSearchPatterns = (query) => {
+  const lowerCaseQuery = query.toLowerCase();
+  const normalizedQuery = removeVietnameseAccents(lowerCaseQuery);
+  return [lowerCaseQuery, normalizedQuery].filter(Boolean);
+};
+
+
+
 
 

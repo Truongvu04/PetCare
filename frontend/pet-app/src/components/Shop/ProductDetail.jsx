@@ -139,7 +139,7 @@ const ProductDetail = () => {
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="mb-6">
             <p className="text-3xl font-bold text-green-600 mb-4">
-              ${(product.price / 1000).toFixed(2)}
+              {product.price ? `${product.price.toLocaleString("vi-VN")} VND` : "0 VND"}
             </p>
             <div className="space-y-3">
               <div className="flex items-center justify-between py-2 border-b">

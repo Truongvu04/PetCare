@@ -1,19 +1,21 @@
 import api from "./axiosConfig.js";
 
 export const expenseApi = {
-  // Create expense
   createExpense: async (data) => {
     const response = await api.post("/expenses", data);
     return response.data;
   },
 
-  // Get expenses
-  getExpenses: async (params = {}) => {
+  getExpenses: async (filters = {}) => {
+    const params = {};
+    if (filters.pet_id) params.pet_id = filters.pet_id;
+    if (filters.category) params.category = filters.category;
+    if (filters.start_date) params.start_date = filters.start_date;
+    if (filters.end_date) params.end_date = filters.end_date;
     const response = await api.get("/expenses", { params });
     return response.data;
   },
 
-  // Get expense summary
   getExpenseSummary: async (period = "all") => {
     const response = await api.get("/expenses/summary", {
       params: { period },
@@ -21,21 +23,23 @@ export const expenseApi = {
     return response.data;
   },
 
-  // Get expense by ID
   getExpenseById: async (id) => {
     const response = await api.get(`/expenses/${id}`);
     return response.data;
   },
 
-  // Update expense
   updateExpense: async (id, data) => {
     const response = await api.put(`/expenses/${id}`, data);
     return response.data;
   },
 
-  // Delete expense
   deleteExpense: async (id) => {
-    await api.delete(`/expenses/${id}`);
+    const response = await api.delete(`/expenses/${id}`);
+    return response.data;
   },
 };
+
+
+
+
 

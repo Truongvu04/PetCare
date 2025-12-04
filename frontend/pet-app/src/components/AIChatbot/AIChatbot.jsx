@@ -1,92 +1,79 @@
 import React, { useState, useEffect, useRef } from "react";
-import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
-import { aiApi } from "../../api/aiApi.js";
+import { useAuth } from "../../hooks/useAuth.js";
 import api from "../../api/axiosConfig.js";
+import { aiApi } from "../../api/aiApi.js";
+import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
 import ChatMessage from "./ChatMessage.jsx";
 import SuggestedProducts from "./SuggestedProducts.jsx";
-import { Bot, Send, Trash2, User } from "lucide-react";
-import Swal from "sweetalert2";
+import { showError, showSuccess, showConfirm } from "../../utils/notifications.js";
+import { Send, Trash2, Loader2 } from "lucide-react";
 
 const AIChatbot = () => {
+  const { user } = useAuth();
+  const [pets, setPets] = useState([]);
+  const [selectedPetId, setSelectedPetId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [pets, setPets] = useState([]);
-  const [selectedPetId, setSelectedPetId] = useState(() => {
-    // Load from localStorage on initial mount
-    return localStorage.getItem("aiChatSelectedPetId") || "";
-  });
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const messagesEndRef = useRef(null);
 
+  // Load pets and restore selectedPetId from localStorage
   useEffect(() => {
-    loadPets();
-  }, []);
+    const loadPets = async () => {
+      try {
+        const response = await api.get("/pets");
+        setPets(response.data || []);
 
-  useEffect(() => {
-    loadChatHistory();
-  }, [selectedPetId]);
-
-  // Save selectedPetId to localStorage whenever it changes
-  useEffect(() => {
-    if (selectedPetId) {
-      localStorage.setItem("aiChatSelectedPetId", selectedPetId);
-    } else {
-      localStorage.removeItem("aiChatSelectedPetId");
+        // Restore selectedPetId from localStorage
+        const savedPetId = localStorage.getItem("selectedPetId");
+        if (savedPetId) {
+          const petExists = response.data?.some((p) => p.id === savedPetId);
+          if (petExists) {
+            setSelectedPetId(savedPetId);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading pets:", error);
+      }
+    };
+    if (user) {
+      loadPets();
     }
-  }, [selectedPetId]);
+  }, [user]);
 
+  // Load chat history only once when component mounts (single chat box)
   useEffect(() => {
-    scrollToBottom();
+    const loadHistory = async () => {
+      if (!user) return;
+      setLoadingHistory(true);
+      try {
+        // Load general chat history (without pet_id) for single chat box
+        const response = await aiApi.getChatHistory(null, 50);
+        setMessages(response.history || []);
+      } catch (error) {
+        console.error("Error loading chat history:", error);
+        showError("Lỗi", "Không thể tải lịch sử chat");
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+    loadHistory();
+  }, [user]); // Only depend on user, not selectedPetId
+
+  // Auto scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const loadPets = async () => {
-    try {
-      const res = await api.get("/pets");
-      if (Array.isArray(res.data) && res.data.length > 0) {
-        setPets(res.data);
-        // Restore selected pet from localStorage if it exists and is valid
-        const savedPetId = localStorage.getItem("aiChatSelectedPetId");
-        if (savedPetId && res.data.find(p => p.id === savedPetId)) {
-          setSelectedPetId(savedPetId);
-        }
-      }
-    } catch (err) {
-      console.error("Error loading pets:", err);
+  // Save selectedPetId to localStorage when it changes
+  useEffect(() => {
+    if (selectedPetId) {
+      localStorage.setItem("selectedPetId", selectedPetId);
     }
-  };
+  }, [selectedPetId]);
 
-  const loadChatHistory = async () => {
-    try {
-      const history = await aiApi.getChatHistory(selectedPetId || null);
-      // Group consecutive messages by user/AI
-      const groupedMessages = [];
-      let currentGroup = null;
-
-      history.forEach((msg) => {
-        if (!currentGroup || currentGroup.isUser !== msg.is_user_message) {
-          currentGroup = {
-            id: msg.id,
-            message: msg.is_user_message ? msg.message : msg.response || msg.message,
-            isUser: msg.is_user_message,
-            pet: msg.pet,
-          };
-          groupedMessages.push(currentGroup);
-        } else {
-          currentGroup.message += "\n" + (msg.is_user_message ? msg.message : msg.response || msg.message);
-        }
-      });
-
-      setMessages(groupedMessages);
-    } catch (err) {
-      console.error("Error loading chat history:", err);
-    }
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleSend = async (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!inputMessage.trim() || loading) return;
 
@@ -94,254 +81,168 @@ const AIChatbot = () => {
     setInputMessage("");
     setLoading(true);
 
-    // Add user message immediately
-    const tempUserMsg = {
-      id: `temp-${Date.now()}`,
+    // Add user message to UI immediately
+    const tempUserMessage = {
+      id: Date.now(),
       message: userMessage,
-      isUser: true,
+      is_user_message: true,
+      created_at: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, tempUserMsg]);
+    setMessages((prev) => [...prev, tempUserMessage]);
 
     try {
-      const response = await aiApi.sendChatMessage(userMessage, selectedPetId || null);
+      const response = await aiApi.sendMessage(userMessage, selectedPetId);
       
-      // Remove temp message and add real messages
-      setMessages((prev) => {
-        const filtered = prev.filter((msg) => msg.id !== tempUserMsg.id);
-        return [
-          ...filtered,
-          {
-            id: `user-${Date.now()}`,
-            message: userMessage,
-            isUser: true,
-          },
-          {
-            id: response.chat_id,
-            message: response.response,
-            isUser: false,
-          },
-        ];
-      });
-    } catch (err) {
-      console.error("Error sending message:", err);
-      setMessages((prev) => {
-        const filtered = prev.filter((msg) => msg.id !== tempUserMsg.id);
-        return [
-          ...filtered,
-          {
-            id: `user-${Date.now()}`,
-            message: userMessage,
-            isUser: true,
-          },
-          {
-            id: `error-${Date.now()}`,
-            message: "Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.",
-            isUser: false,
-          },
-        ];
-      });
+      // Add AI response to UI
+      const aiMessage = {
+        id: Date.now() + 1,
+        message: response.response,
+        response: response.response,
+        is_user_message: false,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      showError("Lỗi", "Không thể gửi tin nhắn. Vui lòng thử lại.");
+      // Remove temp user message on error
+      setMessages((prev) => prev.filter((m) => m.id !== tempUserMessage.id));
     } finally {
       setLoading(false);
     }
   };
 
   const handleClearHistory = async () => {
-    const result = await Swal.fire({
-      title: "Xác nhận xóa lịch sử",
-      text: "Bạn có chắc muốn xóa toàn bộ lịch sử chat? Hành động này không thể hoàn tác.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#dc2626",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Xóa",
-      cancelButtonText: "Hủy",
-      reverseButtons: true,
-    });
+    const result = await showConfirm(
+      "Xóa lịch sử chat",
+      "Bạn có chắc chắn muốn xóa toàn bộ lịch sử chat?",
+      "Xóa",
+      "Hủy"
+    );
 
     if (result.isConfirmed) {
       try {
-        await aiApi.deleteChatHistory(selectedPetId || null);
+        // Delete all chat history (without pet_id) for single chat box
+        await aiApi.deleteChatHistory(null);
         setMessages([]);
-        // Clear selected pet from localStorage when clearing chat history
-        setSelectedPetId("");
-        localStorage.removeItem("aiChatSelectedPetId");
-        
-        Swal.fire({
-          title: "Đã xóa!",
-          text: "Lịch sử chat đã được xóa thành công.",
-          icon: "success",
-          confirmButtonColor: "#16a34a",
-          timer: 2000,
-          timerProgressBar: true,
-        });
-      } catch (err) {
-        console.error("Error clearing chat history:", err);
-        Swal.fire({
-          title: "Lỗi!",
-          text: "Không thể xóa lịch sử chat. Vui lòng thử lại sau.",
-          icon: "error",
-          confirmButtonColor: "#dc2626",
-        });
+        // Clear selectedPetId from localStorage
+        localStorage.removeItem("selectedPetId");
+        setSelectedPetId(null);
+        showSuccess("Thành công", "Đã xóa lịch sử chat");
+      } catch (error) {
+        console.error("Error clearing history:", error);
+        showError("Lỗi", "Không thể xóa lịch sử chat");
       }
     }
   };
 
+  const selectedPet = pets.find((p) => p.id === selectedPetId);
+
   return (
     <CustomerLayout currentPage="ai-chat">
-      <div className="flex flex-col h-full overflow-hidden">
-        {/* Header Section */}
-        <div className="mb-4 flex-shrink-0">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h2 className="text-2xl font-extrabold text-gray-900 mb-1">
-                Chat with PetCare+ AI
-              </h2>
-              <p className="text-sm text-gray-600">
-                Get personalized pet care advice and product recommendations from our AI assistant.
-              </p>
-            </div>
-            {messages.length > 0 && (
-              <button
-                onClick={handleClearHistory}
-                className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-600 hover:text-red-600 transition"
-                title="Xóa lịch sử chat"
-              >
-                <Trash2 size={16} />
-                <span>Xóa lịch sử</span>
-              </button>
-            )}
-          </div>
-
-          {/* Pet Selector */}
-          {pets.length > 0 && (
-            <div className="mt-3">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Chọn thú cưng (tùy chọn để có tư vấn cá nhân hóa)
-              </label>
-              <select
-                value={selectedPetId}
-                onChange={(e) => setSelectedPetId(e.target.value)}
-                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
-              >
-                <option value="">Không chọn</option>
-                {pets.map((pet) => (
-                  <option key={pet.id} value={pet.id}>
-                    {pet.name} ({pet.species})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+      <div className="flex flex-col h-full min-h-full">
+        {/* Header */}
+        <div className="mb-6 flex-shrink-0">
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            Chat with PetCare+ AI
+          </h1>
+          <p className="text-gray-600 text-sm">
+            Get personalized pet care advice and product recommendations from our AI assistant.
+          </p>
         </div>
 
-        {/* Main Content Area - Two Columns */}
-        <div className="flex-1 min-h-0 flex gap-4 overflow-hidden">
-          {/* Chat Area - Left Side - Fixed ratio */}
-          <div className="flex-[2] min-h-0 flex flex-col overflow-hidden">
-            <div className="flex flex-col bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden h-full min-h-0">
-            {/* Messages Container */}
-            <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-b from-gray-50 to-white min-h-0">
-              {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                    <Bot className="text-green-600" size={32} />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Chào bạn! 👋
-                  </h3>
-                  <p className="text-gray-600 max-w-md">
-                    Tôi là trợ lý AI của PetCare+. Tôi có thể giúp bạn về:
-                  </p>
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2 max-w-md">
-                    <div className="px-4 py-2 bg-green-50 rounded-lg text-sm text-gray-700">
-                      💬 Lời nhắc chăm sóc
-                    </div>
-                    <div className="px-4 py-2 bg-green-50 rounded-lg text-sm text-gray-700">
-                      🛍️ Sản phẩm phù hợp
-                    </div>
-                    <div className="px-4 py-2 bg-green-50 rounded-lg text-sm text-gray-700">
-                      🏥 Dịch vụ thú y
-                    </div>
-                    <div className="px-4 py-2 bg-green-50 rounded-lg text-sm text-gray-700">
-                      💡 Tư vấn chăm sóc
-                    </div>
-                  </div>
+        {/* Controls */}
+        <div className="mb-4 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center space-x-4">
+            <label className="text-sm font-medium text-gray-700">
+              Chọn thú cưng (tùy chọn để có tư vấn cá nhân hóa):
+            </label>
+            <select
+              value={selectedPetId || ""}
+              onChange={(e) => setSelectedPetId(e.target.value || null)}
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+            >
+              <option value="">Không chọn</option>
+              {pets.map((pet) => (
+                <option key={pet.id} value={pet.id}>
+                  {pet.name} ({pet.species === "dog" ? "Chó" : pet.species === "cat" ? "Mèo" : pet.species})
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={handleClearHistory}
+            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-600 hover:text-red-600 transition"
+            title="Xóa lịch sử chat"
+          >
+            <Trash2 size={16} />
+            <span>Xóa lịch sử</span>
+          </button>
+        </div>
+
+        {/* Main Content Area - Fixed ratio 2:1 */}
+        <div className="flex-1 flex space-x-6 min-h-0">
+          {/* Chat Area - flex-[2] */}
+          <div className="flex-[2] flex flex-col bg-white rounded-lg border border-gray-200 min-h-0">
+            {/* Messages Container - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingHistory ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="animate-spin text-green-500" size={24} />
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <p>Chào bạn! Tôi có thể giúp gì cho bạn hôm nay?</p>
                 </div>
               ) : (
-                <div className="space-y-4 max-w-5xl mx-auto">
-                  {messages.map((msg) => (
-                    <ChatMessage key={msg.id} message={msg.message} isUser={msg.isUser} />
+                <>
+                  {messages.map((message) => (
+                    <ChatMessage key={message.id || message.created_at} message={message} />
                   ))}
                   {loading && (
-                    <div className="flex justify-start">
-                      <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-sm">
-                        <div className="flex items-center space-x-2">
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
-                          </div>
-                          <span className="text-sm text-gray-600">AI đang suy nghĩ...</span>
-                        </div>
+                    <div className="flex items-start space-x-3 mb-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                        <span className="text-green-600 font-bold text-sm">AI</span>
+                      </div>
+                      <div className="bg-green-50 rounded-lg px-4 py-2 border border-green-100">
+                        <Loader2 className="animate-spin text-green-500" size={16} />
                       </div>
                     </div>
                   )}
-                </div>
+                  <div ref={messagesEndRef} />
+                </>
               )}
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Input Area */}
-            <div className="border-t border-gray-200 p-5 bg-white flex-shrink-0">
-              <form onSubmit={handleSend} className="flex items-end space-x-3 max-w-5xl mx-auto">
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder="Nhập câu hỏi của bạn..."
-                    className="w-full px-5 py-3.5 pr-12 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    disabled={loading}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend(e);
-                      }
-                    }}
-                  />
-                  {inputMessage.trim() && (
-                    <button
-                      type="button"
-                      onClick={() => setInputMessage("")}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
+            <div className="border-t border-gray-200 p-4 flex-shrink-0">
+              <form onSubmit={handleSendMessage} className="flex space-x-2">
+                <input
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  placeholder="Nhập câu hỏi của bạn..."
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
                 <button
                   type="submit"
-                  disabled={loading || !inputMessage.trim()}
-                  className="bg-green-600 text-white px-7 py-3.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center space-x-2 shadow-sm text-base font-medium"
+                  disabled={!inputMessage.trim() || loading}
+                  className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 >
-                  <Send size={20} />
+                  {loading ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : (
+                    <Send size={16} />
+                  )}
                   <span>Gửi</span>
                 </button>
               </form>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                Nhấn Enter để gửi • Shift + Enter để xuống dòng
-              </p>
             </div>
           </div>
-          </div>
 
-          {/* Suggested Products - Right Sidebar - Fixed ratio */}
-          <div className="flex-[1] min-h-0 flex-shrink-0 hidden lg:flex overflow-hidden">
-            <SuggestedProducts 
-              petId={selectedPetId || null} 
-              petSpecies={pets.find(p => p.id === selectedPetId)?.species || null}
-            />
-          </div>
+          {/* Suggested Products Sidebar - flex-[1] */}
+          <SuggestedProducts petId={selectedPetId} petSpecies={selectedPet?.species} />
         </div>
       </div>
     </CustomerLayout>
@@ -349,3 +250,4 @@ const AIChatbot = () => {
 };
 
 export default AIChatbot;
+

@@ -197,8 +197,8 @@ const OrderConfirmation = () => {
             <p className="font-semibold">#{order.order_id}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Total Amount</p>
-            <p className="font-semibold">${(Number(order.total) / 1000).toFixed(2)}</p>
+            <p className="text-sm text-gray-600">Tổng tiền</p>
+            <p className="font-semibold">{Number(order.total).toLocaleString("vi-VN")} VND</p>
           </div>
           <div>
             <p className="text-sm text-gray-600">Order Date</p>

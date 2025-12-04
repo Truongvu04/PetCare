@@ -1,143 +1,137 @@
 import { prisma } from "../config/prisma.js";
-import crypto from "crypto";
 
-// Create health record
+/**
+ * Create health record
+ * POST /api/health
+ */
 export const createHealthRecord = async (req, res) => {
   try {
     const { pet_id, record_type, value, vaccination_name, health_note, record_date } = req.body;
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
 
-    if (!pet_id || !record_type) {
-      return res.status(400).json({ error: "Missing required fields: pet_id, record_type" });
-    }
-
-    // Validate record_type
-    const validTypes = ["weight", "vaccination", "health_note"];
-    if (!validTypes.includes(record_type)) {
-      return res.status(400).json({ error: "Invalid record_type. Must be: weight, vaccination, or health_note" });
-    }
-
-    // Verify pet belongs to user
+    // Validate pet ownership
     const pet = await prisma.pet.findFirst({
-      where: { id: pet_id, user_id },
+      where: {
+        id: pet_id,
+        user_id: userId,
+      },
     });
 
     if (!pet) {
-      return res.status(404).json({ error: "Pet not found or unauthorized" });
+      return res.status(404).json({ message: "Pet not found or you don't have permission" });
     }
 
-    // Validate based on record_type
+    // Validate record type
+    const validTypes = ["weight", "vaccination", "health_note"];
+    if (!validTypes.includes(record_type)) {
+      return res.status(400).json({ message: "Invalid record_type" });
+    }
+
+    // Validate based on record type
     if (record_type === "weight") {
       if (!value || parseFloat(value) <= 0) {
-        return res.status(400).json({ error: "Weight value must be greater than 0" });
+        return res.status(400).json({ message: "Weight must be greater than 0" });
       }
     } else if (record_type === "vaccination") {
       if (!vaccination_name || vaccination_name.trim() === "") {
-        return res.status(400).json({ error: "vaccination_name is required for vaccination records" });
+        return res.status(400).json({ message: "Vaccination name is required" });
       }
     } else if (record_type === "health_note") {
       if (!health_note || health_note.trim() === "") {
-        return res.status(400).json({ error: "health_note is required for health note records" });
+        return res.status(400).json({ message: "Health note is required" });
       }
     }
 
-    // Validate date
-    const recordDate = record_date ? new Date(record_date) : new Date();
-    if (isNaN(recordDate.getTime())) {
-      return res.status(400).json({ error: "Invalid record_date format" });
-    }
-
-    const healthRecord = await prisma.healthRecord.create({
+    const record = await prisma.healthRecord.create({
       data: {
-        id: crypto.randomBytes(12).toString("hex"),
         pet_id,
         record_type,
         value: record_type === "weight" ? parseFloat(value) : null,
-        vaccination_name: record_type === "vaccination" ? vaccination_name : null,
-        health_note: record_type === "health_note" ? health_note : null,
-        record_date: recordDate,
-      },
-      include: {
-        pet: {
-          select: {
-            id: true,
-            name: true,
-            species: true,
-          },
-        },
+        vaccination_name: record_type === "vaccination" ? vaccination_name.trim() : null,
+        health_note: record_type === "health_note" ? health_note.trim() : null,
+        record_date: new Date(record_date),
       },
     });
 
-    res.status(201).json(healthRecord);
-  } catch (err) {
-    console.error("Error creating health record:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(201).json({
+      success: true,
+      record: record,
+    });
+  } catch (error) {
+    console.error("Error in createHealthRecord:", error);
+    return res.status(500).json({
+      message: "Error creating health record",
+      error: error.message,
+    });
   }
 };
 
-// Get all health records for a pet
+/**
+ * Get health records for a pet
+ * GET /api/health/pet/:petId
+ */
 export const getHealthRecords = async (req, res) => {
   try {
     const { petId } = req.params;
     const { record_type } = req.query;
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
 
-    // Verify pet belongs to user
+    // Validate pet ownership
     const pet = await prisma.pet.findFirst({
-      where: { id: petId, user_id },
+      where: {
+        id: petId,
+        user_id: userId,
+      },
     });
 
     if (!pet) {
-      return res.status(404).json({ error: "Pet not found or unauthorized" });
+      return res.status(404).json({ message: "Pet not found or you don't have permission" });
     }
 
-    const where = {
-      pet_id: petId,
-    };
-
+    const whereClause = { pet_id: petId };
     if (record_type) {
-      const validTypes = ["weight", "vaccination", "health_note"];
-      if (!validTypes.includes(record_type)) {
-        return res.status(400).json({ error: "Invalid record_type" });
-      }
-      where.record_type = record_type;
+      whereClause.record_type = record_type;
     }
 
     const records = await prisma.healthRecord.findMany({
-      where,
+      where: whereClause,
       orderBy: {
         record_date: "desc",
       },
-      include: {
-        pet: {
-          select: {
-            id: true,
-            name: true,
-            species: true,
-          },
-        },
-      },
     });
 
-    res.json(records);
-  } catch (err) {
-    console.error("Error fetching health records:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.json({
+      success: true,
+      records: records,
+    });
+  } catch (error) {
+    console.error("Error in getHealthRecords:", error);
+    return res.status(500).json({
+      message: "Error fetching health records",
+      error: error.message,
+    });
   }
 };
 
-// Get weight history
+/**
+ * Get weight history
+ * GET /api/health/pet/:petId/weight
+ */
 export const getWeightHistory = async (req, res) => {
   try {
     const { petId } = req.params;
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
 
+    // Validate pet ownership
     const pet = await prisma.pet.findFirst({
-      where: { id: petId, user_id },
+      where: {
+        id: petId,
+        user_id: userId,
+      },
     });
 
     if (!pet) {
-      return res.status(404).json({ error: "Pet not found or unauthorized" });
+      return res.status(404).json({ message: "Pet not found or you don't have permission" });
     }
 
     const records = await prisma.healthRecord.findMany({
@@ -148,33 +142,40 @@ export const getWeightHistory = async (req, res) => {
       orderBy: {
         record_date: "asc",
       },
-      select: {
-        id: true,
-        value: true,
-        record_date: true,
-        created_at: true,
-      },
     });
 
-    res.json(records);
-  } catch (err) {
-    console.error("Error fetching weight history:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.json({
+      success: true,
+      records: records,
+    });
+  } catch (error) {
+    console.error("Error in getWeightHistory:", error);
+    return res.status(500).json({
+      message: "Error fetching weight history",
+      error: error.message,
+    });
   }
 };
 
-// Get vaccination history
+/**
+ * Get vaccination history
+ * GET /api/health/pet/:petId/vaccination
+ */
 export const getVaccinationHistory = async (req, res) => {
   try {
     const { petId } = req.params;
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
 
+    // Validate pet ownership
     const pet = await prisma.pet.findFirst({
-      where: { id: petId, user_id },
+      where: {
+        id: petId,
+        user_id: userId,
+      },
     });
 
     if (!pet) {
-      return res.status(404).json({ error: "Pet not found or unauthorized" });
+      return res.status(404).json({ message: "Pet not found or you don't have permission" });
     }
 
     const records = await prisma.healthRecord.findMany({
@@ -185,122 +186,116 @@ export const getVaccinationHistory = async (req, res) => {
       orderBy: {
         record_date: "desc",
       },
-      select: {
-        id: true,
-        vaccination_name: true,
-        record_date: true,
-        created_at: true,
-      },
     });
 
-    res.json(records);
-  } catch (err) {
-    console.error("Error fetching vaccination history:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.json({
+      success: true,
+      records: records,
+    });
+  } catch (error) {
+    console.error("Error in getVaccinationHistory:", error);
+    return res.status(500).json({
+      message: "Error fetching vaccination history",
+      error: error.message,
+    });
   }
 };
 
-// Update health record
+/**
+ * Update health record
+ * PUT /api/health/:recordId
+ */
 export const updateHealthRecord = async (req, res) => {
   try {
     const { recordId } = req.params;
     const { value, vaccination_name, health_note, record_date } = req.body;
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
 
-    // Find record and verify ownership
-    const existingRecord = await prisma.healthRecord.findFirst({
-      where: { id: recordId },
-      include: {
+    // Check if record exists and user owns the pet
+    const record = await prisma.healthRecord.findFirst({
+      where: {
+        id: recordId,
         pet: {
-          select: {
-            user_id: true,
-          },
+          user_id: userId,
         },
       },
     });
 
-    if (!existingRecord) {
-      return res.status(404).json({ error: "Health record not found" });
-    }
-
-    if (existingRecord.pet.user_id !== user_id) {
-      return res.status(403).json({ error: "Unauthorized" });
+    if (!record) {
+      return res.status(404).json({ message: "Record not found or you don't have permission" });
     }
 
     const updateData = {};
-    if (existingRecord.record_type === "weight" && value !== undefined) {
-      if (parseFloat(value) <= 0) {
-        return res.status(400).json({ error: "Weight value must be greater than 0" });
-      }
+    if (record.record_type === "weight" && value) {
       updateData.value = parseFloat(value);
-    } else if (existingRecord.record_type === "vaccination" && vaccination_name !== undefined) {
-      updateData.vaccination_name = vaccination_name;
-    } else if (existingRecord.record_type === "health_note" && health_note !== undefined) {
-      updateData.health_note = health_note;
+    } else if (record.record_type === "vaccination" && vaccination_name) {
+      updateData.vaccination_name = vaccination_name.trim();
+    } else if (record.record_type === "health_note" && health_note) {
+      updateData.health_note = health_note.trim();
     }
-
-    if (record_date !== undefined) {
-      const recordDate = new Date(record_date);
-      if (isNaN(recordDate.getTime())) {
-        return res.status(400).json({ error: "Invalid record_date format" });
-      }
-      updateData.record_date = recordDate;
+    if (record_date) {
+      updateData.record_date = new Date(record_date);
     }
 
     const updatedRecord = await prisma.healthRecord.update({
       where: { id: recordId },
       data: updateData,
-      include: {
-        pet: {
-          select: {
-            id: true,
-            name: true,
-            species: true,
-          },
-        },
-      },
     });
 
-    res.json(updatedRecord);
-  } catch (err) {
-    console.error("Error updating health record:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.json({
+      success: true,
+      record: updatedRecord,
+    });
+  } catch (error) {
+    console.error("Error in updateHealthRecord:", error);
+    return res.status(500).json({
+      message: "Error updating health record",
+      error: error.message,
+    });
   }
 };
 
-// Delete health record
+/**
+ * Delete health record
+ * DELETE /api/health/:recordId
+ */
 export const deleteHealthRecord = async (req, res) => {
   try {
     const { recordId } = req.params;
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
 
-    const existingRecord = await prisma.healthRecord.findFirst({
-      where: { id: recordId },
-      include: {
+    // Check if record exists and user owns the pet
+    const record = await prisma.healthRecord.findFirst({
+      where: {
+        id: recordId,
         pet: {
-          select: {
-            user_id: true,
-          },
+          user_id: userId,
         },
       },
     });
 
-    if (!existingRecord) {
-      return res.status(404).json({ error: "Health record not found" });
-    }
-
-    if (existingRecord.pet.user_id !== user_id) {
-      return res.status(403).json({ error: "Unauthorized" });
+    if (!record) {
+      return res.status(404).json({ message: "Record not found or you don't have permission" });
     }
 
     await prisma.healthRecord.delete({
       where: { id: recordId },
     });
 
-    res.status(204).send();
-  } catch (err) {
-    console.error("Error deleting health record:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.json({
+      success: true,
+      message: "Health record deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error in deleteHealthRecord:", error);
+    return res.status(500).json({
+      message: "Error deleting health record",
+      error: error.message,
+    });
   }
 };
+
+
+
+
 

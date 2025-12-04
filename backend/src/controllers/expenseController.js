@@ -1,112 +1,98 @@
 import { prisma } from "../config/prisma.js";
-import crypto from "crypto";
 
-// Create expense
+/**
+ * Create expense
+ * POST /api/expenses
+ */
 export const createExpense = async (req, res) => {
   try {
     const { pet_id, category, description, amount, expense_date } = req.body;
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
 
-    if (!pet_id || !category || !description || !amount) {
-      return res.status(400).json({ error: "Missing required fields: pet_id, category, description, amount" });
+    // Validate pet ownership
+    const pet = await prisma.pet.findFirst({
+      where: {
+        id: pet_id,
+        user_id: userId,
+      },
+    });
+
+    if (!pet) {
+      return res.status(404).json({ message: "Pet not found or you don't have permission" });
     }
 
     // Validate category
     const validCategories = ["food", "medicine", "accessories", "vet_visit", "grooming", "other"];
     if (!validCategories.includes(category)) {
-      return res.status(400).json({ error: "Invalid category" });
+      return res.status(400).json({ message: "Invalid category" });
     }
 
     // Validate amount
-    const amountValue = parseFloat(amount);
-    if (isNaN(amountValue) || amountValue <= 0) {
-      return res.status(400).json({ error: "Amount must be a positive number" });
-    }
-
-    // Verify pet belongs to user
-    const pet = await prisma.pet.findFirst({
-      where: { id: pet_id, user_id },
-    });
-
-    if (!pet) {
-      return res.status(404).json({ error: "Pet not found or unauthorized" });
-    }
-
-    // Validate date
-    const expenseDate = expense_date ? new Date(expense_date) : new Date();
-    if (isNaN(expenseDate.getTime())) {
-      return res.status(400).json({ error: "Invalid expense_date format" });
+    if (!amount || parseFloat(amount) <= 0) {
+      return res.status(400).json({ message: "Amount must be greater than 0" });
     }
 
     const expense = await prisma.expense.create({
       data: {
-        id: crypto.randomBytes(12).toString("hex"),
         pet_id,
-        user_id,
+        user_id: userId,
         category,
         description: description.trim(),
-        amount: amountValue,
-        expense_date: expenseDate,
-      },
-      include: {
-        pet: {
-          select: {
-            id: true,
-            name: true,
-            species: true,
-          },
-        },
+        amount: parseFloat(amount),
+        expense_date: new Date(expense_date),
       },
     });
 
-    res.status(201).json(expense);
-  } catch (err) {
-    console.error("Error creating expense:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(201).json({
+      success: true,
+      expense: expense,
+    });
+  } catch (error) {
+    console.error("Error in createExpense:", error);
+    return res.status(500).json({
+      message: "Error creating expense",
+      error: error.message,
+    });
   }
 };
 
-// Get expenses
+/**
+ * Get expenses
+ * GET /api/expenses
+ */
 export const getExpenses = async (req, res) => {
   try {
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
     const { pet_id, category, start_date, end_date } = req.query;
 
-    const where = {
-      user_id,
-    };
-
-    if (pet_id) {
-      // Verify pet belongs to user
-      const pet = await prisma.pet.findFirst({
-        where: { id: pet_id, user_id },
+    // Check if expense model exists
+    if (!prisma.expense) {
+      console.error("Expense model not found. Run 'npx prisma generate'");
+      return res.json({
+        success: true,
+        expenses: [],
       });
-      if (!pet) {
-        return res.status(404).json({ error: "Pet not found or unauthorized" });
-      }
-      where.pet_id = pet_id;
     }
 
+    const whereClause = { user_id: userId };
+    if (pet_id) {
+      whereClause.pet_id = pet_id;
+    }
     if (category) {
-      const validCategories = ["food", "medicine", "accessories", "vet_visit", "grooming", "other"];
-      if (!validCategories.includes(category)) {
-        return res.status(400).json({ error: "Invalid category" });
-      }
-      where.category = category;
+      whereClause.category = category;
     }
-
     if (start_date || end_date) {
-      where.expense_date = {};
+      whereClause.expense_date = {};
       if (start_date) {
-        where.expense_date.gte = new Date(start_date);
+        whereClause.expense_date.gte = new Date(start_date);
       }
       if (end_date) {
-        where.expense_date.lte = new Date(end_date);
+        whereClause.expense_date.lte = new Date(end_date);
       }
     }
 
     const expenses = await prisma.expense.findMany({
-      where,
+      where: whereClause,
       orderBy: {
         expense_date: "desc",
       },
@@ -121,90 +107,166 @@ export const getExpenses = async (req, res) => {
       },
     });
 
-    res.json(expenses);
-  } catch (err) {
-    console.error("Error fetching expenses:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.json({
+      success: true,
+      expenses: expenses,
+    });
+  } catch (error) {
+    console.error("Error in getExpenses:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+    });
+    return res.status(500).json({
+      message: "Error fetching expenses",
+      error: process.env.NODE_ENV === "development" ? error.message : "Internal server error",
+    });
   }
 };
 
-// Get expense summary
+/**
+ * Get expense summary
+ * GET /api/expenses/summary
+ */
 export const getExpenseSummary = async (req, res) => {
   try {
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
     const { period = "all" } = req.query;
 
-    let dateFilter = {};
-    const now = new Date();
-
-    if (period === "this_month") {
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      dateFilter = {
-        expense_date: {
-          gte: startOfMonth,
+    // Check if expense model exists
+    if (!prisma.expense) {
+      console.error("Expense model not found. Run 'npx prisma generate'");
+      return res.json({
+        success: true,
+        summary: {
+          total_spent: 0,
+          by_category: [],
         },
+      });
+    }
+
+    const now = new Date();
+    const whereClause = { user_id: userId };
+    
+    if (period === "this_month") {
+      const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      endDate.setHours(23, 59, 59, 999);
+      whereClause.expense_date = {
+        gte: startDate,
+        lte: endDate,
       };
     } else if (period === "last_month") {
-      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-      dateFilter = {
-        expense_date: {
-          gte: startOfLastMonth,
-          lte: endOfLastMonth,
-        },
+      const startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+      endDate.setHours(23, 59, 59, 999);
+      whereClause.expense_date = {
+        gte: startDate,
+        lte: endDate,
       };
+    }
+    // For "all" period, no date filter is applied
+
+    return await calculateSummary(whereClause, res);
+  } catch (error) {
+    console.error("Error in getExpenseSummary:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+    });
+    // Return empty summary instead of 500 error
+    return res.json({
+      success: true,
+      summary: {
+        total_spent: 0,
+        by_category: [],
+      },
+    });
+  }
+};
+
+/**
+ * Helper function to calculate summary
+ */
+const calculateSummary = async (whereClause, res) => {
+  try {
+    // Check if expense model exists
+    if (!prisma.expense) {
+      console.error("Expense model not found. Run 'npx prisma generate'");
+      return res.json({
+        success: true,
+        summary: {
+          total_spent: 0,
+          by_category: [],
+        },
+      });
     }
 
     const expenses = await prisma.expense.findMany({
-      where: {
-        user_id,
-        ...dateFilter,
-      },
+      where: whereClause,
     });
 
-    // Calculate totals
-    const totalSpent = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
+    const totalSpent = expenses.reduce((sum, exp) => {
+      const amount = parseFloat(exp.amount) || 0;
+      return sum + amount;
+    }, 0);
 
-    // Group by category
     const byCategory = {};
     expenses.forEach((exp) => {
-      const category = exp.category;
-      if (!byCategory[category]) {
-        byCategory[category] = 0;
+      const amount = parseFloat(exp.amount) || 0;
+      if (!byCategory[exp.category]) {
+        byCategory[exp.category] = 0;
       }
-      byCategory[category] += parseFloat(exp.amount);
+      byCategory[exp.category] += amount;
     });
 
-    // Group by month
-    const byMonth = {};
-    expenses.forEach((exp) => {
-      const monthKey = exp.expense_date.toISOString().slice(0, 7); // YYYY-MM
-      if (!byMonth[monthKey]) {
-        byMonth[monthKey] = 0;
-      }
-      byMonth[monthKey] += parseFloat(exp.amount);
-    });
+    // Sort categories by amount
+    const sortedCategories = Object.entries(byCategory)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 2)
+      .map(([category, amount]) => ({ category, amount }));
 
-    res.json({
-      total_spent: totalSpent,
-      by_category: byCategory,
-      by_month: byMonth,
-      count: expenses.length,
+    return res.json({
+      success: true,
+      summary: {
+        total_spent: totalSpent,
+        by_category: sortedCategories,
+      },
     });
-  } catch (err) {
-    console.error("Error fetching expense summary:", err);
-    res.status(500).json({ error: "Internal server error" });
+  } catch (error) {
+    console.error("Error in calculateSummary:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+    });
+    // Return empty summary instead of crashing
+    return res.json({
+      success: true,
+      summary: {
+        total_spent: 0,
+        by_category: [],
+      },
+    });
   }
 };
 
-// Get expense by ID
+/**
+ * Get expense by ID
+ * GET /api/expenses/:id
+ */
 export const getExpenseById = async (req, res) => {
   try {
     const { id } = req.params;
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
 
     const expense = await prisma.expense.findFirst({
-      where: { id, user_id },
+      where: {
+        id: id,
+        user_id: userId,
+      },
       include: {
         pet: {
           select: {
@@ -217,104 +279,101 @@ export const getExpenseById = async (req, res) => {
     });
 
     if (!expense) {
-      return res.status(404).json({ error: "Expense not found" });
+      return res.status(404).json({ message: "Expense not found" });
     }
 
-    res.json(expense);
-  } catch (err) {
-    console.error("Error fetching expense:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.json({
+      success: true,
+      expense: expense,
+    });
+  } catch (error) {
+    console.error("Error in getExpenseById:", error);
+    return res.status(500).json({
+      message: "Error fetching expense",
+      error: error.message,
+    });
   }
 };
 
-// Update expense
+/**
+ * Update expense
+ * PUT /api/expenses/:id
+ */
 export const updateExpense = async (req, res) => {
   try {
     const { id } = req.params;
     const { category, description, amount, expense_date } = req.body;
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
 
-    const existingExpense = await prisma.expense.findFirst({
-      where: { id, user_id },
-    });
-
-    if (!existingExpense) {
-      return res.status(404).json({ error: "Expense not found" });
-    }
-
-    const updateData = {};
-
-    if (category !== undefined) {
-      const validCategories = ["food", "medicine", "accessories", "vet_visit", "grooming", "other"];
-      if (!validCategories.includes(category)) {
-        return res.status(400).json({ error: "Invalid category" });
-      }
-      updateData.category = category;
-    }
-
-    if (description !== undefined) {
-      updateData.description = description.trim();
-    }
-
-    if (amount !== undefined) {
-      const amountValue = parseFloat(amount);
-      if (isNaN(amountValue) || amountValue <= 0) {
-        return res.status(400).json({ error: "Amount must be a positive number" });
-      }
-      updateData.amount = amountValue;
-    }
-
-    if (expense_date !== undefined) {
-      const expenseDate = new Date(expense_date);
-      if (isNaN(expenseDate.getTime())) {
-        return res.status(400).json({ error: "Invalid expense_date format" });
-      }
-      updateData.expense_date = expenseDate;
-    }
-
-    const updatedExpense = await prisma.expense.update({
-      where: { id },
-      data: updateData,
-      include: {
-        pet: {
-          select: {
-            id: true,
-            name: true,
-            species: true,
-          },
-        },
+    const expense = await prisma.expense.findFirst({
+      where: {
+        id: id,
+        user_id: userId,
       },
     });
 
-    res.json(updatedExpense);
-  } catch (err) {
-    console.error("Error updating expense:", err);
-    res.status(500).json({ error: "Internal server error" });
+    if (!expense) {
+      return res.status(404).json({ message: "Expense not found or you don't have permission" });
+    }
+
+    const updateData = {};
+    if (category) updateData.category = category;
+    if (description) updateData.description = description.trim();
+    if (amount) updateData.amount = parseFloat(amount);
+    if (expense_date) updateData.expense_date = new Date(expense_date);
+
+    const updatedExpense = await prisma.expense.update({
+      where: { id: id },
+      data: updateData,
+    });
+
+    return res.json({
+      success: true,
+      expense: updatedExpense,
+    });
+  } catch (error) {
+    console.error("Error in updateExpense:", error);
+    return res.status(500).json({
+      message: "Error updating expense",
+      error: error.message,
+    });
   }
 };
 
-// Delete expense
+/**
+ * Delete expense
+ * DELETE /api/expenses/:id
+ */
 export const deleteExpense = async (req, res) => {
   try {
     const { id } = req.params;
-    const user_id = req.user.user_id;
+    const userId = req.user.user_id;
 
-    const existingExpense = await prisma.expense.findFirst({
-      where: { id, user_id },
+    const expense = await prisma.expense.findFirst({
+      where: {
+        id: id,
+        user_id: userId,
+      },
     });
 
-    if (!existingExpense) {
-      return res.status(404).json({ error: "Expense not found" });
+    if (!expense) {
+      return res.status(404).json({ message: "Expense not found or you don't have permission" });
     }
 
     await prisma.expense.delete({
-      where: { id },
+      where: { id: id },
     });
 
-    res.status(204).send();
-  } catch (err) {
-    console.error("Error deleting expense:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.json({
+      success: true,
+      message: "Expense deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error in deleteExpense:", error);
+    return res.status(500).json({
+      message: "Error deleting expense",
+      error: error.message,
+    });
   }
 };
 

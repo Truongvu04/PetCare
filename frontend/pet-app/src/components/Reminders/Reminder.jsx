@@ -4,7 +4,44 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
 import api from "../../api/axiosConfig.js";
 import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
-import { showSuccess, showError, showWarning } from "../../utils/notifications";
+import { showSuccess, showError, showWarning, showConfirm, showToast } from "../../utils/notifications";
+import {
+  Syringe,
+  Scissors,
+  Stethoscope,
+  Utensils,
+  Edit,
+  Trash2,
+  CheckCircle,
+  Filter,
+  Plus,
+} from "lucide-react";
+
+const getReminderIcon = (type) => {
+  switch (type) {
+    case "vaccination":
+      return <Syringe className="text-green-700" size={20} />;
+    case "grooming":
+      return <Scissors className="text-green-700" size={20} />;
+    case "vet_visit":
+    case "checkup":
+      return <Stethoscope className="text-green-700" size={20} />;
+    case "feeding":
+      return <Utensils className="text-green-700" size={20} />;
+    default:
+      return <Stethoscope className="text-gray-600" size={20} />;
+  }
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("vi-VN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
 
 const RemindersAuto = () => {
   const navigate = useNavigate();
@@ -12,6 +49,10 @@ const RemindersAuto = () => {
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
   const [pets, setPets] = useState([]);
+  const [reminders, setReminders] = useState([]);
+  const [loadingReminders, setLoadingReminders] = useState(true);
+  const [filter, setFilter] = useState("all");
+  const [showForm, setShowForm] = useState(false);
 
   // --- States cho từng loại reminder ---
   const [vPet, setVPet] = useState("");
@@ -50,6 +91,61 @@ const RemindersAuto = () => {
     }
     loadPets();
   }, [user]);
+
+  // Load reminders on component mount
+  useEffect(() => {
+    fetchReminders();
+  }, [user, filter]);
+
+  const fetchReminders = async () => {
+    if (!user) {
+      setLoadingReminders(false);
+      return;
+    }
+
+    try {
+      setLoadingReminders(true);
+      const res = await api.get("/reminders");
+      let data = Array.isArray(res.data) ? res.data : [];
+
+      // Apply filter
+      if (filter !== "all") {
+        data = data.filter((r) => r.type === filter);
+      }
+
+      setReminders(data);
+    } catch (err) {
+      console.error("Error fetching reminders:", err);
+      showToast("Không thể tải danh sách nhắc nhở", "error");
+    } finally {
+      setLoadingReminders(false);
+    }
+  };
+
+  const handleDeleteReminder = async (reminderId) => {
+    const result = await showConfirm("Xóa nhắc nhở", "Bạn có chắc chắn muốn xóa nhắc nhở này?");
+    if (!result.isConfirmed) return;
+
+    try {
+      await api.delete(`/reminders/${reminderId}`);
+      showToast("Đã xóa nhắc nhở thành công", "success");
+      fetchReminders();
+    } catch (err) {
+      console.error("Error deleting reminder:", err);
+      showToast("Không thể xóa nhắc nhở", "error");
+    }
+  };
+
+  const handleMarkDone = async (reminderId) => {
+    try {
+      await api.put(`/reminders/${reminderId}`, { status: "done" });
+      showToast("Đã đánh dấu hoàn thành", "success");
+      fetchReminders();
+    } catch (err) {
+      console.error("Error updating reminder:", err);
+      showToast("Không thể cập nhật nhắc nhở", "error");
+    }
+  };
 
   const handleCancel = (e) => {
     e.preventDefault();
@@ -112,6 +208,8 @@ const RemindersAuto = () => {
       await api.post("/reminders", payload);
       showSuccess("Thành công", `Đã thêm nhắc nhở ${type} thành công!`);
       if (resetCallback) resetCallback();
+      // Refresh reminders list after adding
+      fetchReminders();
     } catch (err) {
       console.error(`Failed to save ${type} reminder:`, err);
       const errorMsg = err.response?.data?.error || err.message || `Không thể tạo nhắc nhở ${type}`;
@@ -204,7 +302,15 @@ const RemindersAuto = () => {
     try {
       await Promise.all(toCreate.map((payload) => api.post("/reminders", payload)));
       showSuccess("Thành công", `Đã lưu ${toCreate.length} nhắc nhở thành công!`);
-      navigate("/dashboard");
+      // Refresh reminders list
+      fetchReminders();
+      // Reset all form fields
+      setVPet(""); setVaccinationType(""); setVDate(""); setVFreq("none");
+      setCPet(""); setCDate(""); setCFreq("none");
+      setFPet(""); setFeedingTime(""); setFFreq("none"); setFEndDate("");
+      setGPet(""); setGDate(""); setGFreq("none");
+      // Optionally hide form after saving
+      setShowForm(false);
     } catch (err) {
       console.error("Failed to save reminders:", err);
       const errorMsg = err.response?.data?.error || err.message || "Không thể tạo nhắc nhở";
@@ -212,21 +318,146 @@ const RemindersAuto = () => {
     }
   }
 
+  const filterOptions = [
+    { value: "all", label: "Tất cả" },
+    { value: "vaccination", label: "Tiêm chủng" },
+    { value: "vet_visit", label: "Khám sức khỏe" },
+    { value: "feeding", label: "Cho ăn" },
+    { value: "grooming", label: "Chải lông" },
+  ];
+
   return (
     <CustomerLayout currentPage="reminder">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Set Up Reminders</h1>
                 <p className="text-md text-green-700">Schedule reminders for vaccinations, check-ups, feeding, and grooming.</p>
               </div>
               <button
-                onClick={() => navigate("/reminder/list")}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                onClick={() => setShowForm(!showForm)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2"
               >
-                Xem danh sách
+                <Plus size={18} />
+                {showForm ? "Ẩn form" : "Thêm nhắc nhở"}
               </button>
             </div>
+
+            {/* Reminders List Section - Always visible */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-800">Danh sách nhắc nhở</h2>
+                {/* Filter */}
+                <div className="flex items-center gap-2">
+                  <Filter className="text-gray-600" size={18} />
+                  <div className="flex gap-2">
+                    {filterOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setFilter(option.value)}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
+                          filter === option.value
+                            ? "bg-green-600 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {loadingReminders ? (
+                <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                  <p className="text-gray-500">Đang tải danh sách nhắc nhở...</p>
+                </div>
+              ) : reminders.length === 0 ? (
+                <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                  <p className="text-gray-500 text-lg mb-4">
+                    {filter === "all"
+                      ? "Chưa có nhắc nhở nào. Hãy tạo nhắc nhở mới!"
+                      : "Không có nhắc nhở nào thuộc loại này."}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {reminders.map((reminder) => (
+                    <div
+                      key={reminder.reminder_id}
+                      className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 hover:shadow-md transition"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3 flex-1">
+                          <div className="bg-green-50 p-2 rounded-lg">
+                            {getReminderIcon(reminder.type)}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-base font-semibold text-gray-900 mb-1">
+                              {reminder.pet?.name}'s {reminder.type === "vaccination" && reminder.vaccination_type 
+                                ? `Vaccination: ${reminder.vaccination_type}` 
+                                : reminder.type === "vet_visit" 
+                                ? "Check-Up" 
+                                : reminder.type}
+                            </h3>
+                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                              <span>Ngày: {formatDate(reminder.reminder_date)}</span>
+                              {reminder.feeding_time && (
+                                <span>
+                                  Giờ: {new Date(`2000-01-01T${reminder.feeding_time}`).toLocaleTimeString("vi-VN", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              )}
+                              <span
+                                className={`px-2 py-1 rounded text-xs ${
+                                  reminder.status === "done"
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-yellow-100 text-yellow-700"
+                                }`}
+                              >
+                                {reminder.status === "done" ? "Hoàn thành" : "Chờ xử lý"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {reminder.status !== "done" && (
+                            <button
+                              onClick={() => handleMarkDone(reminder.reminder_id)}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                              title="Đánh dấu hoàn thành"
+                            >
+                              <CheckCircle size={18} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => navigate(`/reminder/edit/${reminder.reminder_id}`)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            title="Chỉnh sửa"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteReminder(reminder.reminder_id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title="Xóa"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Form Section - Toggleable */}
+            {showForm && (
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Thêm nhắc nhở mới</h2>
 
             <form className="space-y-8" onSubmit={handleSubmit}>
               {/* Vaccination */}
@@ -405,6 +636,8 @@ const RemindersAuto = () => {
                 </div>
               </div>
             </form>
+            </div>
+            )}
           </div>
     </CustomerLayout>
   );

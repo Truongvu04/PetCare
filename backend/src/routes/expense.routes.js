@@ -11,12 +11,19 @@ import {
 
 const router = express.Router();
 
-router.post("/", verifyToken, createExpense);
-router.get("/", verifyToken, getExpenses);
-router.get("/summary", verifyToken, getExpenseSummary);
-router.get("/:id", verifyToken, getExpenseById);
-router.put("/:id", verifyToken, updateExpense);
-router.delete("/:id", verifyToken, deleteExpense);
+// All routes require authentication
+router.use(verifyToken);
+
+router.post("/", createExpense);
+router.get("/", getExpenses);
+router.get("/summary", getExpenseSummary);
+router.get("/:id", getExpenseById);
+router.put("/:id", updateExpense);
+router.delete("/:id", deleteExpense);
 
 export default router;
+
+
+
+
 

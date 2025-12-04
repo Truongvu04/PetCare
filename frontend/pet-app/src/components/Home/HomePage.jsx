@@ -718,24 +718,33 @@ const CareSection = () => (
   </section>
 );
 
-const SupportSection = () => (
-  <section className="support-section">
-    <h2>Get Instant Support</h2>
-    <p>Our AI chatbot is here to assist you with any questions or concerns you may have.</p>
-    <a href="#" className="btn btn-primary">Chat with AI</a>
+const SupportSection = () => {
+  const navigate = useNavigate();
+  
+  return (
+    <section className="support-section">
+      <h2>Get Instant Support</h2>
+      <p>Our AI chatbot is here to assist you with any questions or concerns you may have.</p>
+      <button 
+        onClick={() => navigate("/ai-chat")} 
+        className="btn btn-primary"
+      >
+        Chat with AI
+      </button>
 
-    <div className="support-grid">
-      <SupportCard
-        iconClass="fa-solid fa-robot"
-        title="AI Chatbot"
-        description="Get quick answers to your questions about pet care, products, and services."/>
-      <SupportCard
-        iconClass="fa-solid fa-circle-info"
-        title="Help Center"
-        description="Access our comprehensive help center for detailed information and guides."/>
-    </div>
-  </section>
-);
+      <div className="support-grid">
+        <SupportCard
+          iconClass="fa-solid fa-robot"
+          title="AI Chatbot"
+          description="Get quick answers to your questions about pet care, products, and services."/>
+        <SupportCard
+          iconClass="fa-solid fa-circle-info"
+          title="Help Center"
+          description="Access our comprehensive help center for detailed information and guides."/>
+      </div>
+    </section>
+  );
+};
 
 const Footer = () => (
   <footer className="footer">

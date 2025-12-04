@@ -1,279 +1,336 @@
 import React, { useState, useEffect } from "react";
-import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
+import { useAuth } from "../../hooks/useAuth.js";
 import { calendarApi } from "../../api/calendarApi.js";
-import { reminderApi } from "../../api/reminderApi.js";
+import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
 import CalendarEventModal from "./CalendarEventModal.jsx";
+import { showError } from "../../utils/notifications.js";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const Calendar = () => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const { user } = useAuth();
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
-  const [reminders, setReminders] = useState([]);
-  const [upcomingExpenses, setUpcomingExpenses] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedEvents, setSelectedEvents] = useState([]);
+  const [upcomingExpenses, setUpcomingExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    loadCalendarData();
-    loadReminders();
-    loadUpcomingExpenses();
-  }, [currentMonth]);
+  // Helper functions for date handling (to avoid timezone issues)
+  const createDateString = (year, month, day) => {
+    return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  };
 
-  const loadCalendarData = async () => {
+  const normalizeDateToString = (date) => {
+    if (date instanceof Date) {
+      return createDateString(
+        date.getUTCFullYear(),
+        date.getUTCMonth(),
+        date.getUTCDate()
+      );
+    }
+    if (typeof date === "string") {
+      return date.split("T")[0];
+    }
+    return date;
+  };
+
+  useEffect(() => {
+    if (user) {
+      loadEvents();
+      loadUpcomingExpenses();
+    }
+  }, [user, currentDate]);
+
+  const loadEvents = async () => {
     setLoading(true);
     try {
-      const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      const endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 2, 0);
-      const data = await calendarApi.getCalendarEvents(
-        startDate.toISOString().split("T")[0],
-        endDate.toISOString().split("T")[0]
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      
+      // Get events for current month and next month
+      const startDate = createDateString(year, month, 1);
+      const nextMonth = new Date(year, month + 2, 0); // Last day of next month
+      const endDate = createDateString(
+        nextMonth.getFullYear(),
+        nextMonth.getMonth(),
+        nextMonth.getDate()
       );
-      setEvents(data);
-    } catch (err) {
-      console.error("Error loading calendar:", err);
+
+      const response = await calendarApi.getCalendarEvents(startDate, endDate);
+      setEvents(response.events || []);
+    } catch (error) {
+      console.error("Error loading events:", error);
+      showError("Lỗi", "Không thể tải sự kiện");
     } finally {
       setLoading(false);
     }
   };
 
-  const loadReminders = async () => {
-    try {
-      const data = await reminderApi.getReminders();
-      setReminders(data || []);
-    } catch (err) {
-      console.error("Error loading reminders:", err);
-    }
-  };
-
   const loadUpcomingExpenses = async () => {
     try {
-      const data = await calendarApi.getUpcomingExpenses();
-      setUpcomingExpenses(data);
-    } catch (err) {
-      console.error("Error loading upcoming expenses:", err);
+      const response = await calendarApi.getUpcomingExpenses();
+      setUpcomingExpenses(response.upcoming_expenses || []);
+    } catch (error) {
+      console.error("Error loading upcoming expenses:", error);
     }
   };
 
-  const getDaysInMonth = (date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
+  const getEventsForDate = (date) => {
+    const dateStr = normalizeDateToString(date);
+    return events.filter((event) => {
+      const eventDateStr = normalizeDateToString(event.event_date);
+      return eventDateStr === dateStr;
+    });
+  };
+
+  const handleDateClick = (date) => {
+    const dateEvents = getEventsForDate(date);
+    setSelectedDate(date);
+    setSelectedEvents(dateEvents);
+  };
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString("vi-VN", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const renderCalendar = (year, month) => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
 
-    const days = [];
-    // Empty cells for days before month starts
+    const weekdays = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+
+    // Add empty cells for days before month starts
+    const emptyCells = [];
     for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null);
+      emptyCells.push(<div key={`empty-${i}`} className="h-16"></div>);
     }
-    // Days of the month
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(i);
+
+    // Add day cells
+    const dayCells = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      // Create date at noon to avoid timezone issues
+      const date = new Date(year, month, day, 12, 0, 0);
+      const dateEvents = getEventsForDate(date);
+      const hasEvents = dateEvents.length > 0;
+      const today = new Date();
+      today.setHours(12, 0, 0, 0);
+      const isToday =
+        normalizeDateToString(date) === normalizeDateToString(today);
+      const isSelected = selectedDate && 
+        normalizeDateToString(date) === normalizeDateToString(selectedDate);
+
+      dayCells.push(
+        <div
+          key={day}
+          onClick={() => handleDateClick(date)}
+          className={`h-14 flex flex-col items-center justify-center border border-gray-200 rounded-md cursor-pointer transition-all ${
+            hasEvents
+              ? "bg-green-50 border-green-300 hover:bg-green-100 hover:shadow-sm"
+              : "hover:bg-gray-50"
+          } ${isToday ? "ring-2 ring-green-500" : ""} ${
+            isSelected ? "bg-green-100 border-green-500 shadow-sm" : ""
+          }`}
+        >
+          <span
+            className={`text-sm font-medium ${
+              isToday ? "text-green-600 font-bold" : isSelected ? "text-green-700 font-semibold" : "text-gray-700"
+            }`}
+          >
+            {day}
+          </span>
+          {hasEvents && (
+            <div className="flex items-center justify-center mt-0.5 space-x-0.5">
+              {dateEvents.slice(0, 3).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="w-1.5 h-1.5 rounded-full bg-green-500"
+                />
+              ))}
+              {dateEvents.length > 3 && (
+                <span className="text-[10px] text-green-600 font-medium ml-0.5">
+                  +{dateEvents.length - 3}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      );
     }
-    return days;
+
+    return (
+      <div>
+        {/* Weekday headers */}
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {weekdays.map((day) => (
+            <div
+              key={day}
+              className="text-center text-xs font-semibold text-gray-600 py-2"
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+        {/* Calendar grid */}
+        <div className="grid grid-cols-7 gap-1">
+          {emptyCells}
+          {dayCells}
+        </div>
+      </div>
+    );
   };
 
-  // Helper function to normalize date to YYYY-MM-DD format (handles timezone issues)
-  const normalizeDateToString = (date) => {
-    if (!date) return null;
-    const d = new Date(date);
-    // Use UTC to avoid timezone issues
-    const year = d.getUTCFullYear();
-    const month = String(d.getUTCMonth() + 1).padStart(2, "0");
-    const day = String(d.getUTCDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+  const goToPreviousMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
 
-  // Helper function to create date string from year, month, day
-  const createDateString = (year, month, day) => {
-    const m = String(month + 1).padStart(2, "0");
-    const d = String(day).padStart(2, "0");
-    return `${year}-${m}-${d}`;
+  const goToNextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
-  const getEventsForDate = (date, month) => {
-    if (!date) return { events: [], reminders: [] };
-    // Create date string directly from year, month, day to avoid timezone issues
-    const dateStr = createDateString(month.getFullYear(), month.getMonth(), date);
-    
-    const dayEvents = events.filter((event) => {
-      if (!event.event_date) return false;
-      const eventDateStr = normalizeDateToString(event.event_date);
-      return eventDateStr === dateStr;
-    });
-
-    const dayReminders = reminders.filter((reminder) => {
-      if (!reminder.reminder_date) return false;
-      const reminderDateStr = normalizeDateToString(reminder.reminder_date);
-      return reminderDateStr === dateStr;
-    });
-
-    return { events: dayEvents, reminders: dayReminders };
-  };
-
-  const hasEventsOrReminders = (date, month) => {
-    const { events: dayEvents, reminders: dayReminders } = getEventsForDate(date, month);
-    return dayEvents.length > 0 || dayReminders.length > 0;
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("vi-VN");
-  };
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth();
+  const nextMonth = new Date(currentYear, currentMonth + 1, 1);
+  const nextYear = nextMonth.getFullYear();
+  const nextMonthIndex = nextMonth.getMonth();
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    "Tháng 1",
+    "Tháng 2",
+    "Tháng 3",
+    "Tháng 4",
+    "Tháng 5",
+    "Tháng 6",
+    "Tháng 7",
+    "Tháng 8",
+    "Tháng 9",
+    "Tháng 10",
+    "Tháng 11",
+    "Tháng 12",
   ];
 
-  const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  const categoryLabels = {
+    food: "Thức ăn",
+    medicine: "Thuốc",
+    accessories: "Phụ kiện",
+    vet_visit: "Khám thú y",
+    grooming: "Chải chuốt",
+    other: "Khác",
   };
-
-  const prevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-  };
-
-  const month1 = currentMonth;
-  const month2 = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
-
-  const days1 = getDaysInMonth(month1);
-  const days2 = getDaysInMonth(month2);
 
   return (
     <CustomerLayout currentPage="calendar">
-      <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Calendar</h2>
-      <p className="text-green-600 mb-6">Manage your pet's expenses and schedules</p>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Lịch</h1>
+          <p className="text-gray-600">Quản lý lịch trình và chi phí sắp tới</p>
+        </div>
 
-      {/* Calendar View */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Month 1 */}
-        <div className="border rounded-lg p-4">
-          <div className="flex justify-between items-center mb-4">
-            <button onClick={prevMonth} className="text-gray-600 hover:text-gray-900">
-              &lt;
-            </button>
-            <h3 className="text-lg font-semibold">
-              {monthNames[month1.getMonth()]} {month1.getFullYear()}
-            </h3>
-            <div className="w-6"></div>
+        {/* Calendar View - 2 months side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Current Month */}
+          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={goToPreviousMonth}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Tháng trước"
+              >
+                <ChevronLeft size={20} className="text-gray-600" />
+              </button>
+              <h2 className="text-lg font-semibold text-gray-800">
+                {monthNames[currentMonth]} {currentYear}
+              </h2>
+              <button
+                onClick={goToNextMonth}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Tháng sau"
+              >
+                <ChevronRight size={20} className="text-gray-600" />
+              </button>
+            </div>
+            {renderCalendar(currentYear, currentMonth)}
           </div>
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {["S", "M", "T", "W", "T", "F", "S"].map((day) => (
-              <div key={day} className="text-center text-sm font-medium text-gray-600 py-1">
-                {day}
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {days1.map((day, idx) => {
-              const hasEvents = hasEventsOrReminders(day, month1);
-              return (
-                <button
-                  key={idx}
-                  onClick={() => day && setSelectedDate({ month: month1, day })}
-                  className={`p-2 text-sm rounded relative ${
-                    day
-                      ? hasEvents
-                        ? "bg-green-100 text-green-800 hover:bg-green-200 font-medium"
-                        : "hover:bg-gray-100"
-                      : ""
-                  }`}
-                >
-                  {day}
-                  {hasEvents && (
-                    <span className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                  )}
-                </button>
-              );
-            })}
+
+          {/* Next Month */}
+          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10"></div>
+              <h2 className="text-lg font-semibold text-gray-800">
+                {monthNames[nextMonthIndex]} {nextYear}
+              </h2>
+              <div className="w-10"></div>
+            </div>
+            {renderCalendar(nextYear, nextMonthIndex)}
           </div>
         </div>
 
-        {/* Month 2 */}
-        <div className="border rounded-lg p-4">
-          <div className="flex justify-between items-center mb-4">
-            <div className="w-6"></div>
-            <h3 className="text-lg font-semibold">
-              {monthNames[month2.getMonth()]} {month2.getFullYear()}
-            </h3>
-            <button onClick={nextMonth} className="text-gray-600 hover:text-gray-900">
-              &gt;
-            </button>
-          </div>
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {["S", "M", "T", "W", "T", "F", "S"].map((day) => (
-              <div key={day} className="text-center text-sm font-medium text-gray-600 py-1">
-                {day}
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {days2.map((day, idx) => {
-              const hasEvents = hasEventsOrReminders(day, month2);
-              return (
-                <button
-                  key={idx}
-                  onClick={() => day && setSelectedDate({ month: month2, day })}
-                  className={`p-2 text-sm rounded relative ${
-                    day
-                      ? hasEvents
-                        ? "bg-green-100 text-green-800 hover:bg-green-200 font-medium"
-                        : "hover:bg-gray-100"
-                      : ""
-                  }`}
-                >
-                  {day}
-                  {hasEvents && (
-                    <span className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Upcoming Expenses */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Expenses</h3>
-        {upcomingExpenses.length === 0 ? (
-          <p className="text-gray-500">Không có chi phí sắp tới</p>
-        ) : (
-          <div className="border rounded-lg overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 text-gray-600 text-sm">
-                <tr>
-                  <th className="p-3 border-b">Date</th>
-                  <th className="p-3 border-b">Category</th>
-                  <th className="p-3 border-b">Description</th>
-                  <th className="p-3 border-b">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="text-gray-800">
-                {upcomingExpenses.map((expense) => (
-                  <tr key={expense.id} className="hover:bg-green-50">
-                    <td className="p-3 border-b">{formatDate(expense.expense_date)}</td>
-                    <td className="p-3 border-b">{expense.category}</td>
-                    <td className="p-3 border-b">{expense.description}</td>
-                    <td className="p-3 border-b">
-                      {expense.amount ? `${parseFloat(expense.amount).toLocaleString("vi-VN")} VND` : "-"}
-                    </td>
+        {/* Upcoming Expenses Section - Table Format */}
+        {upcomingExpenses.length > 0 && (
+          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+            <h2 className="text-lg font-semibold mb-4 text-gray-800">Chi phí sắp tới</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ngày
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Danh mục
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Mô tả
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Số tiền
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {upcomingExpenses.map((expense) => (
+                    <tr key={expense.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(expense.date).toLocaleDateString("vi-VN", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                        {categoryLabels[expense.category] || expense.category}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {expense.description}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-green-700">
+                        {parseFloat(expense.amount).toLocaleString("vi-VN")} VND
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
-      </div>
 
-      {selectedDate && (
+        {/* Event Modal */}
         <CalendarEventModal
+          isOpen={selectedDate !== null}
+          onClose={() => {
+            setSelectedDate(null);
+            setSelectedEvents([]);
+          }}
+          events={selectedEvents}
           date={selectedDate}
-          eventsData={getEventsForDate(selectedDate.day, selectedDate.month)}
-          onClose={() => setSelectedDate(null)}
         />
-      )}
+      </div>
     </CustomerLayout>
   );
 };

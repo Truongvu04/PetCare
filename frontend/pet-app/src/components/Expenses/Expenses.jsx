@@ -1,64 +1,86 @@
 import React, { useState, useEffect } from "react";
-import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
+import { useAuth } from "../../hooks/useAuth.js";
+import api from "../../api/axiosConfig.js";
 import { expenseApi } from "../../api/expenseApi.js";
+import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
 import ExpenseForm from "./ExpenseForm.jsx";
 import ExpenseSummary from "./ExpenseSummary.jsx";
+import { showError } from "../../utils/notifications.js";
+import { Plus } from "lucide-react";
 
 const Expenses = () => {
+  const { user } = useAuth();
+  const [pets, setPets] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
-  const [filter, setFilter] = useState("this_month");
+  const [loading, setLoading] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+
+  useEffect(() => {
+    const loadPets = async () => {
+      try {
+        const response = await api.get("/pets");
+        setPets(response.data || []);
+      } catch (error) {
+        console.error("Error loading pets:", error);
+      }
+    };
+    if (user) {
+      loadPets();
+    }
+  }, [user]);
 
   useEffect(() => {
     loadExpenses();
     loadSummary();
-  }, [filter]);
+  }, [activeFilter]);
 
   const loadExpenses = async () => {
     setLoading(true);
     try {
-      const params = {};
-      if (filter === "this_month") {
+      const filters = {};
+      
+      if (activeFilter === "this_month") {
         const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        params.start_date = startOfMonth.toISOString().split("T")[0];
-        params.end_date = endOfMonth.toISOString().split("T")[0];
-      } else if (filter === "last_month") {
+        filters.start_date = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+        filters.end_date = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+      } else if (activeFilter === "last_month") {
         const now = new Date();
-        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-        params.start_date = startOfLastMonth.toISOString().split("T")[0];
-        params.end_date = endOfLastMonth.toISOString().split("T")[0];
+        filters.start_date = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split("T")[0];
+        filters.end_date = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split("T")[0];
       }
-      const data = await expenseApi.getExpenses(params);
-      setExpenses(data);
-    } catch (err) {
-      console.error("Error loading expenses:", err);
+
+      const response = await expenseApi.getExpenses(filters);
+      setExpenses(response.expenses || []);
+    } catch (error) {
+      console.error("Error loading expenses:", error);
+      showError("Lỗi", "Không thể tải danh sách chi phí");
     } finally {
       setLoading(false);
     }
   };
 
   const loadSummary = async () => {
+    setSummaryLoading(true);
     try {
-      const data = await expenseApi.getExpenseSummary(filter);
-      setSummary(data);
-    } catch (err) {
-      console.error("Error loading summary:", err);
+      let period = "all";
+      if (activeFilter === "this_month") period = "this_month";
+      else if (activeFilter === "last_month") period = "last_month";
+
+      const response = await expenseApi.getExpenseSummary(period);
+      setSummary(response.summary);
+    } catch (error) {
+      console.error("Error loading summary:", error);
+    } finally {
+      setSummaryLoading(false);
     }
   };
 
   const handleSuccess = () => {
     loadExpenses();
     loadSummary();
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("vi-VN");
   };
 
   const categoryLabels = {
@@ -72,82 +94,110 @@ const Expenses = () => {
 
   return (
     <CustomerLayout currentPage="expenses">
-      <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Expenses</h2>
-      <p className="text-green-600 mb-6">Track your pet's expenses</p>
-
-      {/* Filter Tabs */}
-      <div className="flex space-x-4 mb-6 border-b">
-        {["All", "This month", "Last month"].map((tab) => {
-          const tabValue = tab === "All" ? "all" : tab === "This month" ? "this_month" : "last_month";
-          return (
-            <button
-              key={tab}
-              onClick={() => setFilter(tabValue)}
-              className={`pb-2 px-1 ${
-                filter === tabValue
-                  ? "text-green-600 border-b-2 border-green-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {tab}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Summary */}
-      <ExpenseSummary summary={summary} loading={loading} />
-
-      {/* Expenses List */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Expenses</h3>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">Chi phí</h1>
+            <p className="text-gray-600">Theo dõi chi phí thú cưng</p>
+          </div>
           <button
             onClick={() => setShowForm(true)}
-            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+            className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
           >
-            + Thêm chi phí
+            <Plus size={20} />
+            <span>Thêm chi phí</span>
           </button>
         </div>
 
-        {loading ? (
-          <p className="text-gray-500">Đang tải...</p>
-        ) : expenses.length === 0 ? (
-          <p className="text-gray-500">Chưa có chi phí nào</p>
-        ) : (
-          <div className="border rounded-lg overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 text-gray-600 text-sm">
-                <tr>
-                  <th className="p-3 border-b">Date</th>
-                  <th className="p-3 border-b">Category</th>
-                  <th className="p-3 border-b">Description</th>
-                  <th className="p-3 border-b">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="text-gray-800">
-                {expenses.map((expense) => (
-                  <tr key={expense.id} className="hover:bg-green-50">
-                    <td className="p-3 border-b">{formatDate(expense.expense_date)}</td>
-                    <td className="p-3 border-b">
-                      {categoryLabels[expense.category] || expense.category}
-                    </td>
-                    <td className="p-3 border-b">{expense.description}</td>
-                    <td className="p-3 border-b font-medium">{parseFloat(expense.amount).toLocaleString("vi-VN")} VND</td>
+        {/* Summary Cards */}
+        <ExpenseSummary summary={summary} loading={summaryLoading} />
+
+        {/* Filter Tabs */}
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-4">
+            {[
+              { id: "all", label: "Tất cả" },
+              { id: "this_month", label: "Tháng này" },
+              { id: "last_month", label: "Tháng trước" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveFilter(tab.id)}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+                  activeFilter === tab.id
+                    ? "border-green-500 text-green-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Expenses Table */}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            {loading ? (
+              <div className="p-8 text-center text-gray-500">Đang tải...</div>
+            ) : expenses.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                Chưa có chi phí nào
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Ngày
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Thú cưng
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Danh mục
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Mô tả
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Số tiền
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {expenses.map((expense) => (
+                    <tr key={expense.id}>
+                      <td className="px-4 py-3 text-sm">
+                        {new Date(expense.expense_date).toLocaleDateString("vi-VN")}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        {expense.pet?.name || "N/A"}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        {categoryLabels[expense.category] || expense.category}
+                      </td>
+                      <td className="px-4 py-3 text-sm">{expense.description}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-green-700">
+                        {parseFloat(expense.amount).toLocaleString("vi-VN")} VND
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
+        </div>
+
+        {/* Expense Form Modal */}
+        {showForm && (
+          <ExpenseForm
+            pets={pets}
+            onSuccess={handleSuccess}
+            onClose={() => setShowForm(false)}
+          />
         )}
       </div>
-
-      {showForm && (
-        <ExpenseForm
-          onSuccess={handleSuccess}
-          onClose={() => setShowForm(false)}
-        />
-      )}
     </CustomerLayout>
   );
 };
