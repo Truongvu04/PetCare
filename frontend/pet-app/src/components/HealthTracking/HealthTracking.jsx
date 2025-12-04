@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
 import api from "../../api/axiosConfig.js";
 import { healthApi } from "../../api/healthApi.js";
@@ -7,8 +8,10 @@ import WeightForm from "./WeightForm.jsx";
 import VaccinationForm from "./VaccinationForm.jsx";
 import HealthNoteForm from "./HealthNoteForm.jsx";
 import { showError } from "../../utils/notifications.js";
+import { MapPin } from "lucide-react";
 
 const HealthTracking = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [pets, setPets] = useState([]);
   const [selectedPetId, setSelectedPetId] = useState(null);
@@ -17,6 +20,10 @@ const HealthTracking = () => {
   const [vaccinationRecords, setVaccinationRecords] = useState([]);
   const [healthNotes, setHealthNotes] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const handleOpenMap = () => {
+    navigate('/vet-map');
+  };
 
   useEffect(() => {
     const loadPets = async () => {
@@ -114,24 +121,33 @@ const HealthTracking = () => {
 
             {/* Tabs */}
             <div className="border-b border-gray-200">
-              <nav className="flex space-x-4">
-                {[
-                  { id: "overview", label: "Overview" },
-                  { id: "weight", label: "Weight" },
-                  { id: "vaccination", label: "Medical History" },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
-                      activeTab === tab.id
-                        ? "border-green-500 text-green-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
+              <nav className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2">
+                <div className="flex flex-wrap gap-4">
+                  {[
+                    { id: "overview", label: "Overview" },
+                    { id: "weight", label: "Weight" },
+                    { id: "vaccination", label: "Medical History" },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+                        activeTab === tab.id
+                          ? "border-green-500 text-green-600"
+                          : "border-transparent text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={handleOpenMap}
+                  className="flex items-center text-green-600 hover:text-green-700 space-x-1 px-4 py-2 text-sm font-medium border-b-2 border-transparent transition-colors whitespace-nowrap"
+                >
+                  <MapPin className="w-5 h-5"/>
+                  <span>Clinic Map</span>
+                </button>
               </nav>
             </div>
 
