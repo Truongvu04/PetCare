@@ -37,8 +37,8 @@ const handleOpenMap = () => {
           </h2>
 
           {/* Tabs */}
-          <div className="flex justify-between items-center border-b mb-6">
-            <div className="flex space-x-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b mb-6 pb-2">
+            <div className="flex flex-wrap gap-4 sm:gap-8">
               {["Overview", "Weight", "Diet", "Medical History"].map(
                 (tab, index) => (
                   <button
@@ -56,7 +56,7 @@ const handleOpenMap = () => {
 
             <button
               onClick={handleOpenMap}
-              className="flex items-center text-green-00 !text-green-600 hover:!text-green-500 space-x-1 pb-2 font-medium border-b-2 border-transparent">
+              className="flex items-center text-green-600 hover:text-green-700 space-x-1 pb-2 font-medium border-b-2 border-transparent transition-colors whitespace-nowrap">
               <MapPin className="w-5 h-5"/>
               <span>Clinic Map</span>
             </button>
