@@ -42,13 +42,14 @@ const AIChatbot = () => {
     }
   }, [user]);
 
-  // Load chat history when selectedPetId changes
+  // Load chat history only once when component mounts (single chat box)
   useEffect(() => {
     const loadHistory = async () => {
       if (!user) return;
       setLoadingHistory(true);
       try {
-        const response = await aiApi.getChatHistory(selectedPetId, 50);
+        // Load general chat history (without pet_id) for single chat box
+        const response = await aiApi.getChatHistory(null, 50);
         setMessages(response.history || []);
       } catch (error) {
         console.error("Error loading chat history:", error);
@@ -58,7 +59,7 @@ const AIChatbot = () => {
       }
     };
     loadHistory();
-  }, [user, selectedPetId]);
+  }, [user]); // Only depend on user, not selectedPetId
 
   // Auto scroll to bottom when messages change
   useEffect(() => {
@@ -121,7 +122,8 @@ const AIChatbot = () => {
 
     if (result.isConfirmed) {
       try {
-        await aiApi.deleteChatHistory(selectedPetId);
+        // Delete all chat history (without pet_id) for single chat box
+        await aiApi.deleteChatHistory(null);
         setMessages([]);
         // Clear selectedPetId from localStorage
         localStorage.removeItem("selectedPetId");

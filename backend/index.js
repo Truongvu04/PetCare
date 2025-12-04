@@ -17,7 +17,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./src/routes/auth.routes.js";
 import petRoutes from "./src/routes/pets.js";
 import reminderRoutes from "./src/routes/reminder.js";
-import geoapifyRoutes from "./src/routes/geoapify.routes.js";
+import goongRoutes from "./src/routes/goong.routes.js";
 import productRoutes from "./src/routes/productRoutes.js";
 import orderRoutes from "./src/routes/orderRoutes.js";
 import serviceRoutes from "./src/routes/serviceRoutes.js";
@@ -58,9 +58,15 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
-app.use(bodyParser.json());
-app.use(express.urlencoded({ extended: true }));
+// Set charset UTF-8 for all responses
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+  next();
+});
+
+app.use(express.json({ charset: 'utf-8' }));
+app.use(bodyParser.json({ charset: 'utf-8' }));
+app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(passport.initialize());
@@ -68,7 +74,7 @@ app.use(passport.initialize());
 app.use("/api/auth", authRoutes);
 app.use("/api/pets", petRoutes);
 app.use("/api/reminders", reminderRoutes);
-app.use("/api/geoapify", geoapifyRoutes);
+app.use("/api/goong", goongRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/services", serviceRoutes);
@@ -96,6 +102,7 @@ console.log("✅ Calendar routes registered at /api/calendar");
 console.log("✅ AI routes registered at /api/ai");
 console.log("✅ Recommendation routes registered at /api/recommendations");
 console.log("✅ Admin routes registered at /api/admin");
+console.log("✅ Goong routes registered at /api/goong");
 
 app.get(
   "/auth/google",

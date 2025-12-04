@@ -361,40 +361,69 @@ section p {
         display: none; 
     }
     .hero-card {
-        height: 350px;
+        height: 300px;
     }
     .hero-overlay h1 {
-        font-size: 2.5em;
+        font-size: 2em;
+        padding: 0 20px;
     }
     .hero-overlay p {
-        font-size: 1em;
+        font-size: 0.9em;
         max-width: 90%;
+        padding: 0 20px;
     }
     .content {
-        padding: 20px;
+        padding: 15px;
     }
     section {
-        padding: 30px 20px;
+        padding: 30px 15px;
     }
     .features-grid, .services-grid, .support-grid {
         flex-direction: column;
-        gap: 20px;
+        gap: 15px;
     }
     .feature-card, .service-card, .support-card {
         width: 100%;
         max-width: 100%;
     }
     .service-image {
-        height: 150px;
+        height: 180px;
     }
-    /* ⚠️ Đảm bảo các nút hiển thị tốt trên mobile */
-    .auth-buttons {
-      display: flex;
+    .btn {
+        padding: 8px 20px;
+        font-size: 16px;
     }
-    .btn-login, .btn-register {
-      padding: 8px 15px;
-      font-size: 12px;
-      border-radius: 20px;
+    h2 {
+        font-size: 1.5em;
+    }
+    h4 {
+        font-size: 1em;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-card {
+        height: 250px;
+        border-radius: 10px;
+    }
+    .hero-overlay h1 {
+        font-size: 1.5em;
+    }
+    .hero-overlay p {
+        font-size: 0.85em;
+    }
+    .content {
+        padding: 10px;
+    }
+    section {
+        padding: 20px 10px;
+    }
+    .btn {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+    h2 {
+        font-size: 1.3em;
     }
 }
 `;

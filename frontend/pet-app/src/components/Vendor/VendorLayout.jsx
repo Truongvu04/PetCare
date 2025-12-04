@@ -1,14 +1,14 @@
 // src/components/Vendor/VendorLayout.jsx
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Home, List, ShoppingCart, Tag, Settings, LogOut, Store, Shield } from 'lucide-react';
+import { Home, List, ShoppingCart, Tag, Settings, LogOut, Store, Shield, Menu, X } from 'lucide-react';
 import { apiGetVendorProfile } from '../../api/vendorApi';
 import { getAvatarUrl } from '../../utils/avatarHelper';
 import { performCompleteLogout } from '../../utils/logoutHelper';
 import { useAuth } from '../../hooks/useAuth';
 import { showConfirm } from '../../utils/notifications';
 
-const Sidebar = () => {
+const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
     const navigate = useNavigate();
     const { user, loading: authLoading } = useAuth();
 
@@ -115,7 +115,9 @@ const Sidebar = () => {
          ${isActive ? 'bg-green-50 text-green-700 font-semibold' : 'font-medium'}`;
 
     return (
-        <div className="w-64 h-screen p-4 bg-white border-r border-gray-100 flex flex-col shadow-sm sticky top-0">
+        <div className={`w-64 h-screen p-4 bg-white border-r border-gray-100 flex flex-col shadow-sm fixed lg:sticky top-0 z-40 transition-transform duration-300 ${
+            isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}>
 
             {/* Header Sidebar */}
             <div className="flex items-center gap-3 mb-6 px-2">
@@ -190,10 +192,28 @@ const Sidebar = () => {
 };
 
 const VendorLayout = () => {
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
     return (
         <div className="flex min-h-screen bg-gray-50">
-            <Sidebar />
-            <main className="flex-1 h-screen p-8 overflow-y-auto">
+            {/* Mobile Menu Button */}
+            <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md"
+            >
+                {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+
+            {/* Mobile Overlay */}
+            {isMobileMenuOpen && (
+                <div
+                    className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                />
+            )}
+
+            <Sidebar isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+            <main className="flex-1 h-screen p-4 sm:p-6 lg:p-8 overflow-y-auto pt-16 lg:pt-8">
                 <Outlet />
             </main>
         </div>

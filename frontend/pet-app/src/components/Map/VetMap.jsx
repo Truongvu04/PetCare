@@ -1,9 +1,8 @@
-// VetMap.jsx
 import React from 'react';
-import VeterinaryMapPage from './VeterinaryMapPage';
+import GoongVetMapPage from './GoongVetMapPage';
 
 const VetMap = () => {
-  return <VeterinaryMapPage />;
+  return <GoongVetMapPage />;
 };
 
 export default VetMap;
