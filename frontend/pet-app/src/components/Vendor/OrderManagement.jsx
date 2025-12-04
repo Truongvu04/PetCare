@@ -59,28 +59,28 @@ const renderStatus = (status) => {
     switch (normalizedStatus) {
         case 'paid': 
             classes = 'bg-green-100 text-green-700 border-green-200'; 
-            label = 'Đã thanh toán'; 
+            label = 'Paid'; 
             break;
         case 'delivered': 
             classes = 'bg-green-100 text-green-700 border-green-200'; 
-            label = 'Giao thành công'; 
+            label = 'Delivered'; 
             break;
         case 'shipped': 
             classes = 'bg-blue-100 text-blue-700 border-blue-200'; 
-            label = 'Đang giao'; 
+            label = 'Shipping'; 
             break;
         case 'processing': 
             classes = 'bg-yellow-100 text-yellow-700 border-yellow-200'; 
-            label = 'Đang xử lý'; 
+            label = 'Processing'; 
             break;
         case 'cancelled': 
             classes = 'bg-red-100 text-red-700 border-red-200'; 
-            label = 'Đã hủy'; 
+            label = 'Cancelled'; 
             break;
         case 'pending': 
         default: 
             classes = 'bg-gray-100 text-gray-700 border-gray-200'; 
-            label = 'Chờ xử lý';
+            label = 'Pending';
     }
     return <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${classes}`}>{label}</span>;
 };
@@ -95,8 +95,8 @@ const OrderDetailModal = ({ order, onClose }) => {
                 {/* Header Modal */}
                 <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <div>
-                        <h3 className="text-lg font-bold text-gray-800">Chi tiết đơn hàng #{order.order_id}</h3>
-                        <p className="text-sm text-gray-500">{new Date(order.created_at).toLocaleString('vi-VN')}</p>
+                        <h3 className="text-lg font-bold text-gray-800">Order Details #{order.order_id}</h3>
+                        <p className="text-sm text-gray-500">{new Date(order.created_at).toLocaleString('en-US')}</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition">
                         <X size={20} className="text-gray-500" />
@@ -108,11 +108,11 @@ const OrderDetailModal = ({ order, onClose }) => {
                     {/* Thông tin khách hàng */}
                     <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
                         <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
-                            <Package size={18}/> Thông tin giao hàng
+                            <Package size={18}/> Shipping Information
                         </h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
                             <div>
-                                <p className="text-gray-500 text-xs">Khách hàng</p>
+                                <p className="text-gray-500 text-xs">Customer</p>
                                 <p className="font-medium">{order.users?.full_name || order.user_name || "N/A"}</p>
                             </div>
                             <div>
@@ -120,23 +120,23 @@ const OrderDetailModal = ({ order, onClose }) => {
                                 <p className="font-medium">{order.users?.email || "N/A"}</p>
                             </div>
                             <div>
-                                <p className="text-gray-500 text-xs">Số điện thoại</p>
-                                <p className="font-medium">{order.users?.phone || order.user?.phone || "Chưa cập nhật"}</p>
+                                <p className="text-gray-500 text-xs">Phone</p>
+                                <p className="font-medium">{order.users?.phone || order.user?.phone || "Not updated"}</p>
                             </div>
                             <div className="sm:col-span-2">
-                                <p className="text-gray-500 text-xs">Địa chỉ nhận hàng</p>
-                                <p className="font-medium">{order.shipping_address || "Nhận tại cửa hàng"}</p>
+                                <p className="text-gray-500 text-xs">Shipping Address</p>
+                                <p className="font-medium">{order.shipping_address || "Pick up at store"}</p>
                             </div>
                             <div>
-                                <p className="text-gray-500 text-xs">Phương thức thanh toán</p>
-                                <p className="font-medium uppercase">{order.payment_method || "Tiền mặt"}</p>
+                                <p className="text-gray-500 text-xs">Payment Method</p>
+                                <p className="font-medium uppercase">{order.payment_method || "Cash"}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Danh sách sản phẩm */}
                     <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                        <Layers size={18}/> Sản phẩm ({order.order_items?.length || 0})
+                        <Layers size={18}/> Products ({order.order_items?.length || 0})
                     </h4>
                     <div className="space-y-3">
                         {order.order_items?.map((item, idx) => {
@@ -176,8 +176,8 @@ const OrderDetailModal = ({ order, onClose }) => {
                                             )}
                                         </div>
                                         <div>
-                                            <p className="font-medium text-gray-800 text-sm">{product?.name || "Sản phẩm đã xóa"}</p>
-                                            <p className="text-xs text-gray-500">Đơn giá: {formatVND(item.price)}</p>
+                                            <p className="font-medium text-gray-800 text-sm">{product?.name || "Deleted Product"}</p>
+                                            <p className="text-xs text-gray-500">Unit Price: {formatVND(item.price)}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -190,10 +190,44 @@ const OrderDetailModal = ({ order, onClose }) => {
                     </div>
                 </div>
 
-                {/* Footer Modal */}
-                <div className="px-6 py-4 border-t border-gray-100 flex justify-between items-center bg-gray-50">
-                    <span className="text-gray-600 font-medium">Tổng thanh toán:</span>
-                    <span className="text-2xl font-bold text-green-600">{formatVND(order.total)}</span>
+                {/* Footer Modal - Price Breakdown */}
+                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
+                    <div className="space-y-2 mb-4">
+                        {/* Calculate subtotal from items */}
+                        {(() => {
+                            const itemsSubtotal = order.order_items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
+                            const subtotalAfterDiscount = order.subtotal || itemsSubtotal;
+                            const discountAmount = itemsSubtotal - subtotalAfterDiscount;
+                            const shippingFee = order.shipping || 0;
+                            // Tax removed - no tax applied to orders
+                            const total = order.total || (subtotalAfterDiscount + shippingFee);
+                            
+                            return (
+                                <>
+                                    <div className="flex justify-between text-sm text-gray-600">
+                                        <span>Subtotal:</span>
+                                        <span>{formatVND(itemsSubtotal)}</span>
+                                    </div>
+                                    {discountAmount > 0 && (
+                                        <div className="flex justify-between text-sm text-green-600">
+                                            <span>Discount:</span>
+                                            <span>-{formatVND(discountAmount)}</span>
+                                        </div>
+                                    )}
+                                    {shippingFee > 0 && (
+                                        <div className="flex justify-between text-sm text-gray-600">
+                                            <span>Shipping Fee:</span>
+                                            <span>{formatVND(shippingFee)}</span>
+                                        </div>
+                                    )}
+                                    <div className="pt-2 border-t border-gray-200 flex justify-between items-center">
+                                        <span className="text-gray-700 font-semibold">Total Payment:</span>
+                                        <span className="text-2xl font-bold text-green-600">{formatVND(total)}</span>
+                                    </div>
+                                </>
+                            );
+                        })()}
+                    </div>
                 </div>
             </div>
         </div>
@@ -216,7 +250,7 @@ const OrderManagement = () => {
             // Đảm bảo dữ liệu luôn là mảng để tránh lỗi .map()
             setOrders(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
-            console.error("Lỗi tải đơn hàng:", err);
+            console.error("Error loading orders:", err);
         } finally {
             setLoading(false);
         }
@@ -228,8 +262,8 @@ const OrderManagement = () => {
     const handleStatusUpdate = async (orderId, newStatus, actionName) => {
         // Xác nhận trước khi đổi (tránh bấm nhầm)
         const result = await showConfirm(
-            actionName || "Cập nhật trạng thái",
-            `Bạn có chắc muốn ${actionName?.toLowerCase() || `chuyển trạng thái đơn hàng #${orderId} sang "${newStatus}"`}?`
+            actionName || "Update Status",
+            `Are you sure you want to ${actionName?.toLowerCase() || `change order #${orderId} status to "${newStatus}"`}?`
         );
         if (!result.isConfirmed) return;
 
@@ -239,10 +273,10 @@ const OrderManagement = () => {
             
             // Gọi API cập nhật thật trong DB
             await apiUpdateOrderStatus(orderId, newStatus);
-            showSuccess("Thành công", `Đã ${actionName?.toLowerCase() || 'cập nhật trạng thái'} đơn hàng #${orderId} thành công!`);
+            showSuccess("Success", `Order #${orderId} ${actionName?.toLowerCase() || 'status updated'} successfully!`);
             fetchOrders(); // Refresh để đảm bảo dữ liệu đồng bộ
         } catch (err) {
-            showError("Lỗi", "Lỗi cập nhật: " + (err.response?.data?.message || err.message));
+            showError("Error", "Update error: " + (err.response?.data?.message || err.message));
             fetchOrders(); // Nếu lỗi thì tải lại dữ liệu cũ
         }
     };
@@ -281,7 +315,7 @@ const OrderManagement = () => {
     if (loading) return (
         <div className="flex h-screen items-center justify-center text-gray-500 gap-2">
             <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-            <span>Đang tải danh sách đơn hàng...</span>
+            <span>Loading order list...</span>
         </div>
     );
 
@@ -290,12 +324,12 @@ const OrderManagement = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <Package className="text-green-600" /> Quản lý Đơn hàng
+                        <Package className="text-green-600" /> Order Management
                     </h1>
-                    <p className="text-gray-600 text-sm mt-1">Xem và xử lý các đơn hàng mới nhất từ khách hàng</p>
+                    <p className="text-gray-600 text-sm mt-1">View and process the latest orders from customers</p>
                 </div>
                 <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
-                    <span className="text-sm text-gray-500">Tổng đơn hàng: </span>
+                    <span className="text-sm text-gray-500">Total Orders: </span>
                     <span className="font-bold text-gray-800">{orders.length}</span>
                 </div>
             </div>
@@ -311,7 +345,7 @@ const OrderManagement = () => {
                                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                         }`}
                     >
-                        Chờ xác nhận ({orders.filter(o => o.status?.toLowerCase() === 'pending').length})
+                        Pending Confirmation ({orders.filter(o => o.status?.toLowerCase() === 'pending').length})
                     </button>
                     <button
                         onClick={() => setActiveTab('paid')}
@@ -321,7 +355,7 @@ const OrderManagement = () => {
                                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                         }`}
                     >
-                        Đang xử lý ({orders.filter(o => o.status?.toLowerCase() === 'paid').length})
+                        Processing ({orders.filter(o => o.status?.toLowerCase() === 'paid').length})
                     </button>
                     <button
                         onClick={() => setActiveTab('shipped')}
@@ -331,7 +365,7 @@ const OrderManagement = () => {
                                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                         }`}
                     >
-                        Đang giao ({orders.filter(o => o.status?.toLowerCase() === 'shipped').length})
+                        Shipping ({orders.filter(o => o.status?.toLowerCase() === 'shipped').length})
                     </button>
                     <button
                         onClick={() => setActiveTab('history')}
@@ -341,7 +375,7 @@ const OrderManagement = () => {
                                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                         }`}
                     >
-                        Lịch sử ({orders.filter(o => ['delivered', 'cancelled', 'refunded'].includes(o.status?.toLowerCase())).length})
+                        History ({orders.filter(o => ['delivered', 'cancelled', 'refunded'].includes(o.status?.toLowerCase())).length})
                     </button>
                 </div>
             </div>
@@ -351,7 +385,7 @@ const OrderManagement = () => {
                 <Search className="text-gray-400 ml-2" size={20} />
                 <input
                     type="text"
-                    placeholder="Tìm theo mã đơn hoặc tên khách hàng..."
+                    placeholder="Search by order ID or customer name..."
                     className="w-full ml-3 outline-none text-gray-700 bg-transparent"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -369,21 +403,23 @@ const OrderManagement = () => {
                     <table className="w-full text-left whitespace-nowrap">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Mã Đơn</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Khách hàng</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Ngày đặt</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">SL</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Tổng tiền</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Hành động</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Order ID</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Order Date</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Qty</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {filteredOrders.length === 0 ? (
                                 <tr>
-                                    <td colSpan="7" className="p-12 text-center text-gray-500 flex flex-col items-center justify-center w-full">
-                                        <Package size={48} className="text-gray-300 mb-3" />
-                                        <p>Không tìm thấy đơn hàng nào phù hợp.</p>
+                                    <td colSpan="7" className="p-12">
+                                        <div className="flex flex-col items-center justify-center text-gray-500">
+                                            <Package size={48} className="text-gray-300 mb-3" />
+                                            <p>No matching orders found.</p>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : (
@@ -398,7 +434,7 @@ const OrderManagement = () => {
                                         <td className="p-4 text-gray-500 text-sm">
                                             <div className="flex items-center gap-1">
                                                 <Calendar size={14} />
-                                                {new Date(order.created_at).toLocaleDateString('vi-VN')}
+                                                {new Date(order.created_at).toLocaleDateString('en-US')}
                                             </div>
                                         </td>
                                         <td className="p-4 text-center font-medium text-gray-700">
@@ -415,25 +451,25 @@ const OrderManagement = () => {
                                                 {/* Action buttons theo status */}
                                                 {order.status?.toLowerCase() === 'pending' && (
                                                     <button
-                                                        onClick={() => handleStatusUpdate(order.order_id, 'paid', 'Xác nhận đơn hàng')}
+                                                        onClick={() => handleStatusUpdate(order.order_id, 'paid', 'Confirm Order')}
                                                         className="px-3 py-1.5 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 transition flex items-center gap-1 font-medium"
                                                     >
-                                                        Xác nhận
+                                                        Confirm
                                                     </button>
                                                 )}
                                                 {order.status?.toLowerCase() === 'paid' && (
                                                     <button
-                                                        onClick={() => handleStatusUpdate(order.order_id, 'shipped', 'Gửi hàng')}
+                                                        onClick={() => handleStatusUpdate(order.order_id, 'shipped', 'Ship Order')}
                                                         className="px-3 py-1.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition flex items-center gap-1 font-medium"
                                                     >
-                                                        Gửi hàng
+                                                        Ship
                                                     </button>
                                                 )}
                                                 <button 
                                                     onClick={() => setSelectedOrder(order)}
                                                     className="px-3 py-1.5 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition flex items-center gap-1 font-medium"
                                                 >
-                                                    <Eye size={16} /> Xem
+                                                    <Eye size={16} /> View
                                                 </button>
                                             </div>
                                         </td>

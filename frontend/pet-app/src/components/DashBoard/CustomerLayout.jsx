@@ -63,9 +63,11 @@ const CustomerLayout = ({ children, currentPage = "dashboard" }) => {
   // Only show role-based buttons if user is logged in AND not on vendor routes
   const isVendorRoute = location.pathname.startsWith('/vendor');
   const isAdmin = !isVendorRoute && user?.role === 'admin';
-  const isVendor = !isVendorRoute && (user?.role === 'vendor' || user?.vendor);
-  // Admin can have vendor data - check both user.vendor object and vendor_id
-  const hasVendorData = !isVendorRoute && (user?.vendor || (isAdmin && (user?.vendor || user?.vendor_id)));
+  // Use role field primarily - only show vendor button if role === 'vendor'
+  // For admin with vendor data, check vendor table data as secondary consideration
+  const isVendor = !isVendorRoute && user?.role === 'vendor';
+  // Admin can have vendor data - check vendor table data for admin users
+  const hasVendorData = !isVendorRoute && isAdmin && (user?.vendor || user?.vendor_id);
   const avatarUrl = getAvatarUrl(user);
 
   return (
@@ -102,7 +104,7 @@ const CustomerLayout = ({ children, currentPage = "dashboard" }) => {
                 />
               </Link>
               <div>
-                <p className="text-gray-900 font-semibold">{user?.full_name || "Khách"}</p>
+                <p className="text-gray-900 font-semibold">{user?.full_name || "Guest"}</p>
               </div>
             </div>
 
@@ -146,7 +148,8 @@ const CustomerLayout = ({ children, currentPage = "dashboard" }) => {
                   )}
                 </>
               )}
-              {isVendor && !isAdmin && (
+              {/* Show Vendor Management button if user has vendor role */}
+              {isVendor && (
                 <button
                   onClick={() => navigate("/vendor/dashboard")}
                   className="w-full flex items-center space-x-2 text-left px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
@@ -161,7 +164,7 @@ const CustomerLayout = ({ children, currentPage = "dashboard" }) => {
                 className="w-full flex items-center space-x-2 text-left px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
               >
                 <Home size={18} />
-                <span>Về trang chủ</span>
+                <span>Back to Home</span>
               </button>
               {/* Chat button */}
               <button 

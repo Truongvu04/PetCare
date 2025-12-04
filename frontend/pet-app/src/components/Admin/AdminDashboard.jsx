@@ -28,7 +28,7 @@ const AdminDashboard = () => {
             }
         } catch (err) {
             console.error("Error fetching admin stats:", err);
-            showError("Lỗi", "Không thể tải thống kê");
+            showError("Error", "Failed to load statistics");
         } finally {
             setLoading(false);
         }
@@ -45,7 +45,7 @@ const AdminDashboard = () => {
         return (
             <div className="flex h-screen items-center justify-center text-gray-500 gap-2">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                <span>Đang tải thống kê...</span>
+                <span>Loading statistics...</span>
             </div>
         );
     }
@@ -54,9 +54,9 @@ const AdminDashboard = () => {
         <div className="p-6 bg-gray-50 min-h-screen animate-fade-in">
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <TrendingUp className="text-blue-600" /> Dashboard Admin
+                    <TrendingUp className="text-blue-600" /> Admin Dashboard
                 </h1>
-                <p className="text-gray-600 text-sm mt-1">Tổng quan hệ thống PetCare</p>
+                <p className="text-gray-600 text-sm mt-1">PetCare System Overview</p>
             </div>
 
             {/* Stats Cards */}
@@ -65,7 +65,7 @@ const AdminDashboard = () => {
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500 font-medium">Tổng người dùng</p>
+                            <p className="text-sm text-gray-500 font-medium">Total Users</p>
                             <p className="text-3xl font-bold text-gray-800 mt-2">{stats.totalUsers}</p>
                         </div>
                         <div className="bg-blue-100 p-3 rounded-lg">
@@ -78,7 +78,7 @@ const AdminDashboard = () => {
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500 font-medium">Tổng vendors</p>
+                            <p className="text-sm text-gray-500 font-medium">Total Vendors</p>
                             <p className="text-3xl font-bold text-gray-800 mt-2">{stats.totalVendors}</p>
                         </div>
                         <div className="bg-green-100 p-3 rounded-lg">
@@ -91,7 +91,7 @@ const AdminDashboard = () => {
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500 font-medium">Tổng đơn hàng</p>
+                            <p className="text-sm text-gray-500 font-medium">Total Orders</p>
                             <p className="text-3xl font-bold text-gray-800 mt-2">{stats.totalOrders}</p>
                         </div>
                         <div className="bg-purple-100 p-3 rounded-lg">
@@ -104,7 +104,7 @@ const AdminDashboard = () => {
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-500 font-medium">Tổng doanh thu</p>
+                            <p className="text-sm text-gray-500 font-medium">Total Revenue</p>
                             <p className="text-2xl font-bold text-gray-800 mt-2">{formatCurrency(stats.totalRevenue)}</p>
                         </div>
                         <div className="bg-yellow-100 p-3 rounded-lg">
@@ -116,7 +116,7 @@ const AdminDashboard = () => {
 
             {/* Revenue Chart */}
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                <h2 className="text-lg font-bold text-gray-800 mb-4">Doanh thu theo tháng (6 tháng gần nhất)</h2>
+                <h2 className="text-lg font-bold text-gray-800 mb-4">Monthly Revenue (Last 6 Months)</h2>
                 {chartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={chartData}>
@@ -147,7 +147,7 @@ const AdminDashboard = () => {
                                 formatter={(value) => formatCurrency(value)}
                                 labelFormatter={(label) => {
                                     const [year, month] = label.split('-');
-                                    return `Tháng ${month}/${year}`;
+                                    return `Month ${month}/${year}`;
                                 }}
                                 contentStyle={{
                                     backgroundColor: '#fff',
@@ -162,7 +162,7 @@ const AdminDashboard = () => {
                                 dataKey="revenue" 
                                 stroke="#3b82f6" 
                                 strokeWidth={2}
-                                name="Doanh thu"
+                                name="Revenue"
                                 dot={{ fill: '#3b82f6', r: 4 }}
                                 activeDot={{ r: 6 }}
                             />
@@ -170,7 +170,7 @@ const AdminDashboard = () => {
                     </ResponsiveContainer>
                 ) : (
                     <div className="flex items-center justify-center h-[300px] text-gray-500">
-                        <p>Chưa có dữ liệu doanh thu</p>
+                        <p>No revenue data yet</p>
                     </div>
                 )}
             </div>

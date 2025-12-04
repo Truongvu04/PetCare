@@ -129,12 +129,12 @@ const AccountSettings = () => {
                 platform_updates: newNotifications.pushNotif,
                 appointment_reminders: newNotifications.orderUpdates
             });
-            showSuccess("Thành công", "Đã cập nhật cài đặt thông báo");
+            showSuccess("Success", "Notification settings updated");
         } catch (err) {
             setNotifications(notifications);
-            console.error("Lỗi cập nhật notification preferences:", err);
-            const errorMessage = err.response?.data?.message || err.message || "Không thể cập nhật cài đặt thông báo";
-            showError("Lỗi", errorMessage);
+            console.error("Error updating notification preferences:", err);
+            const errorMessage = err.response?.data?.message || err.message || "Failed to update notification settings";
+            showError("Error", errorMessage);
         }
     };
 
@@ -178,7 +178,7 @@ const AccountSettings = () => {
                 });
             }
         } catch (err) {
-            console.error("Lỗi tải thông tin tài khoản:", err);
+            console.error("Error loading account information:", err);
             // Fallback to user from context
             if (user) {
                 setProfile({
@@ -196,11 +196,11 @@ const AccountSettings = () => {
     const handlePasswordChange = async (e) => {
         e.preventDefault();
         if (passData.newPassword !== passData.confirmPassword) {
-            showWarning("Lỗi", "Mật khẩu mới không khớp!");
+            showWarning("Error", "New passwords do not match!");
             return;
         }
         if (passData.newPassword.length < 6) {
-            showWarning("Lỗi", "Mật khẩu mới phải có ít nhất 6 ký tự.");
+            showWarning("Error", "New password must be at least 6 characters.");
             return;
         }
 
@@ -219,10 +219,10 @@ const AccountSettings = () => {
                     newPassword: passData.newPassword
                 });
             }
-            showSuccess("Thành công", "Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
+            showSuccess("Success", "Password changed successfully! Please login again.");
             setPassData({ oldPassword: '', newPassword: '', confirmPassword: '' });
         } catch (err) {
-            showError("Lỗi", err.response?.data?.message || err.message || "Không thể đổi mật khẩu");
+            showError("Error", err.response?.data?.message || err.message || "Failed to change password");
         } finally {
             setSaving(false);
         }
@@ -237,15 +237,15 @@ const AccountSettings = () => {
         
         // Validation: 3 fields bắt buộc
         if (!vendorRequest.store_name || vendorRequest.store_name.trim().length === 0) {
-            showWarning("Lỗi", "Vui lòng nhập tên cửa hàng");
+            showWarning("Error", "Please enter shop name");
             return;
         }
         if (!vendorRequest.phone || vendorRequest.phone.trim().length === 0) {
-            showWarning("Lỗi", "Vui lòng nhập số điện thoại");
+            showWarning("Error", "Please enter phone number");
             return;
         }
         if (!vendorRequest.address || vendorRequest.address.trim().length === 0) {
-            showWarning("Lỗi", "Vui lòng nhập địa chỉ kho");
+            showWarning("Error", "Please enter warehouse address");
             return;
         }
 
@@ -258,7 +258,7 @@ const AccountSettings = () => {
                 logo_url: vendorRequest.logo_url?.trim() || null,
                 description: vendorRequest.description?.trim() || null
             });
-            showSuccess("Thành công", "Đăng ký làm vendor thành công! Yêu cầu của bạn đang chờ admin duyệt.");
+            showSuccess("Success", "Vendor registration successful! Your request is pending admin approval.");
             setVendorStatus('pending');
             setHasVendorRecord(true); // Đã có vendor record sau khi đăng ký thành công
             setVendorRequest({ 
@@ -270,7 +270,20 @@ const AccountSettings = () => {
                 description: '' 
             });
         } catch (err) {
-            showError("Lỗi", err.response?.data?.message || err.message || "Không thể đăng ký làm vendor");
+            const errorMessage = err.response?.data?.message || err.message || "Failed to register as vendor";
+            
+            // Check if user already has vendor data - show helpful message instead of error
+            if (errorMessage.includes("đã có") || 
+                errorMessage.includes("already") || 
+                errorMessage.includes("vendor record") ||
+                errorMessage.includes("đã là vendor")) {
+                showWarning(
+                    "Vendor Account Exists", 
+                    "You already have a vendor account. If you need assistance, please contact the administrator for help."
+                );
+            } else {
+                showError("Error", errorMessage);
+            }
         } finally {
             setSubmittingVendor(false);
         }
@@ -278,7 +291,7 @@ const AccountSettings = () => {
 
     if (loading) return (
         <div className="flex h-screen items-center justify-center text-gray-500 gap-2">
-            <Loader2 className="animate-spin" /> Đang tải thông tin...
+            <Loader2 className="animate-spin" /> Loading information...
         </div>
     );
 
@@ -292,13 +305,13 @@ const AccountSettings = () => {
                         <button
                             onClick={() => navigate(-1)}
                             className="flex items-center justify-center w-10 h-10 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors text-gray-600 hover:text-gray-800"
-                            title="Quay lại"
+                            title="Back"
                         >
                             <ArrowLeft size={20} />
                         </button>
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-800">Cài đặt Tài khoản</h1>
-                            <p className="text-sm text-gray-500 mt-1">Quản lý thông tin đăng nhập và bảo mật</p>
+                            <h1 className="text-2xl font-bold text-gray-800">Account Settings</h1>
+                            <p className="text-sm text-gray-500 mt-1">Manage login information and security</p>
                         </div>
                     </div>
                     <button
@@ -306,57 +319,57 @@ const AccountSettings = () => {
                         className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm"
                     >
                         <Home size={18} />
-                        <span>Về trang chủ</span>
+                        <span>Back to Home</span>
                     </button>
                 </div>
 
                 {/* 1. Thông tin cá nhân (Read-only) */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <User size={20} className="text-blue-600" /> Thông tin Cá nhân
+                        <User size={20} className="text-blue-600" /> Personal Information
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Họ và Tên</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                             <input 
                                 type="text" value={profile.fullName} disabled 
                                 className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Email Đăng nhập</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Login Email</label>
                             <input 
                                 type="text" value={profile.email} disabled 
                                 className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                             <input 
-                                type="text" value={profile.phone || 'Chưa cập nhật'} disabled 
+                                type="text" value={profile.phone || 'Not updated'} disabled 
                                 className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Vai trò</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                             <div className="flex items-center gap-2 px-3 py-2.5 bg-blue-50 text-blue-700 rounded-lg font-medium border border-blue-100 w-fit">
                                 <Shield size={16} /> {profile.role}
                             </div>
                         </div>
                     </div>
-                    <p className="text-xs text-gray-400 mt-4 italic">* Để thay đổi thông tin cá nhân, vui lòng liên hệ Admin hoặc hỗ trợ viên.</p>
+                    <p className="text-xs text-gray-400 mt-4 italic">* To change personal information, please contact Admin or support staff.</p>
                 </div>
 
                 {/* 2. Đổi Mật khẩu */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <Lock size={20} className="text-red-600" /> Đổi Mật khẩu
+                        <Lock size={20} className="text-red-600" /> Change Password
                     </h3>
                     <form onSubmit={handlePasswordChange} className="max-w-md space-y-4">
                         
                         {/* Mật khẩu cũ */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu hiện tại</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
                             <div className="relative">
                                 <input 
                                     type={showPass.old ? "text" : "password"} 
@@ -374,7 +387,7 @@ const AccountSettings = () => {
 
                         {/* Mật khẩu mới */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu mới</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
                             <div className="relative">
                                 <input 
                                     type={showPass.new ? "text" : "password"} 
@@ -382,7 +395,7 @@ const AccountSettings = () => {
                                     value={passData.newPassword}
                                     onChange={e => setPassData({...passData, newPassword: e.target.value})}
                                     className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none pr-10"
-                                    placeholder="Tối thiểu 6 ký tự"
+                                    placeholder="Minimum 6 characters"
                                 />
                                 <button type="button" onClick={() => toggleShowPass('new')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                                     {showPass.new ? <EyeOff size={18}/> : <Eye size={18}/>}
@@ -392,7 +405,7 @@ const AccountSettings = () => {
 
                         {/* Xác nhận mật khẩu */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Xác nhận mật khẩu mới</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
                             <div className="relative">
                                 <input 
                                     type={showPass.confirm ? "text" : "password"} 
@@ -403,14 +416,14 @@ const AccountSettings = () => {
                                         ${passData.confirmPassword && passData.newPassword !== passData.confirmPassword 
                                             ? 'border-red-500 focus:ring-red-200' 
                                             : 'border-gray-300 focus:ring-red-500'}`}
-                                    placeholder="Nhập lại mật khẩu mới"
+                                    placeholder="Re-enter new password"
                                 />
                                 <button type="button" onClick={() => toggleShowPass('confirm')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                                     {showPass.confirm ? <EyeOff size={18}/> : <Eye size={18}/>}
                                 </button>
                             </div>
                             {passData.confirmPassword && passData.newPassword !== passData.confirmPassword && (
-                                <p className="text-xs text-red-500 mt-1">Mật khẩu không khớp!</p>
+                                <p className="text-xs text-red-500 mt-1">Passwords do not match!</p>
                             )}
                         </div>
 
@@ -420,7 +433,7 @@ const AccountSettings = () => {
                             className="mt-4 px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-300 font-medium flex items-center gap-2 transition-all"
                         >
                             {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                            {saving ? 'Đang xử lý...' : 'Lưu Mật Khẩu'}
+                            {saving ? 'Processing...' : 'Save Password'}
                         </button>
                     </form>
                 </div>
@@ -428,13 +441,13 @@ const AccountSettings = () => {
                 {/* 3. Cài đặt Thông báo */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <Bell size={20} className="text-yellow-500" /> Cài đặt Thông báo
+                        <Bell size={20} className="text-yellow-500" /> Notification Settings
                     </h3>
                     <div className="space-y-4 max-w-lg">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="font-medium text-gray-700">Thông báo qua Email</p>
-                                <p className="text-xs text-gray-500">Nhận email khi có đơn hàng mới hoặc tin nhắn</p>
+                                <p className="font-medium text-gray-700">Email Notifications</p>
+                                <p className="text-xs text-gray-500">Receive emails when there are new orders or messages</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input 
@@ -448,8 +461,8 @@ const AccountSettings = () => {
                         </div>
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="font-medium text-gray-700">Thông báo trên Trình duyệt</p>
-                                <p className="text-xs text-gray-500">Hiển thị popup khi bạn đang mở trang web</p>
+                                <p className="font-medium text-gray-700">Browser Notifications</p>
+                                <p className="text-xs text-gray-500">Show popup when you have the website open</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input 
@@ -468,15 +481,15 @@ const AccountSettings = () => {
                 {shouldShowVendorForm && (
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                         <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <Store size={20} className="text-green-600" /> Đăng ký làm Vendor
+                            <Store size={20} className="text-green-600" /> Register as Vendor
                         </h3>
                         
                         {vendorStatus === 'pending' && (
                             <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
                                 <AlertCircle className="text-yellow-600 shrink-0 mt-0.5" size={20} />
                                 <div>
-                                    <p className="font-medium text-yellow-800">Yêu cầu đang chờ duyệt</p>
-                                    <p className="text-sm text-yellow-700 mt-1">Yêu cầu đăng ký làm vendor của bạn đang chờ admin duyệt. Vui lòng đợi trong giây lát.</p>
+                                    <p className="font-medium text-yellow-800">Request Pending Approval</p>
+                                    <p className="text-sm text-yellow-700 mt-1">Your vendor registration request is pending admin approval. Please wait a moment.</p>
                                 </div>
                             </div>
                         )}
@@ -485,8 +498,8 @@ const AccountSettings = () => {
                             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
                                 <AlertCircle className="text-red-600 shrink-0 mt-0.5" size={20} />
                                 <div>
-                                    <p className="font-medium text-red-800">Yêu cầu đã bị từ chối</p>
-                                    <p className="text-sm text-red-700 mt-1">Yêu cầu đăng ký làm vendor của bạn đã bị từ chối. Bạn có thể đăng ký lại với thông tin mới.</p>
+                                    <p className="font-medium text-red-800">Request Rejected</p>
+                                    <p className="text-sm text-red-700 mt-1">Your vendor registration request has been rejected. You can register again with new information.</p>
                                 </div>
                             </div>
                         )}
@@ -497,12 +510,12 @@ const AccountSettings = () => {
                                     {/* Cột 1: Thông tin Cơ bản */}
                                     <div className="lg:col-span-1 space-y-5">
                                         <h3 className="font-bold text-gray-700 flex items-center gap-2 border-b pb-2">
-                                            <Tag size={18} className="text-green-600"/> Thông tin Cơ bản
+                                            <Tag size={18} className="text-green-600"/> Basic Information
                                         </h3>
                                         
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                                Tên Cửa Hàng <span className="text-red-500">*</span>
+                                                Shop Name <span className="text-red-500">*</span>
                                             </label>
                                             <input
                                                 type="text"
@@ -510,15 +523,15 @@ const AccountSettings = () => {
                                                 value={vendorRequest.store_name}
                                                 onChange={(e) => setVendorRequest({...vendorRequest, store_name: e.target.value})}
                                                 className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
-                                                placeholder="VD: Pet Shop Cưng"
+                                                placeholder="e.g., Pet Shop"
                                                 disabled={submittingVendor}
                                             />
-                                            <p className="text-xs text-gray-500 mt-1">Trường bắt buộc</p>
+                                            <p className="text-xs text-gray-500 mt-1">Required field</p>
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                                Số điện thoại <span className="text-red-500">*</span>
+                                                Phone Number <span className="text-red-500">*</span>
                                             </label>
                                             <input
                                                 type="text"
@@ -529,12 +542,12 @@ const AccountSettings = () => {
                                                 placeholder="09..."
                                                 disabled={submittingVendor}
                                             />
-                                            <p className="text-xs text-gray-500 mt-1">Trường bắt buộc</p>
+                                            <p className="text-xs text-gray-500 mt-1">Required field</p>
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                                Địa chỉ kho <span className="text-red-500">*</span>
+                                                Warehouse Address <span className="text-red-500">*</span>
                                             </label>
                                             <input
                                                 type="text"
@@ -542,17 +555,17 @@ const AccountSettings = () => {
                                                 value={vendorRequest.address}
                                                 onChange={(e) => setVendorRequest({...vendorRequest, address: e.target.value})}
                                                 className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
-                                                placeholder="Số nhà, đường, quận..."
+                                                placeholder="House number, street, district..."
                                                 disabled={submittingVendor}
                                             />
-                                            <p className="text-xs text-gray-500 mt-1">Trường bắt buộc</p>
+                                            <p className="text-xs text-gray-500 mt-1">Required field</p>
                                         </div>
                                     </div>
 
                                     {/* Cột 2: Hình ảnh & Mô tả */}
                                     <div className="lg:col-span-2 space-y-6">
                                         <h3 className="font-bold text-gray-700 flex items-center gap-2 border-b pb-2">
-                                            <Globe size={18} className="text-green-600"/> Hình ảnh & Mô tả
+                                            <Globe size={18} className="text-green-600"/> Images & Description
                                         </h3>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -605,13 +618,13 @@ const AccountSettings = () => {
 
                                         {/* Mô tả */}
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Giới thiệu cửa hàng</label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Shop Introduction</label>
                                             <textarea
                                                 rows="4"
                                                 value={vendorRequest.description}
                                                 onChange={(e) => setVendorRequest({...vendorRequest, description: e.target.value})}
                                                 className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all resize-none bg-gray-50 focus:bg-white"
-                                                placeholder="Chào mừng đến với cửa hàng của chúng tôi..."
+                                                placeholder="Welcome to our store..."
                                                 disabled={submittingVendor}
                                             />
                                         </div>
@@ -628,12 +641,12 @@ const AccountSettings = () => {
                                         {submittingVendor ? (
                                             <>
                                                 <Loader2 className="w-5 h-5 animate-spin" />
-                                                Đang gửi...
+                                                Submitting...
                                             </>
                                         ) : (
                                             <>
                                                 <Store size={20} />
-                                                Gửi yêu cầu đăng ký
+                                                Submit Registration Request
                                             </>
                                         )}
                                     </button>

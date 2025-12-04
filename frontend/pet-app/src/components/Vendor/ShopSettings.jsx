@@ -33,8 +33,8 @@ const ShopSettings = () => {
                 bannerUrl: '', // banner_url không tồn tại trong database
             });
         } catch (err) {
-            console.error("Lỗi tải profile:", err);
-            setMessage({ type: 'error', text: 'Không thể tải thông tin shop.' });
+            console.error("Error loading profile:", err);
+            setMessage({ type: 'error', text: 'Failed to load shop information.' });
         } finally {
             setLoading(false);
         }
@@ -62,17 +62,17 @@ const ShopSettings = () => {
 
         // Validation: 3 fields bắt buộc
         if (!profile.vendorName || profile.vendorName.trim().length === 0) {
-            setMessage({ type: 'error', text: 'Vui lòng nhập tên cửa hàng' });
+            setMessage({ type: 'error', text: 'Please enter shop name' });
             setSaving(false);
             return;
         }
         if (!profile.phone || profile.phone.trim().length === 0) {
-            setMessage({ type: 'error', text: 'Vui lòng nhập số điện thoại' });
+            setMessage({ type: 'error', text: 'Please enter phone number' });
             setSaving(false);
             return;
         }
         if (!profile.address || profile.address.trim().length === 0) {
-            setMessage({ type: 'error', text: 'Vui lòng nhập địa chỉ kho' });
+            setMessage({ type: 'error', text: 'Please enter warehouse address' });
             setSaving(false);
             return;
         }
@@ -96,7 +96,7 @@ const ShopSettings = () => {
         try {
             // Gọi API cập nhật
             await apiUpdateVendorProfile(payload);
-            setMessage({ type: 'success', text: 'Cập nhật thông tin thành công!' });
+            setMessage({ type: 'success', text: 'Information updated successfully!' });
             
             // Load lại dữ liệu để đảm bảo đồng bộ
             await fetchProfile(); 
@@ -109,7 +109,7 @@ const ShopSettings = () => {
         } catch (err) {
             // Hiển thị lỗi chi tiết từ backend nếu có
             const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message;
-            setMessage({ type: 'error', text: 'Lỗi: ' + errorMessage });
+            setMessage({ type: 'error', text: 'Error: ' + errorMessage });
         } finally {
             setSaving(false);
         }
@@ -134,8 +134,8 @@ const ShopSettings = () => {
                         <Store className="text-green-600" size={32} />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800">Cài đặt Cửa hàng</h1>
-                        <p className="text-sm text-gray-500 mt-1">Quản lý thông tin hiển thị, hình ảnh và vận chuyển</p>
+                        <h1 className="text-2xl font-bold text-gray-800">Shop Settings</h1>
+                        <p className="text-sm text-gray-500 mt-1">Manage display information, images, and shipping</p>
                     </div>
                 </div>
 
@@ -154,24 +154,24 @@ const ShopSettings = () => {
                         {/* Cột 1: Thông tin chung */}
                         <div className="lg:col-span-1 space-y-5">
                             <h3 className="font-bold text-gray-700 flex items-center gap-2 border-b pb-2">
-                                <Tag size={18} className="text-green-600"/> Thông tin Cơ bản
+                                <Tag size={18} className="text-green-600"/> Basic Information
                             </h3>
                             
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                    Tên Cửa Hàng <span className="text-red-500">*</span>
+                                    Shop Name <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text" name="vendorName" required
                                     value={profile.vendorName} onChange={handleChange}
                                     className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
-                                    placeholder="VD: Pet Shop Cưng"
+                                    placeholder="e.g., Pet Shop Cưng"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Trường bắt buộc</p>
+                                <p className="text-xs text-gray-500 mt-1">Required field</p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                    Số điện thoại <span className="text-red-500">*</span>
+                                    Phone Number <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text" name="phone" required
@@ -179,26 +179,26 @@ const ShopSettings = () => {
                                     className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
                                     placeholder="09..."
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Trường bắt buộc</p>
+                                <p className="text-xs text-gray-500 mt-1">Required field</p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                    Địa chỉ kho <span className="text-red-500">*</span>
+                                    Warehouse Address <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text" name="address" required
                                     value={profile.address} onChange={handleChange}
                                     className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all bg-gray-50 focus:bg-white"
-                                    placeholder="Số nhà, đường, quận..."
+                                    placeholder="House number, street, district..."
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Trường bắt buộc</p>
+                                <p className="text-xs text-gray-500 mt-1">Required field</p>
                             </div>
                         </div>
 
                         {/* Cột 2: Hình ảnh & Mô tả */}
                         <div className="lg:col-span-2 space-y-6">
                             <h3 className="font-bold text-gray-700 flex items-center gap-2 border-b pb-2">
-                                <Globe size={18} className="text-green-600"/> Hình ảnh & Mô tả
+                                <Globe size={18} className="text-green-600"/> Images & Description
                             </h3>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -239,12 +239,12 @@ const ShopSettings = () => {
 
                             {/* Mô tả */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Giới thiệu cửa hàng</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Shop Introduction</label>
                                 <textarea
                                     name="description" rows="4"
                                     value={profile.description} onChange={handleChange}
                                     className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all resize-none bg-gray-50 focus:bg-white"
-                                    placeholder="Chào mừng đến với cửa hàng của chúng tôi..."
+                                    placeholder="Welcome to our shop..."
                                 />
                             </div>
                         </div>
@@ -258,7 +258,7 @@ const ShopSettings = () => {
                             className="px-8 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 disabled:bg-green-300 transition-all shadow-lg shadow-green-200 flex items-center gap-2 active:scale-95 transform"
                         >
                             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save size={20} />}
-                            {saving ? 'Đang lưu...' : 'Lưu Thay Đổi'}
+                            {saving ? 'Saving...' : 'Save Changes'}
                         </button>
                     </div>
                 </form>

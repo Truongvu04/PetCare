@@ -30,9 +30,9 @@ const Cart = () => {
   }
   
   const subtotalAfterDiscount = subtotalRaw - discountAmount;
-  const tax = subtotalAfterDiscount * 0.1; // Tax in smallest unit (on discounted amount)
+  const tax = 0; // Tax removed - no tax applied to orders
   const shipping = subtotalAfterDiscount > 100000 ? 0 : 30000; // Shipping in smallest unit
-  const total = subtotalAfterDiscount + tax + shipping; // Total in smallest unit
+  const total = subtotalAfterDiscount + shipping; // Total without tax
 
   const [showConfirmation, setShowConfirmation] = React.useState(false);
 
@@ -262,16 +262,11 @@ const Cart = () => {
                 <span>Phí vận chuyển</span>
                 <span className="font-medium text-green-600">{shipping === 0 ? "Miễn phí" : `${shipping.toLocaleString("vi-VN")} VND`}</span>
               </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Thuế ước tính</span>
-                <span className="font-medium">{tax.toLocaleString("vi-VN")} VND</span>
-              </div>
               <div className="h-px bg-gray-100 my-4"></div>
               <div className="flex justify-between items-end">
                 <span className="text-lg font-bold text-gray-900">Tổng cộng</span>
                 <div className="text-right">
                   <span className="text-2xl font-bold text-green-700">{total.toLocaleString("vi-VN")} VND</span>
-                  <p className="text-xs text-gray-400 mt-1">Đã bao gồm VAT</p>
                 </div>
               </div>
             </div>

@@ -58,7 +58,7 @@ const CouponModal = ({ coupon, onClose, onSave, isSaving }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 className="text-lg font-bold text-gray-800">{coupon ? 'Chi tiết Mã Giảm Giá' : 'Tạo Mã Mới'}</h3>
+                    <h3 className="text-lg font-bold text-gray-800">{coupon ? 'Coupon Details' : 'Create New Code'}</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
                         <X size={24} />
                     </button>
@@ -66,7 +66,7 @@ const CouponModal = ({ coupon, onClose, onSave, isSaving }) => {
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-5">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Mã Coupon (Code)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Coupon Code</label>
                         <div className="relative">
                             <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                             <input
@@ -81,17 +81,17 @@ const CouponModal = ({ coupon, onClose, onSave, isSaving }) => {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Loại giảm giá</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Discount Type</label>
                             <select
                                 name="discountType" value={formData.discountType} onChange={handleChange}
                                 className="w-full py-2.5 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none bg-white"
                             >
-                                <option value="PERCENTAGE">Phần trăm (%)</option>
+                                <option value="PERCENTAGE">Percentage (%)</option>
                                 {/* Backend hiện tại ưu tiên % (discount_percent), nên Fixed tạm thời chưa hỗ trợ sâu */}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Giá trị giảm</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Discount Value</label>
                             <div className="relative">
                                 <Percent className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                 <input
@@ -105,7 +105,7 @@ const CouponModal = ({ coupon, onClose, onSave, isSaving }) => {
 
                     <div className="grid grid-cols-1 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Đơn tối thiểu (VNĐ)</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Order (VND)</label>
                             <input
                                 type="number" name="minOrderValue" min="0"
                                 value={formData.minOrderValue} onChange={handleChange}
@@ -115,7 +115,7 @@ const CouponModal = ({ coupon, onClose, onSave, isSaving }) => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Ngày hết hạn</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
                         <div className="relative">
                             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                             <input
@@ -133,7 +133,7 @@ const CouponModal = ({ coupon, onClose, onSave, isSaving }) => {
                             className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium transition-colors"
                             disabled={isSaving}
                         >
-                            Hủy
+                            Cancel
                         </button>
                         {/* Chỉ hiện nút Lưu khi tạo mới, vì backend chưa có API update coupon hoàn chỉnh */}
                         {!coupon && (
@@ -143,7 +143,7 @@ const CouponModal = ({ coupon, onClose, onSave, isSaving }) => {
                                 disabled={isSaving}
                             >
                                 {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                                {isSaving ? 'Đang lưu...' : 'Tạo mới'}
+                                {isSaving ? 'Saving...' : 'Create'}
                             </button>
                         )}
                     </div>
@@ -168,7 +168,7 @@ const CouponManagement = () => {
             const res = await apiGetVendorCoupons();
             setCoupons(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
-            console.error("Lỗi tải coupons:", err);
+            console.error("Error loading coupons:", err);
         } finally {
             setLoading(false);
         }
@@ -183,24 +183,24 @@ const CouponManagement = () => {
             await apiCreateCoupon(data);
             await fetchCoupons();
             setModalData({ show: false, coupon: null });
-            showSuccess("Thành công", "Tạo mã giảm giá thành công!");
+            showSuccess("Success", "Coupon created successfully!");
         } catch (err) {
-            showError("Lỗi", err.response?.data?.message || err.message);
+            showError("Error", err.response?.data?.message || err.message);
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async (id) => {
-        const result = await showConfirm("Xóa mã giảm giá", "Bạn có chắc chắn muốn xóa mã giảm giá này?");
+        const result = await showConfirm("Delete Coupon", "Are you sure you want to delete this coupon?");
         if (!result.isConfirmed) return;
         try {
             // Gọi API xóa thật (dựa vào coupon_id)
             await apiDeleteCoupon(id);
             setCoupons(prev => prev.filter(c => c.coupon_id !== id)); // Lưu ý: Database dùng coupon_id
-            showSuccess("Thành công", "Đã xóa mã giảm giá thành công!");
+            showSuccess("Success", "Coupon deleted successfully!");
         } catch (err) {
-            showError("Lỗi", "Không thể xóa: " + err.message);
+            showError("Error", "Failed to delete: " + err.message);
         }
     };
 
@@ -208,8 +208,8 @@ const CouponManagement = () => {
         const now = new Date();
         const expiry = new Date(coupon.end_date); // DB dùng end_date
         const isExpired = expiry < now;
-        if (isExpired) return { label: 'Hết hạn', class: 'bg-red-100 text-red-700 border-red-200' };
-        return { label: 'Đang chạy', class: 'bg-green-100 text-green-700 border-green-200' };
+        if (isExpired) return { label: 'Expired', class: 'bg-red-100 text-red-700 border-red-200' };
+        return { label: 'Active', class: 'bg-green-100 text-green-700 border-green-200' };
     };
 
     const filteredCoupons = coupons.filter(c => c.code?.toLowerCase().includes(filter.toLowerCase()));
@@ -220,15 +220,15 @@ const CouponManagement = () => {
                 <div>
                     <div className="flex items-center gap-2">
                         <Tag className="text-green-600" size={24} />
-                        <h1 className="text-2xl font-bold text-gray-800">Quản lý Mã Giảm Giá</h1>
+                        <h1 className="text-2xl font-bold text-gray-800">Coupon Management</h1>
                     </div>
-                    <p className="mt-1 text-gray-600 text-sm">Tạo và quản lý các chương trình khuyến mãi cho khách hàng</p>
+                    <p className="mt-1 text-gray-600 text-sm">Create and manage promotional campaigns for customers</p>
                 </div>
                 <button
                     onClick={() => setModalData({ show: true, coupon: null })}
                     className="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 font-medium shadow-md shadow-green-200 transition-colors"
                 >
-                    <Plus size={20} /> Tạo Mã Mới
+                    <Plus size={20} /> Create New Code
                 </button>
             </div>
 
@@ -237,7 +237,7 @@ const CouponManagement = () => {
                 <input
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
-                    placeholder="Tìm kiếm mã coupon..."
+                    placeholder="Search coupon code..."
                     className="w-full pl-10 p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none bg-white shadow-sm transition-all"
                 />
             </div>
@@ -247,19 +247,19 @@ const CouponManagement = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mã Code</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Giảm giá</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Điều kiện</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Hạn dùng</th>
-                                <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                                <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Hành động</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Code</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Discount</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Condition</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Expiry</th>
+                                <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-100">
                             {loading ? (
-                                <tr><td colSpan="6" className="p-12 text-center text-gray-500"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-green-500" />Đang tải dữ liệu...</td></tr>
+                                <tr><td colSpan="6" className="p-12 text-center text-gray-500"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-green-500" />Loading data...</td></tr>
                             ) : filteredCoupons.length === 0 ? (
-                                <tr><td colSpan="6" className="p-12 text-center text-gray-500 italic">Chưa có mã giảm giá nào.</td></tr>
+                                <tr><td colSpan="6" className="p-12 text-center text-gray-500 italic">No coupons yet.</td></tr>
                             ) : (
                                 filteredCoupons.map(coupon => {
                                     const status = getStatus(coupon);
@@ -272,10 +272,10 @@ const CouponManagement = () => {
                                                 <span className="text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded">-{coupon.discount_percent}%</span>
                                             </td>
                                             <td className="px-6 py-4 text-gray-600 whitespace-nowrap text-sm">
-                                                {coupon.rule_condition || "Không có"}
+                                                {coupon.rule_condition || "None"}
                                             </td>
                                             <td className="px-6 py-4 text-gray-600 whitespace-nowrap text-sm">
-                                                {coupon.end_date ? new Date(coupon.end_date).toLocaleDateString('vi-VN') : "Vô thời hạn"}
+                                                {coupon.end_date ? new Date(coupon.end_date).toLocaleDateString('en-US') : "Unlimited"}
                                             </td>
                                             <td className="px-6 py-4 text-center whitespace-nowrap">
                                                 <span className={`px-2.5 py-1 text-xs font-semibold rounded-full border ${status.class}`}>
@@ -288,14 +288,14 @@ const CouponManagement = () => {
                                                     <button
                                                         onClick={() => setModalData({ show: true, coupon: coupon })}
                                                         className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                                                        title="Xem chi tiết"
+                                                        title="View Details"
                                                     >
                                                         <Edit size={16} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(coupon.coupon_id)}
                                                         className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                                                        title="Xóa"
+                                                        title="Delete"
                                                     >
                                                         <Trash2 size={16} />
                                                     </button>

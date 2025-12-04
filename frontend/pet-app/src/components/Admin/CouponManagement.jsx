@@ -43,7 +43,7 @@ const CouponModal = ({ coupon, onClose, onSave, isSaving }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.code) {
-      showToast("Vui lòng nhập mã coupon", "error");
+      showToast("Please enter coupon code", "error");
       return;
     }
     onSave(formData);
@@ -54,7 +54,7 @@ const CouponModal = ({ coupon, onClose, onSave, isSaving }) => {
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
           <h3 className="text-lg font-bold text-gray-800">
-            {coupon ? "Chỉnh sửa Coupon" : "Tạo Coupon mới"}
+            {coupon ? "Edit Coupon" : "Create New Coupon"}
           </h3>
           <button
             onClick={onClose}
@@ -67,12 +67,12 @@ const CouponModal = ({ coupon, onClose, onSave, isSaving }) => {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
             <p className="text-sm text-blue-800 font-medium">
-              ℹ️ Coupon này sẽ áp dụng cho <strong>tất cả sản phẩm</strong> của mọi vendor trong hệ thống.
+              ℹ️ This coupon will apply to <strong>all products</strong> from every vendor in the system.
             </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Mã Coupon *
+              Coupon Code *
             </label>
             <input
               type="text"
@@ -89,7 +89,7 @@ const CouponModal = ({ coupon, onClose, onSave, isSaving }) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Giảm % (nếu có)
+                Discount % (if any)
               </label>
               <input
                 type="number"
@@ -103,7 +103,7 @@ const CouponModal = ({ coupon, onClose, onSave, isSaving }) => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Giảm số tiền (nếu có)
+                Discount Amount (if any)
               </label>
               <input
                 type="number"
@@ -118,7 +118,7 @@ const CouponModal = ({ coupon, onClose, onSave, isSaving }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Điều kiện (VD: Min: 100000)
+              Condition (e.g., Min: 100000)
             </label>
             <input
               type="text"
@@ -162,14 +162,14 @@ const CouponModal = ({ coupon, onClose, onSave, isSaving }) => {
               onClick={onClose}
               className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
             >
-              Hủy
+              Cancel
             </button>
             <button
               type="submit"
               disabled={isSaving}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
             >
-              {isSaving ? "Đang lưu..." : "Lưu"}
+              {isSaving ? "Saving..." : "Save"}
             </button>
           </div>
         </form>
@@ -199,7 +199,7 @@ const AdminCouponManagement = () => {
       setCoupons(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Error fetching coupons:", err);
-      showToast("Không thể tải danh sách coupon", "error");
+      showToast("Failed to load coupon list", "error");
     } finally {
       setLoading(false);
     }
@@ -216,16 +216,16 @@ const AdminCouponManagement = () => {
   };
 
   const handleDelete = async (couponId) => {
-    const result = await showConfirm("Xóa coupon", "Bạn có chắc chắn muốn xóa coupon này?");
+    const result = await showConfirm("Delete Coupon", "Are you sure you want to delete this coupon?");
     if (!result.isConfirmed) return;
 
     try {
       await api.delete(`/coupons/admin/${couponId}`);
-      showToast("Đã xóa coupon thành công", "success");
+      showToast("Coupon deleted successfully", "success");
       fetchCoupons();
     } catch (err) {
       console.error("Error deleting coupon:", err);
-      showToast("Không thể xóa coupon", "error");
+      showToast("Failed to delete coupon", "error");
     }
   };
 
@@ -240,10 +240,10 @@ const AdminCouponManagement = () => {
       
       if (editingCoupon) {
         await api.put(`/coupons/admin/${editingCoupon.coupon_id}`, adminCouponData);
-        showToast("Đã cập nhật coupon thành công", "success");
+        showToast("Coupon updated successfully", "success");
       } else {
         await api.post("/coupons/admin/create", adminCouponData);
-        showToast("Đã tạo coupon thành công", "success");
+        showToast("Coupon created successfully", "success");
       }
       setShowModal(false);
       setEditingCoupon(null);
@@ -251,7 +251,7 @@ const AdminCouponManagement = () => {
     } catch (err) {
       console.error("Error saving coupon:", err);
       showToast(
-        err.response?.data?.error || "Không thể lưu coupon",
+        err.response?.data?.error || "Failed to save coupon",
         "error"
       );
     } finally {
@@ -262,7 +262,7 @@ const AdminCouponManagement = () => {
   if (!user || user.role !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-red-600">Bạn không có quyền truy cập trang này</p>
+        <p className="text-red-600">You don't have permission to access this page</p>
       </div>
     );
   }
@@ -270,7 +270,7 @@ const AdminCouponManagement = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Đang tải...</p>
+        <p className="text-gray-500">Loading...</p>
       </div>
     );
   }
@@ -281,10 +281,10 @@ const AdminCouponManagement = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
-              Quản lý Coupon
+              Coupon Management
             </h1>
             <p className="text-sm text-gray-600">
-              Quản lý tất cả các mã giảm giá trong hệ thống
+              Manage all discount codes in the system
             </p>
           </div>
           <button
@@ -292,7 +292,7 @@ const AdminCouponManagement = () => {
             className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2"
           >
             <Plus size={20} />
-            Tạo Coupon mới
+            Create New Coupon
           </button>
         </div>
 
@@ -302,25 +302,25 @@ const AdminCouponManagement = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Mã
+                  Code
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Giảm giá
+                  Discount
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Vendor
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ngày bắt đầu
+                  Start Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ngày kết thúc
+                  End Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Đã sử dụng
+                  Used
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Hành động
+                  Action
                 </th>
               </tr>
             </thead>
@@ -328,7 +328,7 @@ const AdminCouponManagement = () => {
               {coupons.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
-                    Chưa có coupon nào
+                    No coupons yet
                   </td>
                 </tr>
               ) : (
@@ -351,15 +351,15 @@ const AdminCouponManagement = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {coupon.vendors?.store_name || "Tất cả"}
+                      {coupon.vendors?.store_name || "All"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {coupon.start_date
                         ? formatDate(coupon.start_date)
-                        : "Không giới hạn"}
+                        : "Unlimited"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {coupon.end_date ? formatDate(coupon.end_date) : "Không giới hạn"}
+                      {coupon.end_date ? formatDate(coupon.end_date) : "Unlimited"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {coupon.usage_count || 0}

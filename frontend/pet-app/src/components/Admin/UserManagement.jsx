@@ -41,7 +41,7 @@ const UserManagement = () => {
             }
         } catch (err) {
             console.error("Error fetching users:", err);
-            showError("Lỗi", "Không thể tải danh sách người dùng");
+            showError("Error", "Failed to load user list");
         } finally {
             setLoading(false);
         }
@@ -57,7 +57,7 @@ const UserManagement = () => {
             }
         } catch (err) {
             console.error("Error fetching user details:", err);
-            showError("Lỗi", "Không thể tải thông tin người dùng");
+            showError("Error", "Failed to load user information");
         }
     };
 
@@ -66,15 +66,15 @@ const UserManagement = () => {
 
         // Validation
         if (!editingUser.full_name || editingUser.full_name.trim() === '') {
-            showError("Lỗi", "Tên không được để trống");
+            showError("Error", "Name cannot be empty");
             return;
         }
         if (!editingUser.email || editingUser.email.trim() === '') {
-            showError("Lỗi", "Email không được để trống");
+            showError("Error", "Email cannot be empty");
             return;
         }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editingUser.email)) {
-            showError("Lỗi", "Email không hợp lệ");
+            showError("Error", "Invalid email");
             return;
         }
 
@@ -86,12 +86,12 @@ const UserManagement = () => {
                 phone: editingUser.phone?.trim() || null,
                 role: editingUser.role
             });
-            showSuccess("Thành công", "Đã cập nhật thông tin người dùng thành công");
+            showSuccess("Success", "User information updated successfully");
             setShowUserModal(false);
             fetchUsers(); // Refresh list
         } catch (err) {
             console.error("Error updating user:", err);
-            showError("Lỗi", err.response?.data?.message || "Không thể cập nhật thông tin người dùng");
+            showError("Error", err.response?.data?.message || "Failed to update user information");
         } finally {
             setSaving(false);
         }
@@ -99,20 +99,20 @@ const UserManagement = () => {
 
     const handleToggleStatus = async (userId, currentStatus) => {
         const newStatus = !currentStatus;
-        const action = newStatus ? 'mở khóa' : 'khóa';
-        const actionText = newStatus ? 'Mở khóa' : 'Khóa';
+        const action = newStatus ? 'unlock' : 'lock';
+        const actionText = newStatus ? 'Unlock' : 'Lock';
 
         // Không cho phép khóa chính mình
         if (userId === currentUser?.user_id) {
-            showError("Lỗi", "Bạn không thể khóa chính mình");
+            showError("Error", "You cannot lock yourself");
             return;
         }
 
         const result = await showConfirm(
-            `${actionText} tài khoản`,
-            `Bạn có chắc chắn muốn ${action} tài khoản này không?`,
+            `${actionText} Account`,
+            `Are you sure you want to ${action} this account?`,
             actionText,
-            'Hủy'
+            'Cancel'
         );
 
         if (!result.isConfirmed) return;
@@ -120,7 +120,7 @@ const UserManagement = () => {
         try {
             setUpdating(userId);
             await apiUpdateUserStatus(userId, newStatus);
-            showSuccess("Thành công", `Đã ${action} tài khoản thành công`);
+            showSuccess("Success", `Account ${action}ed successfully`);
             
             // Update selectedUser và editingUser nếu đang mở modal
             if (selectedUser && selectedUser.user_id === userId) {
@@ -131,7 +131,7 @@ const UserManagement = () => {
             fetchUsers(); // Refresh list
         } catch (err) {
             console.error("Error updating user status:", err);
-            showError("Lỗi", err.response?.data?.message || `Không thể ${action} tài khoản`);
+            showError("Error", err.response?.data?.message || `Failed to ${action} account`);
         } finally {
             setUpdating(null);
         }
@@ -159,7 +159,7 @@ const UserManagement = () => {
         return (
             <div className="flex h-screen items-center justify-center text-gray-500 gap-2">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                <span>Đang tải danh sách người dùng...</span>
+                <span>Loading user list...</span>
             </div>
         );
     }
@@ -168,9 +168,9 @@ const UserManagement = () => {
         <div className="p-6 bg-gray-50 min-h-screen animate-fade-in">
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <Users className="text-blue-600" /> Quản lý người dùng
+                    <Users className="text-blue-600" /> User Management
                 </h1>
-                <p className="text-gray-600 text-sm mt-1">Xem và quản lý tất cả người dùng trong hệ thống</p>
+                <p className="text-gray-600 text-sm mt-1">View and manage all users in the system</p>
             </div>
 
             {/* Search & Filter */}
@@ -179,7 +179,7 @@ const UserManagement = () => {
                     <Search className="text-gray-400 ml-2" size={20} />
                     <input
                         type="text"
-                        placeholder="Tìm theo tên hoặc email..."
+                        placeholder="Search by name or email..."
                         className="w-full ml-3 outline-none text-gray-700 bg-transparent"
                         value={searchTerm}
                         onChange={(e) => {
@@ -198,7 +198,7 @@ const UserManagement = () => {
                         }}
                         className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
                     >
-                        <option value="all">Tất cả vai trò</option>
+                        <option value="all">All Roles</option>
                         <option value="admin">Admin</option>
                         <option value="vendor">Vendor</option>
                         <option value="owner">Owner</option>
@@ -212,11 +212,11 @@ const UserManagement = () => {
                     <table className="w-full text-left whitespace-nowrap">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Người dùng</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">User</th>
                                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Vai trò</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Hành động</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Role</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -224,7 +224,7 @@ const UserManagement = () => {
                                 <tr>
                                     <td colSpan="5" className="p-12 text-center text-gray-500 flex flex-col items-center justify-center w-full">
                                         <User size={48} className="text-gray-300 mb-3" />
-                                        <p>Không tìm thấy người dùng nào.</p>
+                                        <p>No users found.</p>
                                     </td>
                                 </tr>
                             ) : (
@@ -276,7 +276,7 @@ const UserManagement = () => {
                                                         ? 'bg-green-100 text-green-700 border-green-200' 
                                                         : 'bg-red-100 text-red-700 border-red-200'
                                                 }`}>
-                                                    {user.is_active ? 'Hoạt động' : 'Đã khóa'}
+                                                    {user.is_active ? 'Active' : 'Banned'}
                                                 </span>
                                             </td>
                                             <td className="p-4 text-right">
@@ -287,7 +287,7 @@ const UserManagement = () => {
                                                             handleViewUser(user.user_id);
                                                         }}
                                                         className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1 font-medium text-blue-600 bg-blue-50 hover:bg-blue-100"
-                                                        title="Xem chi tiết"
+                                                        title="View Details"
                                                     >
                                                         <Edit2 size={16} />
                                                     </button>
@@ -307,11 +307,11 @@ const UserManagement = () => {
                                                             <Loader2 className="w-4 h-4 animate-spin" />
                                                         ) : user.is_active ? (
                                                             <>
-                                                                <Ban size={16} /> Khóa
+                                                                <Ban size={16} /> Lock
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <Unlock size={16} /> Mở khóa
+                                                                <Unlock size={16} /> Unlock
                                                             </>
                                                         )}
                                                     </button>
@@ -329,7 +329,7 @@ const UserManagement = () => {
                 {totalPages > 1 && (
                     <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 flex items-center justify-between">
                         <div className="text-sm text-gray-600">
-                            Trang {page} / {totalPages}
+                            Page {page} / {totalPages}
                         </div>
                         <div className="flex gap-2">
                             <button
@@ -337,14 +337,14 @@ const UserManagement = () => {
                                 disabled={page === 1}
                                 className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Trước
+                                Previous
                             </button>
                             <button
                                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                 disabled={page === totalPages}
                                 className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Sau
+                                Next
                             </button>
                         </div>
                     </div>
@@ -362,7 +362,7 @@ const UserManagement = () => {
                                     <User className="text-blue-600" size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-800">Chi tiết người dùng</h3>
+                                    <h3 className="text-lg font-bold text-gray-800">User Details</h3>
                                     <p className="text-sm text-gray-500">ID: #{selectedUser.user_id}</p>
                                 </div>
                             </div>
@@ -399,13 +399,13 @@ const UserManagement = () => {
                                 </div>
                                 <div className="flex-1">
                                     <div className="mb-4">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Họ và Tên *</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name *</label>
                                         <input
                                             type="text"
                                             value={editingUser.full_name || ''}
                                             onChange={(e) => setEditingUser({...editingUser, full_name: e.target.value})}
                                             className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                            placeholder="Nhập họ và tên"
+                                            placeholder="Enter full name"
                                         />
                                     </div>
                                     <div className="mb-4">
@@ -415,7 +415,7 @@ const UserManagement = () => {
                                             value={editingUser.email || ''}
                                             onChange={(e) => setEditingUser({...editingUser, email: e.target.value})}
                                             className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                            placeholder="Nhập email"
+                                            placeholder="Enter email"
                                         />
                                     </div>
                                 </div>
@@ -424,17 +424,17 @@ const UserManagement = () => {
                             {/* Additional Info */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Số điện thoại</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone Number</label>
                                     <input
                                         type="text"
                                         value={editingUser.phone || ''}
                                         onChange={(e) => setEditingUser({...editingUser, phone: e.target.value})}
                                         className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                        placeholder="Nhập số điện thoại"
+                                        placeholder="Enter phone number"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Vai trò *</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Role *</label>
                                     <select
                                         value={editingUser.role || 'owner'}
                                         onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
@@ -446,7 +446,7 @@ const UserManagement = () => {
                                         <option value="admin">Admin</option>
                                     </select>
                                     {selectedUser.user_id === currentUser?.user_id && (
-                                        <p className="text-xs text-gray-500 mt-1">Bạn không thể thay đổi role của chính mình</p>
+                                        <p className="text-xs text-gray-500 mt-1">You cannot change your own role</p>
                                     )}
                                 </div>
                             </div>
@@ -454,17 +454,17 @@ const UserManagement = () => {
                             {/* Vendor Info (if applicable) */}
                             {selectedUser.vendors && selectedUser.vendors.length > 0 && (
                                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Thông tin Vendor</h4>
+                                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Vendor Information</h4>
                                     <div className="space-y-2 text-sm">
-                                        <p><span className="font-medium">Tên cửa hàng:</span> {selectedUser.vendors[0].store_name}</p>
-                                        <p><span className="font-medium">Trạng thái:</span> 
+                                        <p><span className="font-medium">Store Name:</span> {selectedUser.vendors[0].store_name}</p>
+                                        <p><span className="font-medium">Status:</span> 
                                             <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold ${
                                                 selectedUser.vendors[0].status === 'approved' ? 'bg-green-100 text-green-700' :
                                                 selectedUser.vendors[0].status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                                                 'bg-red-100 text-red-700'
                                             }`}>
-                                                {selectedUser.vendors[0].status === 'approved' ? 'Đã duyệt' :
-                                                 selectedUser.vendors[0].status === 'pending' ? 'Chờ duyệt' : 'Đã từ chối'}
+                                                {selectedUser.vendors[0].status === 'approved' ? 'Approved' :
+                                                 selectedUser.vendors[0].status === 'pending' ? 'Pending' : 'Rejected'}
                                             </span>
                                         </p>
                                     </div>
@@ -473,14 +473,14 @@ const UserManagement = () => {
 
                             {/* Status */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Trạng thái tài khoản</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Account Status</label>
                                 <div className="flex items-center gap-3">
                                     <span className={`px-3 py-1.5 text-sm font-semibold rounded-full border ${
                                         selectedUser.is_active 
                                             ? 'bg-green-100 text-green-700 border-green-200' 
                                             : 'bg-red-100 text-red-700 border-red-200'
                                     }`}>
-                                        {selectedUser.is_active ? 'Hoạt động' : 'Đã khóa'}
+                                        {selectedUser.is_active ? 'Active' : 'Banned'}
                                     </span>
                                     <button
                                         onClick={() => handleToggleStatus(selectedUser.user_id, selectedUser.is_active)}
@@ -495,11 +495,11 @@ const UserManagement = () => {
                                             <Loader2 className="w-4 h-4 animate-spin" />
                                         ) : selectedUser.is_active ? (
                                             <>
-                                                <Ban size={16} /> Khóa
+                                                <Ban size={16} /> Lock
                                             </>
                                         ) : (
                                             <>
-                                                <Unlock size={16} /> Mở khóa
+                                                <Unlock size={16} /> Unlock
                                             </>
                                         )}
                                     </button>
@@ -517,7 +517,7 @@ const UserManagement = () => {
                                 }}
                                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                             >
-                                Hủy
+                                Cancel
                             </button>
                             <button
                                 onClick={handleUpdateUser}
@@ -527,12 +527,12 @@ const UserManagement = () => {
                                 {saving ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        Đang lưu...
+                                        Saving...
                                     </>
                                 ) : (
                                     <>
                                         <Save size={16} />
-                                        Lưu thay đổi
+                                        Save Changes
                                     </>
                                 )}
                             </button>

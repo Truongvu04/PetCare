@@ -10,7 +10,7 @@ const VaccinationForm = ({ petId, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!vaccinationName.trim()) {
-      showError("Lỗi", "Vui lòng nhập tên vaccine");
+      showError("Error", "Please enter vaccine name");
       return;
     }
 
@@ -23,13 +23,13 @@ const VaccinationForm = ({ petId, onSuccess }) => {
         record_date: recordDate,
       });
 
-      showSuccess("Thành công", "Đã thêm lịch sử tiêm chủng");
+      showSuccess("Success", "Vaccination record added successfully");
       setVaccinationName("");
       setRecordDate(new Date().toISOString().split("T")[0]);
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Error creating vaccination record:", error);
-      showError("Lỗi", "Không thể thêm lịch sử tiêm chủng");
+      showError("Error", "Unable to add vaccination record");
     } finally {
       setLoading(false);
     }
@@ -37,11 +37,11 @@ const VaccinationForm = ({ petId, onSuccess }) => {
 
   return (
     <form onSubmit={handleSubmit} className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
-      <h3 className="text-lg font-semibold mb-4">Thêm lịch sử tiêm chủng</h3>
+      <h3 className="text-lg font-semibold mb-4">Add Vaccination Record</h3>
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Tên vaccine *
+            Vaccine Name *
           </label>
           <input
             type="text"
@@ -49,12 +49,12 @@ const VaccinationForm = ({ petId, onSuccess }) => {
             onChange={(e) => setVaccinationName(e.target.value)}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            placeholder="Ví dụ: Vaccine phòng dại, Vaccine 5 trong 1..."
+            placeholder="e.g., Rabies vaccine, 5-in-1 vaccine..."
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Ngày tiêm *
+            Vaccination Date *
           </label>
           <input
             type="date"
@@ -69,7 +69,7 @@ const VaccinationForm = ({ petId, onSuccess }) => {
           disabled={loading}
           className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
         >
-          {loading ? "Đang thêm..." : "Thêm lịch sử tiêm chủng"}
+          {loading ? "Adding..." : "Add Vaccination Record"}
         </button>
       </div>
     </form>

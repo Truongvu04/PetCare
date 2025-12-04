@@ -34,10 +34,10 @@ const OrderHistory = () => {
     e.stopPropagation(); // Prevent navigation when clicking the button
     
     const confirmed = await showConfirm(
-      "Xác nhận đã nhận hàng",
-      "Bạn có chắc chắn đã nhận được đơn hàng này?",
-      "Xác nhận",
-      "Hủy"
+      "Confirm Receipt",
+      "Are you sure you have received this order?",
+      "Confirm",
+      "Cancel"
     );
 
     if (!confirmed) return;
@@ -45,13 +45,13 @@ const OrderHistory = () => {
     try {
       setMarkingReceived(orderId);
       const response = await api.patch(`/orders/${orderId}/received`);
-      showSuccess("Thành công", "Đã xác nhận nhận hàng thành công!");
+      showSuccess("Success", "Order receipt confirmed successfully!");
       // Refresh orders list
       await fetchOrders();
     } catch (error) {
       console.error("Error marking order as received:", error);
-      const message = error.response?.data?.message || "Không thể xác nhận nhận hàng. Vui lòng thử lại.";
-      showError("Lỗi", message);
+      const message = error.response?.data?.message || "Failed to confirm receipt. Please try again.";
+      showError("Error", message);
     } finally {
       setMarkingReceived(null);
     }
@@ -111,7 +111,7 @@ const OrderHistory = () => {
                             ? "bg-red-100 text-red-800"
                             : "bg-yellow-100 text-yellow-800"
                         }`}>
-                        {order.status === "delivered" ? "Đã nhận hàng" : order.status === "shipped" ? "Đã giao hàng" : order.status}
+                        {order.status === "delivered" ? "Received" : order.status === "shipped" ? "Shipped" : order.status}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-6 text-sm text-gray-600">
@@ -151,12 +151,12 @@ const OrderHistory = () => {
                         {markingReceived === order.order_id ? (
                           <>
                             <Loader2 size={16} className="animate-spin" />
-                            <span>Đang xử lý...</span>
+                            <span>Processing...</span>
                           </>
                         ) : (
                           <>
                             <CheckCircle size={16} />
-                            <span>Đã nhận hàng</span>
+                            <span>Received</span>
                           </>
                         )}
                       </button>
@@ -166,7 +166,7 @@ const OrderHistory = () => {
                     {order.status === "delivered" && (
                       <div className="px-4 py-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
                         <CheckCircle size={16} className="text-green-600" />
-                        <span className="text-green-700 font-medium text-sm">Đã nhận hàng</span>
+                        <span className="text-green-700 font-medium text-sm">Received</span>
                       </div>
                     )}
                     

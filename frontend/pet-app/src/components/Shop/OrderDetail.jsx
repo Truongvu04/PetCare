@@ -102,10 +102,6 @@ const OrderDetail = () => {
             </p>
           </div>
           <div className="border-b border-gray-100 pb-4">
-            <p className="text-sm font-medium text-green-700 mb-1 uppercase tracking-wide">Tổng tiền</p>
-            <p className="text-lg font-semibold text-gray-900">{Number(order.total).toLocaleString("vi-VN")} VND</p>
-          </div>
-          <div className="border-b border-gray-100 pb-4">
             <p className="text-sm font-medium text-green-700 mb-1 uppercase tracking-wide">Payment Method</p>
             <p className="text-lg font-semibold text-gray-900 capitalize">
               {order.payment_method || "Credit Card"}
@@ -150,12 +146,52 @@ const OrderDetail = () => {
                     {item.quantity}
                   </td>
                   <td className="px-6 py-4 text-right font-medium text-green-600">
-                    {Number(item.price).toLocaleString("vi-VN")} VND
+                    {Number(item.price).toLocaleString("en-US")} VND
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Price Breakdown Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+        <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6 border-b border-gray-100 pb-4">Price Breakdown</h2>
+        <div className="space-y-3">
+          {(() => {
+            const itemsSubtotal = order.order_items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
+            const subtotalAfterDiscount = order.subtotal || itemsSubtotal;
+            const discountAmount = itemsSubtotal - subtotalAfterDiscount;
+            const shippingFee = order.shipping || 0;
+            // Tax removed - no tax applied to orders
+            const total = order.total || (subtotalAfterDiscount + shippingFee);
+            
+            return (
+              <>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-700 font-medium">Subtotal:</span>
+                  <span className="text-gray-900 font-semibold">{Number(itemsSubtotal).toLocaleString("en-US")} VND</span>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-green-600 font-medium">Discount:</span>
+                    <span className="text-green-600 font-semibold">-{Number(discountAmount).toLocaleString("en-US")} VND</span>
+                  </div>
+                )}
+                {shippingFee > 0 && (
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-700 font-medium">Shipping Fee:</span>
+                    <span className="text-gray-900 font-semibold">{Number(shippingFee).toLocaleString("en-US")} VND</span>
+                  </div>
+                )}
+                <div className="flex justify-between py-3 border-t-2 border-gray-300 mt-2">
+                  <span className="text-lg font-bold text-gray-900">Total Payment:</span>
+                  <span className="text-2xl font-bold text-green-600">{Number(total).toLocaleString("en-US")} VND</span>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
 

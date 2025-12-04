@@ -26,7 +26,7 @@ const ProductModeration = () => {
             }
         } catch (err) {
             console.error("Error fetching pending products:", err);
-            showError("Lỗi", "Không thể tải danh sách sản phẩm chờ duyệt");
+            showError("Error", "Failed to load pending products list");
         } finally {
             setLoading(false);
         }
@@ -40,10 +40,10 @@ const ProductModeration = () => {
 
     const handleApprove = async (productId) => {
         const result = await showConfirm(
-            'Duyệt sản phẩm?',
-            'Bạn có chắc chắn muốn duyệt sản phẩm này không?',
-            'Duyệt',
-            'Hủy'
+            'Approve Product?',
+            'Are you sure you want to approve this product?',
+            'Approve',
+            'Cancel'
         );
 
         if (!result.isConfirmed) return;
@@ -51,7 +51,7 @@ const ProductModeration = () => {
         try {
             setProcessing(productId);
             await apiApproveProduct(productId);
-            showSuccess("Thành công", "Đã duyệt sản phẩm thành công");
+            showSuccess("Success", "Product approved successfully");
             fetchPendingProducts(); // Refresh list
             if (selectedProduct?.product_id === productId) {
                 setShowModal(false);
@@ -59,7 +59,7 @@ const ProductModeration = () => {
             }
         } catch (err) {
             console.error("Error approving product:", err);
-            showError("Lỗi", err.response?.data?.message || "Không thể duyệt sản phẩm");
+            showError("Error", err.response?.data?.message || "Failed to approve product");
         } finally {
             setProcessing(null);
         }
@@ -67,14 +67,14 @@ const ProductModeration = () => {
 
     const handleReject = async () => {
         if (!rejectionReason.trim()) {
-            showError("Lỗi", "Vui lòng nhập lý do từ chối");
+            showError("Error", "Please enter rejection reason");
             return;
         }
 
         try {
             setProcessing(selectedProduct.product_id);
             await apiRejectProduct(selectedProduct.product_id, rejectionReason);
-            showSuccess("Thành công", "Đã từ chối sản phẩm thành công");
+            showSuccess("Success", "Product rejected successfully");
             setShowRejectModal(false);
             setRejectionReason('');
             fetchPendingProducts(); // Refresh list
@@ -82,7 +82,7 @@ const ProductModeration = () => {
             setSelectedProduct(null);
         } catch (err) {
             console.error("Error rejecting product:", err);
-            showError("Lỗi", err.response?.data?.message || "Không thể từ chối sản phẩm");
+            showError("Error", err.response?.data?.message || "Failed to reject product");
         } finally {
             setProcessing(null);
         }
@@ -113,7 +113,7 @@ const ProductModeration = () => {
         return (
             <div className="flex h-screen items-center justify-center text-gray-500 gap-2">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                <span>Đang tải danh sách sản phẩm chờ duyệt...</span>
+                <span>Loading pending products list...</span>
             </div>
         );
     }
@@ -122,16 +122,16 @@ const ProductModeration = () => {
         <div className="p-6 bg-gray-50 min-h-screen animate-fade-in">
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <Package className="text-blue-600" /> Duyệt sản phẩm
+                    <Package className="text-blue-600" /> Product Moderation
                 </h1>
-                <p className="text-gray-600 text-sm mt-1">Xem và duyệt các sản phẩm đang chờ phê duyệt</p>
+                <p className="text-gray-600 text-sm mt-1">View and approve products awaiting moderation</p>
             </div>
 
             {/* Products List */}
             {products.length === 0 ? (
                 <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-200">
                     <Package size={48} className="text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">Không có sản phẩm nào chờ duyệt</p>
+                    <p className="text-gray-500">No pending products</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -157,7 +157,7 @@ const ProductModeration = () => {
                                 <div className="p-4">
                                     <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">{product.name}</h3>
                                     <p className="text-lg font-bold text-blue-600 mb-2">
-                                        {new Intl.NumberFormat('vi-VN', {
+                                        {new Intl.NumberFormat('en-US', {
                                             style: 'currency',
                                             currency: 'VND'
                                         }).format(product.price)}
@@ -165,7 +165,7 @@ const ProductModeration = () => {
                                     <div className="flex items-center justify-between text-sm text-gray-500">
                                         <span>Vendor: {product.vendors?.store_name || 'N/A'}</span>
                                         <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
-                                            Chờ duyệt
+                                            Pending
                                         </span>
                                     </div>
                                 </div>
@@ -183,7 +183,7 @@ const ProductModeration = () => {
                         <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl flex justify-between items-start z-10">
                             <div>
                                 <h2 className="text-2xl font-bold">{selectedProduct.name}</h2>
-                                <p className="text-blue-100 text-sm mt-1">Chi tiết sản phẩm chờ duyệt</p>
+                                <p className="text-blue-100 text-sm mt-1">Pending product details</p>
                             </div>
                             <button
                                 onClick={() => {
@@ -234,21 +234,21 @@ const ProductModeration = () => {
                             {/* Product Info */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                 <div>
-                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Giá</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Price</label>
                                     <p className="text-2xl font-bold text-blue-600 mt-1">
-                                        {new Intl.NumberFormat('vi-VN', {
+                                        {new Intl.NumberFormat('en-US', {
                                             style: 'currency',
                                             currency: 'VND'
                                         }).format(selectedProduct.price)}
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tồn kho</label>
-                                    <p className="text-gray-900 font-medium mt-1">{selectedProduct.stock || 0} sản phẩm</p>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Stock</label>
+                                    <p className="text-gray-900 font-medium mt-1">{selectedProduct.stock || 0} items</p>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Danh mục</label>
-                                    <p className="text-gray-900 font-medium mt-1">{selectedProduct.category || 'Chưa phân loại'}</p>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Category</label>
+                                    <p className="text-gray-900 font-medium mt-1">{selectedProduct.category || 'Uncategorized'}</p>
                                 </div>
                                 <div>
                                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Vendor</label>
@@ -258,7 +258,7 @@ const ProductModeration = () => {
 
                             {selectedProduct.description && (
                                 <div className="mb-6">
-                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Mô tả</label>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Description</label>
                                     <p className="text-gray-700 mt-1 leading-relaxed">{selectedProduct.description}</p>
                                 </div>
                             )}
@@ -271,7 +271,7 @@ const ProductModeration = () => {
                                 disabled={processing === selectedProduct.product_id}
                                 className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-md shadow-red-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                             >
-                                <XCircle size={20} /> Từ chối
+                                <XCircle size={20} /> Reject
                             </button>
                             <button
                                 onClick={() => handleApprove(selectedProduct.product_id)}
@@ -280,11 +280,11 @@ const ProductModeration = () => {
                             >
                                 {processing === selectedProduct.product_id ? (
                                     <>
-                                        <Loader2 className="w-5 h-5 animate-spin" /> Đang xử lý...
+                                        <Loader2 className="w-5 h-5 animate-spin" /> Processing...
                                     </>
                                 ) : (
                                     <>
-                                        <CheckCircle size={20} /> Duyệt
+                                        <CheckCircle size={20} /> Approve
                                     </>
                                 )}
                             </button>
@@ -298,14 +298,14 @@ const ProductModeration = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
                         <div className="p-6 border-b border-gray-200">
-                            <h3 className="text-xl font-bold text-gray-800">Từ chối sản phẩm</h3>
-                            <p className="text-gray-600 text-sm mt-1">Vui lòng nhập lý do từ chối</p>
+                            <h3 className="text-xl font-bold text-gray-800">Reject Product</h3>
+                            <p className="text-gray-600 text-sm mt-1">Please enter rejection reason</p>
                         </div>
                         <div className="p-6">
                             <textarea
                                 value={rejectionReason}
                                 onChange={(e) => setRejectionReason(e.target.value)}
-                                placeholder="Nhập lý do từ chối sản phẩm..."
+                                placeholder="Enter product rejection reason..."
                                 className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-none"
                                 required
                             />
@@ -315,14 +315,14 @@ const ProductModeration = () => {
                                 onClick={closeRejectModal}
                                 className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                             >
-                                Hủy
+                                Cancel
                             </button>
                             <button
                                 onClick={handleReject}
                                 disabled={!rejectionReason.trim() || processing === selectedProduct?.product_id}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {processing === selectedProduct?.product_id ? 'Đang xử lý...' : 'Xác nhận từ chối'}
+                                {processing === selectedProduct?.product_id ? 'Processing...' : 'Confirm Rejection'}
                             </button>
                         </div>
                     </div>

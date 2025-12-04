@@ -11,18 +11,18 @@ const ExpenseForm = ({ pets, onSuccess, onClose }) => {
   const [loading, setLoading] = useState(false);
 
   const categories = [
-    { value: "food", label: "Thức ăn" },
-    { value: "medicine", label: "Thuốc" },
-    { value: "accessories", label: "Phụ kiện" },
-    { value: "vet_visit", label: "Khám thú y" },
-    { value: "grooming", label: "Chải chuốt" },
-    { value: "other", label: "Khác" },
+    { value: "food", label: "Food" },
+    { value: "medicine", label: "Medicine" },
+    { value: "accessories", label: "Accessories" },
+    { value: "vet_visit", label: "Vet Visit" },
+    { value: "grooming", label: "Grooming" },
+    { value: "other", label: "Other" },
   ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!petId || !category || !description.trim() || !amount || parseFloat(amount) < 1000) {
-      showError("Lỗi", "Vui lòng điền đầy đủ thông tin. Số tiền tối thiểu là 1,000 VND");
+      showError("Error", "Please fill in all fields. Minimum amount is 1,000 VND");
       return;
     }
 
@@ -36,7 +36,7 @@ const ExpenseForm = ({ pets, onSuccess, onClose }) => {
         expense_date: expenseDate,
       });
 
-      showSuccess("Thành công", "Đã thêm chi phí mới");
+      showSuccess("Success", "Expense added successfully");
       // Reset form
       setPetId("");
       setCategory("");
@@ -47,7 +47,7 @@ const ExpenseForm = ({ pets, onSuccess, onClose }) => {
       if (onClose) onClose();
     } catch (error) {
       console.error("Error creating expense:", error);
-      showError("Lỗi", "Không thể thêm chi phí");
+      showError("Error", "Unable to add expense");
     } finally {
       setLoading(false);
     }
@@ -56,11 +56,11 @@ const ExpenseForm = ({ pets, onSuccess, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">Thêm chi phí</h2>
+        <h2 className="text-xl font-bold mb-4">Add Expense</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Thú cưng *
+              Pet *
             </label>
             <select
               value={petId}
@@ -68,7 +68,7 @@ const ExpenseForm = ({ pets, onSuccess, onClose }) => {
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              <option value="">Chọn thú cưng</option>
+              <option value="">Select Pet</option>
               {pets.map((pet) => (
                 <option key={pet.id} value={pet.id}>
                   {pet.name} ({pet.species})
@@ -78,7 +78,7 @@ const ExpenseForm = ({ pets, onSuccess, onClose }) => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Danh mục *
+              Category *
             </label>
             <select
               value={category}
@@ -86,7 +86,7 @@ const ExpenseForm = ({ pets, onSuccess, onClose }) => {
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              <option value="">Chọn danh mục</option>
+              <option value="">Select Category</option>
               {categories.map((cat) => (
                 <option key={cat.value} value={cat.value}>
                   {cat.label}
@@ -96,7 +96,7 @@ const ExpenseForm = ({ pets, onSuccess, onClose }) => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Mô tả *
+              Description *
             </label>
             <input
               type="text"
@@ -104,12 +104,12 @@ const ExpenseForm = ({ pets, onSuccess, onClose }) => {
               onChange={(e) => setDescription(e.target.value)}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="Nhập mô tả chi phí"
+              placeholder="Enter expense description"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Số tiền (VND) *
+              Amount (VND) *
             </label>
             <input
               type="number"
@@ -119,12 +119,12 @@ const ExpenseForm = ({ pets, onSuccess, onClose }) => {
               onChange={(e) => setAmount(e.target.value)}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="Nhập số tiền (VND)"
+              placeholder="Enter amount (VND)"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ngày *
+              Date *
             </label>
             <input
               type="date"
@@ -140,14 +140,14 @@ const ExpenseForm = ({ pets, onSuccess, onClose }) => {
               onClick={onClose}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
             >
-              Hủy
+              Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
               className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
             >
-              {loading ? "Đang thêm..." : "Thêm"}
+              {loading ? "Adding..." : "Add"}
             </button>
           </div>
         </form>

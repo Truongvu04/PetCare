@@ -21,8 +21,8 @@ const VendorManagement = () => {
             const res = await apiGetPendingVendors();
             setVendors(res.data.vendors || []);
         } catch (err) {
-            console.error("Lỗi tải danh sách vendor:", err);
-            showError("Lỗi", "Không thể tải danh sách vendor chờ duyệt");
+            console.error("Error loading vendor list:", err);
+            showError("Error", "Failed to load pending vendor list");
         } finally {
             setLoading(false);
         }
@@ -30,10 +30,10 @@ const VendorManagement = () => {
 
     const handleApprove = async (vendorId) => {
         const result = await showConfirm(
-            'Duyệt Vendor',
-            'Bạn có chắc chắn muốn duyệt vendor này?',
-            'Duyệt',
-            'Hủy'
+            'Approve Vendor',
+            'Are you sure you want to approve this vendor?',
+            'Approve',
+            'Cancel'
         );
 
         if (!result.isConfirmed) return;
@@ -41,10 +41,10 @@ const VendorManagement = () => {
         try {
             setProcessing(vendorId);
             await apiApproveVendor(vendorId);
-            showSuccess("Thành công", "Đã duyệt vendor thành công");
+            showSuccess("Success", "Vendor approved successfully");
             await fetchPendingVendors();
         } catch (err) {
-            showError("Lỗi", err.response?.data?.message || "Không thể duyệt vendor");
+            showError("Error", err.response?.data?.message || "Failed to approve vendor");
         } finally {
             setProcessing(null);
         }
@@ -58,20 +58,20 @@ const VendorManagement = () => {
 
     const handleRejectSubmit = async () => {
         if (!rejectReason || rejectReason.trim().length === 0) {
-            showError("Lỗi", "Vui lòng nhập lý do từ chối");
+            showError("Error", "Please enter rejection reason");
             return;
         }
 
         try {
             setProcessing(selectedVendor.vendor_id);
             await apiRejectVendor(selectedVendor.vendor_id, rejectReason.trim());
-            showSuccess("Thành công", "Đã từ chối vendor");
+            showSuccess("Success", "Vendor rejected");
             setShowRejectModal(false);
             setSelectedVendor(null);
             setRejectReason('');
             await fetchPendingVendors();
         } catch (err) {
-            showError("Lỗi", err.response?.data?.message || "Không thể từ chối vendor");
+            showError("Error", err.response?.data?.message || "Failed to reject vendor");
         } finally {
             setProcessing(null);
         }
@@ -92,12 +92,12 @@ const VendorManagement = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                         <Store className="text-blue-600" size={28} />
-                        Quản lý Vendor
+                        Vendor Management
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1">Duyệt các yêu cầu đăng ký làm vendor</p>
+                    <p className="text-sm text-gray-500 mt-1">Review vendor registration requests</p>
                 </div>
                 <div className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium border border-blue-200">
-                    {vendors.length} yêu cầu chờ duyệt
+                    {vendors.length} pending requests
                 </div>
             </div>
 
@@ -105,7 +105,7 @@ const VendorManagement = () => {
             {vendors.length === 0 ? (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                     <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 text-lg">Không có yêu cầu nào chờ duyệt</p>
+                    <p className="text-gray-500 text-lg">No pending requests</p>
                 </div>
             ) : (
                 <div className="grid gap-4">
@@ -129,7 +129,7 @@ const VendorManagement = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <User size={16} className="text-gray-400" />
-                                            <span className="font-medium">Người đăng ký:</span>
+                                            <span className="font-medium">Applicant:</span>
                                             <span>{vendor.users?.full_name || 'N/A'}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -140,21 +140,21 @@ const VendorManagement = () => {
                                         {vendor.phone && (
                                             <div className="flex items-center gap-2 text-sm text-gray-600">
                                                 <Phone size={16} className="text-gray-400" />
-                                                <span className="font-medium">SĐT:</span>
+                                                <span className="font-medium">Phone:</span>
                                                 <span>{vendor.phone}</span>
                                             </div>
                                         )}
                                         {vendor.address && (
                                             <div className="flex items-center gap-2 text-sm text-gray-600">
                                                 <MapPin size={16} className="text-gray-400" />
-                                                <span className="font-medium">Địa chỉ:</span>
+                                                <span className="font-medium">Address:</span>
                                                 <span>{vendor.address}</span>
                                             </div>
                                         )}
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <Calendar size={16} className="text-gray-400" />
-                                            <span className="font-medium">Ngày đăng ký:</span>
-                                            <span>{new Date(vendor.created_at).toLocaleDateString('vi-VN')}</span>
+                                            <span className="font-medium">Registration Date:</span>
+                                            <span>{new Date(vendor.created_at).toLocaleDateString('en-US')}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -170,7 +170,7 @@ const VendorManagement = () => {
                                         ) : (
                                             <CheckCircle size={18} />
                                         )}
-                                        Duyệt
+                                        Approve
                                     </button>
                                     <button
                                         onClick={() => handleRejectClick(vendor)}
@@ -178,7 +178,7 @@ const VendorManagement = () => {
                                         className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-300 font-medium flex items-center gap-2 transition-all"
                                     >
                                         <XCircle size={18} />
-                                        Từ chối
+                                        Reject
                                     </button>
                                 </div>
                             </div>
@@ -193,18 +193,18 @@ const VendorManagement = () => {
                     <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
                         <div className="flex items-center gap-3 mb-4">
                             <AlertCircle className="text-red-600" size={24} />
-                            <h3 className="text-lg font-bold text-gray-800">Từ chối Vendor</h3>
+                            <h3 className="text-lg font-bold text-gray-800">Reject Vendor</h3>
                         </div>
                         <p className="text-sm text-gray-600 mb-4">
-                            Bạn đang từ chối yêu cầu đăng ký vendor từ <strong>{selectedVendor?.store_name}</strong>.
-                            Vui lòng nhập lý do từ chối:
+                            You are rejecting the vendor registration request from <strong>{selectedVendor?.store_name}</strong>.
+                            Please enter the rejection reason:
                         </p>
                         <textarea
                             value={rejectReason}
                             onChange={(e) => setRejectReason(e.target.value)}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none resize-none"
                             rows="4"
-                            placeholder="Nhập lý do từ chối..."
+                            placeholder="Enter rejection reason..."
                             required
                         />
                         <div className="flex items-center gap-3 mt-6">
@@ -216,10 +216,10 @@ const VendorManagement = () => {
                                 {processing === selectedVendor?.vendor_id ? (
                                     <span className="flex items-center justify-center gap-2">
                                         <Loader2 className="animate-spin" size={18} />
-                                        Đang xử lý...
+                                        Processing...
                                     </span>
                                 ) : (
-                                    'Xác nhận từ chối'
+                                    'Confirm Rejection'
                                 )}
                             </button>
                             <button
@@ -231,7 +231,7 @@ const VendorManagement = () => {
                                 disabled={processing === selectedVendor?.vendor_id}
                                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-all"
                             >
-                                Hủy
+                                Cancel
                             </button>
                         </div>
                     </div>

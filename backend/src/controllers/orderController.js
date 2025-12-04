@@ -138,9 +138,9 @@ export const createOrder = async (req, res) => {
         }
 
         const subtotalAfterDiscount = Math.max(0, vendorSubtotal - discountAmount);
-        const tax = subtotalAfterDiscount * 0.1;
+        const tax = 0; // Tax removed - no tax applied to orders
         const shipping = subtotalAfterDiscount > 100000 ? 0 : 30000;
-        const total = subtotalAfterDiscount + tax + shipping;
+        const total = subtotalAfterDiscount + shipping; // Total without tax
 
         // Create order for this vendor
         // Ensure payment_method is either a valid enum value or null

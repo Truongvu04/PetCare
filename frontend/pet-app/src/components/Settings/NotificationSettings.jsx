@@ -49,7 +49,7 @@ const NotificationSettings = () => {
         setPreferences(res.data);
       } catch (err) {
         console.error("Error fetching notification preferences:", err);
-        showToast("Không thể tải cài đặt thông báo", "error");
+        showToast("Unable to load notification settings", "error");
       } finally {
         setLoading(false);
       }
@@ -67,17 +67,17 @@ const NotificationSettings = () => {
 
   const handleSave = async () => {
     if (!user) {
-      showToast("Vui lòng đăng nhập", "error");
+      showToast("Please login", "error");
       return;
     }
 
     try {
       setSaving(true);
       await api.put("/notification-settings", preferences);
-      showToast("Đã lưu cài đặt thông báo thành công", "success");
+      showToast("Notification settings saved successfully", "success");
     } catch (err) {
       console.error("Error saving notification preferences:", err);
-      showToast("Không thể lưu cài đặt thông báo", "error");
+      showToast("Unable to save notification settings", "error");
     } finally {
       setSaving(false);
     }
@@ -141,7 +141,7 @@ const NotificationSettings = () => {
     return (
       <CustomerLayout currentPage="settings">
         <div className="flex items-center justify-center min-h-[400px]">
-          <p className="text-gray-500">Đang tải cài đặt thông báo...</p>
+          <p className="text-gray-500">Loading notification settings...</p>
         </div>
       </CustomerLayout>
     );
@@ -202,7 +202,7 @@ const NotificationSettings = () => {
                 : "bg-green-600 hover:bg-green-700"
             }`}
           >
-            {saving ? "Đang lưu..." : "Save Changes"}
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>

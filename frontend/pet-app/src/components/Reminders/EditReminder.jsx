@@ -44,7 +44,7 @@ const EditReminder = () => {
         const foundReminder = reminders.find(r => r.reminder_id === reminderId);
         
         if (!foundReminder) {
-          showError("Lỗi", "Không tìm thấy nhắc nhở này.");
+          showError("Error", "Reminder not found.");
           navigate("/reminder/list");
           return;
         }
@@ -77,7 +77,7 @@ const EditReminder = () => {
         }
       } catch (err) {
         console.error("Error loading data:", err);
-        showError("Lỗi", "Không thể tải dữ liệu nhắc nhở.");
+        showError("Error", "Unable to load reminder data.");
         navigate("/reminder/list");
       } finally {
         setLoading(false);
@@ -113,29 +113,29 @@ const EditReminder = () => {
     e.preventDefault();
     
     if (!selectedPet) {
-      showWarning("Thiếu thông tin", "Vui lòng chọn thú cưng.");
+      showWarning("Missing Information", "Please select a pet.");
       return;
     }
     
     if (reminder.type === "feeding") {
       if (!feedingTime) {
-        showWarning("Thiếu thông tin", "Vui lòng chọn thời gian cho ăn.");
+        showWarning("Missing Information", "Please select feeding time.");
         return;
       }
     } else {
       if (!reminderDate) {
-        showWarning("Thiếu thông tin", "Vui lòng chọn ngày nhắc nhở.");
+        showWarning("Missing Information", "Please select reminder date.");
         return;
       }
       if (!isFrequencyValid(reminderDate, frequency)) {
-        showWarning("Lỗi", `Tần suất '${frequency}' quá ngắn cho ngày ${reminderDate}.`);
+        showWarning("Error", `Frequency '${frequency}' is too short for date ${reminderDate}.`);
         return;
       }
     }
     
     if (frequency !== "none" && endDate) {
       if (new Date(endDate + "T00:00:00Z") < new Date(todayStr + "T00:00:00Z")) {
-        showWarning("Lỗi", "Ngày kết thúc phải là hôm nay hoặc sau đó.");
+        showWarning("Error", "End date must be today or later.");
         return;
       }
     }
@@ -161,11 +161,11 @@ const EditReminder = () => {
       }
       
       await api.put(`/reminders/${reminderId}`, updateData);
-      showSuccess("Thành công", "Đã cập nhật nhắc nhở thành công!");
+      showSuccess("Success", "Reminder updated successfully!");
       navigate("/reminder/list");
     } catch (err) {
       console.error("Error updating reminder:", err);
-      const errorMsg = err.response?.data?.error || err.message || "Không thể cập nhật nhắc nhở";
+      const errorMsg = err.response?.data?.error || err.message || "Unable to update reminder";
       showError("Lỗi", errorMsg);
     }
   };
@@ -174,7 +174,7 @@ const EditReminder = () => {
     return (
       <CustomerLayout currentPage="reminder">
         <div className="flex items-center justify-center min-h-[400px]">
-          <p className="text-gray-500">Đang tải...</p>
+          <p className="text-gray-500">Loading...</p>
         </div>
       </CustomerLayout>
     );
@@ -184,7 +184,7 @@ const EditReminder = () => {
     return (
       <CustomerLayout currentPage="reminder">
         <div className="flex items-center justify-center min-h-[400px]">
-          <p className="text-gray-500">Không tìm thấy nhắc nhở</p>
+          <p className="text-gray-500">Reminder not found</p>
         </div>
       </CustomerLayout>
     );
@@ -192,12 +192,12 @@ const EditReminder = () => {
 
   const getReminderTypeLabel = () => {
     switch (reminder.type) {
-      case "vaccination": return "💉 Tiêm chủng";
+      case "vaccination": return "💉 Vaccination";
       case "vet_visit":
-      case "checkup": return "🏥 Khám sức khỏe";
-      case "feeding": return "🍽️ Cho ăn";
-      case "grooming": return "✂️ Chải chuốt";
-      default: return "📋 Nhắc nhở";
+      case "checkup": return "🏥 Health Checkup";
+      case "feeding": return "🍽️ Feeding";
+      case "grooming": return "✂️ Grooming";
+      default: return "📋 Reminder";
     }
   };
 
@@ -206,14 +206,14 @@ const EditReminder = () => {
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Chỉnh sửa Nhắc nhở</h1>
+            <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Edit Reminder</h1>
             <p className="text-md text-green-700">{getReminderTypeLabel()}</p>
           </div>
           <button
             onClick={() => navigate("/reminder/list")}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
           >
-            Quay lại
+            Back
           </button>
         </div>
 
@@ -221,7 +221,7 @@ const EditReminder = () => {
           <div className="space-y-6">
             {/* Pet Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Thú cưng *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Pet *</label>
               <select
                 value={selectedPet}
                 onChange={(e) => setSelectedPet(e.target.value)}
@@ -235,13 +235,13 @@ const EditReminder = () => {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">Không thể thay đổi thú cưng sau khi tạo</p>
+              <p className="text-xs text-gray-500 mt-1">Cannot change pet after creation</p>
             </div>
 
             {/* Vaccination Type (only for vaccination) */}
             {reminder.type === "vaccination" && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Loại vaccine</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Vaccine Type</label>
                 <input
                   type="text"
                   placeholder="VD: Dại, FVRCP, ..."
@@ -255,7 +255,7 @@ const EditReminder = () => {
             {/* Feeding Time (only for feeding) */}
             {reminder.type === "feeding" && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Thời gian cho ăn *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Feeding Time *</label>
                 <input
                   type="time"
                   value={feedingTime}
@@ -268,7 +268,7 @@ const EditReminder = () => {
             {/* Reminder Date (not for feeding) */}
             {reminder.type !== "feeding" && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Ngày nhắc nhở *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Reminder Date *</label>
                 <input
                   type="date"
                   value={reminderDate}
@@ -281,7 +281,7 @@ const EditReminder = () => {
 
             {/* Frequency */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Tần suất</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
               <select
                 value={frequency}
                 onChange={(e) => setFrequency(e.target.value)}
@@ -290,18 +290,18 @@ const EditReminder = () => {
                 }`}
                 disabled={reminder.type !== "feeding" && !reminderDate}
               >
-                <option value="none">{reminder.type === "feeding" ? "Chỉ hôm nay" : "Một lần"}</option>
-                <option value="daily">Hàng ngày</option>
+                <option value="none">{reminder.type === "feeding" ? "Today Only" : "Once"}</option>
+                <option value="daily">Daily</option>
                 {reminder.type !== "feeding" && (
                   <>
                     <option value="weekly" disabled={!isFrequencyValid(reminderDate, "weekly")}>
-                      Hàng tuần
+                      Weekly
                     </option>
                     <option value="monthly" disabled={!isFrequencyValid(reminderDate, "monthly")}>
-                      Hàng tháng
+                      Monthly
                     </option>
                     <option value="yearly" disabled={!isFrequencyValid(reminderDate, "yearly")}>
-                      Hàng năm
+                      Yearly
                     </option>
                   </>
                 )}
@@ -311,7 +311,7 @@ const EditReminder = () => {
             {/* End Date (only for repeating reminders) */}
             {frequency !== "none" && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Ngày kết thúc (tùy chọn)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">End Date (optional)</label>
                 <input
                   type="date"
                   value={endDate}
@@ -329,13 +329,13 @@ const EditReminder = () => {
               type="button"
               className="px-6 py-3 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-100 transition"
             >
-              Hủy
+              Cancel
             </button>
             <button
               type="submit"
               className="px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold hover:from-green-600 hover:to-green-700 transition"
             >
-              Lưu thay đổi
+              Save Changes
             </button>
           </div>
         </form>

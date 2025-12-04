@@ -75,7 +75,7 @@ const AdminProtectedRouteWrapper = ({ children }) => {
       console.log("🔍 AdminProtectedRoute: UserInfo in storage is admin, waiting for AuthProvider sync.");
       return (
         <div className="min-h-screen flex justify-center items-center text-gray-600">
-          Đang tải thông tin người dùng...
+          Loading user information...
         </div>
       );
     }
@@ -141,7 +141,7 @@ const VendorProtectedRouteWrapper = ({ children }) => {
     console.log("⏳ VendorProtectedRoute: Auth is loading, waiting...");
     return (
       <div className="min-h-screen flex justify-center items-center text-gray-600">
-        Đang kiểm tra quyền truy cập...
+        Checking access permissions...
       </div>
     );
   }
@@ -157,15 +157,15 @@ const VendorProtectedRouteWrapper = ({ children }) => {
     } else {
       console.warn("⚠️ VendorProtectedRoute: UserInfo in localStorage but role is not vendor:", parsedUserInfo.role);
       console.warn("⚠️ Full parsedUserInfo:", JSON.stringify(parsedUserInfo, null, 2));
-      // Check if user has vendor object (might be vendor even if role not set)
-      if (parsedUserInfo.vendor) {
-        console.log("✅ VendorProtectedRoute: User has vendor object, treating as vendor");
+      // Only allow admin with vendor object, not owners
+      if (parsedUserInfo.role === 'admin' && parsedUserInfo.vendor) {
+        console.log("✅ VendorProtectedRoute: Admin with vendor object, allowing access");
         return children;
       }
       // Wait a bit more for AuthProvider to sync
       return (
         <div className="min-h-screen flex justify-center items-center text-gray-600">
-          Đang tải thông tin người dùng...
+          Loading user information...
         </div>
       );
     }
@@ -186,8 +186,9 @@ const VendorProtectedRouteWrapper = ({ children }) => {
   
   // If we have user data (from state or storage), check role
   if (user || parsedUserInfo) {
-    // User is vendor if role is 'vendor' OR if they have a vendor object
-    const isVendor = userRole === 'vendor' || hasVendorObject;
+    // User is vendor ONLY if role is 'vendor' OR if they are admin with vendor object
+    // Do NOT allow owners even if they have vendor data
+    const isVendor = userRole === 'vendor' || (userRole === 'admin' && hasVendorObject);
     
     if (!isVendor) {
       console.error("❌ VendorProtectedRoute: User is not vendor. User:", user, "ParsedUserInfo:", parsedUserInfo, "Role:", userRole, "HasVendor:", hasVendorObject);

@@ -10,7 +10,7 @@ const HealthNoteForm = ({ petId, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!healthNote.trim()) {
-      showError("Lỗi", "Vui lòng nhập ghi chú sức khỏe");
+      showError("Error", "Please enter a health note");
       return;
     }
 
@@ -23,13 +23,13 @@ const HealthNoteForm = ({ petId, onSuccess }) => {
         record_date: recordDate,
       });
 
-      showSuccess("Thành công", "Đã thêm ghi chú sức khỏe");
+      showSuccess("Success", "Health note added successfully");
       setHealthNote("");
       setRecordDate(new Date().toISOString().split("T")[0]);
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Error creating health note:", error);
-      showError("Lỗi", "Không thể thêm ghi chú sức khỏe");
+      showError("Error", "Unable to add health note");
     } finally {
       setLoading(false);
     }
@@ -37,11 +37,11 @@ const HealthNoteForm = ({ petId, onSuccess }) => {
 
   return (
     <form onSubmit={handleSubmit} className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
-      <h3 className="text-lg font-semibold mb-4">Thêm ghi chú sức khỏe</h3>
+      <h3 className="text-lg font-semibold mb-4">Add Health Note</h3>
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Ghi chú sức khỏe *
+            Health Note *
           </label>
           <textarea
             value={healthNote}
@@ -49,12 +49,12 @@ const HealthNoteForm = ({ petId, onSuccess }) => {
             required
             rows={4}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            placeholder="Nhập ghi chú về sức khỏe của thú cưng..."
+            placeholder="Enter health note about your pet..."
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Ngày *
+            Date *
           </label>
           <input
             type="date"
@@ -69,7 +69,7 @@ const HealthNoteForm = ({ petId, onSuccess }) => {
           disabled={loading}
           className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
         >
-          {loading ? "Đang thêm..." : "Thêm ghi chú"}
+          {loading ? "Adding..." : "Add Note"}
         </button>
       </div>
     </form>

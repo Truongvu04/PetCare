@@ -57,9 +57,10 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
         }
 
         // Check if user is authenticated and has vendor access
-        // Allow access if:
+        // Allow access ONLY if:
         // 1. User has vendor role, OR
         // 2. User has admin role AND has vendor record (admin can access vendor dashboard)
+        // Do NOT allow owners even if they have vendor data
         const hasVendorAccess = user && (
             user.role === 'vendor' || 
             (user.role === 'admin' && (user.vendor || localStorage.getItem('vendor')))
@@ -93,10 +94,10 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
 
     const handleLogout = async () => {
         const result = await showConfirm(
-            'Đăng xuất',
-            'Bạn có muốn đăng xuất khỏi hệ thống?',
-            'Đăng xuất',
-            'Hủy'
+            'Logout',
+            'Do you want to logout from the system?',
+            'Logout',
+            'Cancel'
         );
         if (result.isConfirmed) {
             performCompleteLogout();
@@ -150,7 +151,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                     <Home size={20} /> Dashboard
                 </NavLink>
                 <NavLink to="/vendor/products" className={getNavLinkClass}>
-                    <List size={20} /> Listings (Sản phẩm)
+                    <List size={20} /> Listings (Products)
                 </NavLink>
                 <NavLink to="/vendor/orders" className={getNavLinkClass}>
                     <ShoppingCart size={20} /> Orders
@@ -175,16 +176,16 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                     onClick={() => navigate("/")}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors"
                 >
-                    <Store size={20} /> Về trang chủ
+                    <Store size={20} /> Back to Home
                 </button>
                 <NavLink to="/vendor/settings" className={getNavLinkClass}>
-                    <Settings size={20} /> Cài đặt Shop
+                    <Settings size={20} /> Shop Settings
                 </NavLink>
                 <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 font-medium transition-colors"
                 >
-                    <LogOut size={20} /> Đăng xuất
+                    <LogOut size={20} /> Logout
                 </button>
             </div>
         </div>

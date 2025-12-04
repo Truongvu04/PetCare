@@ -60,7 +60,7 @@ const Calendar = () => {
       setEvents(response.events || []);
     } catch (error) {
       console.error("Error loading events:", error);
-      showError("Lỗi", "Không thể tải sự kiện");
+      showError("Error", "Unable to load events");
     } finally {
       setLoading(false);
     }
@@ -90,7 +90,7 @@ const Calendar = () => {
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString("vi-VN", {
+    return new Date(date).toLocaleDateString("en-US", {
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -104,7 +104,7 @@ const Calendar = () => {
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
 
-    const weekdays = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+    const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
     // Add empty cells for days before month starts
     const emptyCells = [];
@@ -201,35 +201,35 @@ const Calendar = () => {
   const nextMonthIndex = nextMonth.getMonth();
 
   const monthNames = [
-    "Tháng 1",
-    "Tháng 2",
-    "Tháng 3",
-    "Tháng 4",
-    "Tháng 5",
-    "Tháng 6",
-    "Tháng 7",
-    "Tháng 8",
-    "Tháng 9",
-    "Tháng 10",
-    "Tháng 11",
-    "Tháng 12",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   const categoryLabels = {
-    food: "Thức ăn",
-    medicine: "Thuốc",
-    accessories: "Phụ kiện",
-    vet_visit: "Khám thú y",
-    grooming: "Chải chuốt",
-    other: "Khác",
+    food: "Food",
+    medicine: "Medicine",
+    accessories: "Accessories",
+    vet_visit: "Vet Visit",
+    grooming: "Grooming",
+    other: "Other",
   };
 
   return (
     <CustomerLayout currentPage="calendar">
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Lịch</h1>
-          <p className="text-gray-600">Quản lý lịch trình và chi phí sắp tới</p>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Calendar</h1>
+          <p className="text-gray-600">Manage schedule and upcoming expenses</p>
         </div>
 
         {/* Calendar View - 2 months side by side */}
@@ -240,7 +240,7 @@ const Calendar = () => {
               <button
                 onClick={goToPreviousMonth}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="Tháng trước"
+                aria-label="Previous month"
               >
                 <ChevronLeft size={20} className="text-gray-600" />
               </button>
@@ -250,7 +250,7 @@ const Calendar = () => {
               <button
                 onClick={goToNextMonth}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="Tháng sau"
+                aria-label="Next month"
               >
                 <ChevronRight size={20} className="text-gray-600" />
               </button>
@@ -274,22 +274,22 @@ const Calendar = () => {
         {/* Upcoming Expenses Section - Table Format */}
         {upcomingExpenses.length > 0 && (
           <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-            <h2 className="text-lg font-semibold mb-4 text-gray-800">Chi phí sắp tới</h2>
+            <h2 className="text-lg font-semibold mb-4 text-gray-800">Upcoming Expenses</h2>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ngày
+                      Date
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Danh mục
+                      Category
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Mô tả
+                      Description
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Số tiền
+                      Amount
                     </th>
                   </tr>
                 </thead>
@@ -297,7 +297,7 @@ const Calendar = () => {
                   {upcomingExpenses.map((expense) => (
                     <tr key={expense.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(expense.date).toLocaleDateString("vi-VN", {
+                        {new Date(expense.date).toLocaleDateString("en-US", {
                           day: "2-digit",
                           month: "2-digit",
                           year: "numeric",
@@ -310,7 +310,7 @@ const Calendar = () => {
                         {expense.description}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-green-700">
-                        {parseFloat(expense.amount).toLocaleString("vi-VN")} VND
+                        {parseFloat(expense.amount).toLocaleString("en-US")} VND
                       </td>
                     </tr>
                   ))}

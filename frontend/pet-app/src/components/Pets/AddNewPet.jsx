@@ -48,7 +48,7 @@ const AddNewPet = () => {
     e.preventDefault();
     
     if (!user) {
-      showWarning("Yêu cầu đăng nhập", "Bạn phải đăng nhập để thêm thú cưng!");
+      showWarning("Login Required", "You must login to add a pet!");
       navigate("/login");
       return;
     }
@@ -83,12 +83,12 @@ const AddNewPet = () => {
       const data = response.data; // 👈 axios trả về trong .data
 
       // 👈 axios không cần .ok, nó sẽ ném lỗi nếu status >= 400
-      showSuccess("Thành công", `Thêm thú cưng thành công! ID: ${data.pet_id}`);
+      showSuccess("Success", `Pet added successfully! ID: ${data.pet_id}`);
       navigate("/mypets");
 
     } catch (error) {
       console.error("Error adding pet:", error);
-      const errorMsg = error.response?.data?.message || "Không thể thêm thú cưng.";
+      const errorMsg = error.response?.data?.message || "Unable to add pet.";
       showError("Lỗi", errorMsg);
     } finally {
       setLoading(false);
@@ -125,24 +125,24 @@ const AddNewPet = () => {
                     onChange={handleChange}
                     className="w-full rounded-lg bg-green-50 px-4 py-2 text-sm border border-green-300 
                              focus:outline-none focus:border-green-300 focus:ring-1 focus:ring-green-500">
-                    <option value="">Chọn</option>
-                    <option value="Chó">Chó</option>
-                    <option value="Mèo">Mèo</option>
-                    <option value="Chim">Chim</option>
-                    <option value="Thỏ">Thỏ</option>
-                    <option value="Cá">Cá</option>
-                    <option value="Bò sát">Bò sát</option>
-                    <option value="Khác">Khác...</option>
+                    <option value="">Select</option>
+                    <option value="Dog">Dog</option>
+                    <option value="Cat">Cat</option>
+                    <option value="Bird">Bird</option>
+                    <option value="Rabbit">Rabbit</option>
+                    <option value="Fish">Fish</option>
+                    <option value="Reptile">Reptile</option>
+                    <option value="Other">Other...</option>
                   </select>
 
                   {/* Nếu chọn Khác thì hiện ô nhập */}
-                  {formData.species === "Khác" && (
+                  {formData.species === "Other" && (
                     <input
                       type="text"
                       name="customSpecies"
                       value={formData.customSpecies}
                       onChange={handleChange}
-                      placeholder="Nhập loài khác..."
+                      placeholder="Enter other species..."
                       className="w-full rounded-lg bg-green-50 mt-2 px-4 py-2 text-sm border border-green-300 
                              focus:outline-none focus:border-green-300 focus:ring-1 focus:ring-green-500"/>
                   )}

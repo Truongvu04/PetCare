@@ -146,7 +146,7 @@ const PetOwnerDashboard = () => {
           {/* 👈 Thêm chào mừng user */}
           {!user && (
             <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800">
-              Chào mừng! Vui lòng <a href="/login" className="font-bold underline">đăng nhập</a> để xem thú cưng và nhắc nhở của bạn.
+              Welcome! Please <a href="/login" className="font-bold underline">login</a> to view your pets and reminders.
             </div>
           )}
 
@@ -287,7 +287,12 @@ const PetOwnerDashboard = () => {
                 {clinics.map((clinic, i) => ( <div key={i} className="flex items-center space-x-3 bg-green-50 p-3 rounded-lg"> <MapPin className="text-green-700" size={18} /> <div> <p className="font-medium text-gray-800">{clinic.name}</p> <p className="text-gray-500 text-sm">{clinic.distance}</p> </div> </div> ))}
               </div>
                <div className="text-right mt-2">
-                  <button className="text-sm text-green-600 hover:text-green-800 font-medium">View Map</button>
+                  <button 
+                    onClick={() => navigate('/vet-map')}
+                    className="text-sm text-green-600 hover:text-green-800 font-medium"
+                  >
+                    View Map
+                  </button>
                </div>
            </section>
     </CustomerLayout>
