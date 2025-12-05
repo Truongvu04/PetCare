@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { normalizeObjectEncoding } from '../utils/encodingHelper.js';
 
 let databaseUrl = process.env.DATABASE_URL || '';
 
@@ -8,55 +7,39 @@ if (databaseUrl && !databaseUrl.includes('charset')) {
   databaseUrl = `${databaseUrl}${separator}charset=utf8mb4`;
 }
 
-if (databaseUrl && !databaseUrl.includes('connectionLimit')) {
+if (databaseUrl && !databaseUrl.includes('connection_limit')) {
   const separator = databaseUrl.includes('?') ? '&' : '?';
-  databaseUrl = `${databaseUrl}${separator}connectionLimit=10`;
+  databaseUrl = `${databaseUrl}${separator}connection_limit=5`;
 }
 
-const prismaClientOptions = {
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  datasources: {
-    db: {
-      url: databaseUrl
-    }
-  }
-};
+if (databaseUrl && !databaseUrl.includes('socket_timeout')) {
+  const separator = databaseUrl.includes('?') ? '&' : '?';
+  databaseUrl = `${databaseUrl}${separator}socket_timeout=30`;
+}
 
-const basePrisma = new PrismaClient(prismaClientOptions);
-
-const normalizeResult = (result) => {
-  if (result === null || result === undefined) {
-    return result;
-  }
-  return normalizeObjectEncoding(result);
-};
-
-export const prisma = basePrisma.$extends({
-  query: {
-    $allModels: {
-      async $allOperations({ operation, model, args, query }) {
-        const result = await query(args);
-        return normalizeResult(result);
-      },
-    },
-  },
+const prisma = new PrismaClient({
+  log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
 });
 
-basePrisma.$connect().then(async () => {
-  console.log('✅ Prisma connected with auto-encoding fix');
-  
+async function initializePrisma() {
   try {
-    await basePrisma.$executeRaw`SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci`;
-    await basePrisma.$executeRaw`SET CHARACTER SET utf8mb4`;
-    await basePrisma.$executeRaw`SET character_set_client = utf8mb4`;
-    await basePrisma.$executeRaw`SET character_set_connection = utf8mb4`;
-    await basePrisma.$executeRaw`SET character_set_results = utf8mb4`;
-    console.log('✅ Database charset set to utf8mb4');
-  } catch (err) {
-    console.warn('⚠️ Could not set database charset:', err.message);
+    await prisma.$connect();
+    
+    await prisma.$executeRaw`SET NAMES 'utf8mb4'`;
+    await prisma.$executeRaw`SET CHARACTER SET 'utf8mb4'`;
+    await prisma.$executeRaw`SET character_set_client = 'utf8mb4'`;
+    await prisma.$executeRaw`SET character_set_connection = 'utf8mb4'`;
+    await prisma.$executeRaw`SET character_set_results = 'utf8mb4'`;
+    await prisma.$executeRaw`SET collation_connection = 'utf8mb4_unicode_ci'`;
+    
+    console.log('✅ [Database] Connected successfully.');
+    console.log('✅ [Database] Forced charset/collation to utf8mb4.');
+  } catch (error) {
+    console.error('❌ [Database] Connection error:', error);
   }
-}).catch((err) => {
-  console.error('❌ Prisma connection error:', err);
-});
+}
+
+initializePrisma();
 
 export default prisma;
+export { prisma };

@@ -1,7 +1,6 @@
 import { prisma } from "../config/prisma.js";
 import path from "path";
 import fs from "fs";
-import { normalizeObjectEncoding } from "../utils/encodingHelper.js";
 
 export const createProduct = async (req, res) => {
   try {
@@ -172,8 +171,7 @@ export const getVendorProducts = async (req, res) => {
       orderBy: { created_at: "desc" },
     });
 
-    const normalizedProducts = normalizeObjectEncoding(products);
-    res.json(normalizedProducts);
+    res.json(products);
   } catch (err) {
     console.error("Error fetching vendor products:", err);
     res.status(500).json({ message: "Server error" });
@@ -201,8 +199,7 @@ export const getAllProducts = async (req, res) => {
       orderBy: { created_at: "desc" },
     });
 
-    const normalizedProducts = normalizeObjectEncoding(products);
-    res.json(normalizedProducts);
+    res.json(products);
   } catch (err) {
     console.error("Error fetching products:", err);
     res.status(500).json({ message: "Server error" });
@@ -241,8 +238,7 @@ export const getProductById = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    const normalizedProduct = normalizeObjectEncoding(product);
-    res.json(normalizedProduct);
+    res.json(product);
   } catch (err) {
     console.error("Error fetching product:", err);
     res.status(500).json({ message: "Server error" });

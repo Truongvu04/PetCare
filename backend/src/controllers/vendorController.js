@@ -1,7 +1,6 @@
 import { prisma } from "../config/prisma.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { normalizeObjectEncoding } from "../utils/encodingHelper.js";
 
 // =========================================================
 // 1. AUTH (Đăng ký & Đăng nhập)
@@ -288,7 +287,7 @@ export const getVendorProducts = async (req, res) => {
             },
             orderBy: { created_at: 'desc' } 
         });
-        const normalizedList = normalizeObjectEncoding(list);
+        const normalizedList = (list);
         res.json(normalizedList);
     } catch (error) { 
         console.error("Error fetching vendor products:", error);
@@ -1405,7 +1404,7 @@ export const getAllVendors = async (req, res) => {
             })
         );
 
-        const normalizedVendors = normalizeObjectEncoding(vendorsWithRating);
+        const normalizedVendors = (vendorsWithRating);
         res.json(normalizedVendors);
     } catch (error) {
         console.error("Get All Vendors Error:", error);

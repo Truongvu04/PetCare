@@ -1,5 +1,4 @@
 import { prisma } from "../config/prisma.js";
-import { normalizeObjectEncoding } from "../utils/encodingHelper.js";
 
 // Get or create cart for user
 export const getCart = async (req, res) => {
@@ -70,7 +69,7 @@ export const getCart = async (req, res) => {
       })));
     }
     
-    const normalizedCart = normalizeObjectEncoding(cart);
+    const normalizedCart = (cart);
     res.json(normalizedCart);
   } catch (err) {
     console.error("Error fetching cart:", err);
@@ -163,7 +162,7 @@ export const addToCart = async (req, res) => {
         data: { updated_at: new Date() },
       });
 
-      const normalizedItem = normalizeObjectEncoding(updatedItem);
+      const normalizedItem = (updatedItem);
       return res.json(normalizedItem);
     } else {
       // Create new cart item
@@ -197,7 +196,7 @@ export const addToCart = async (req, res) => {
         data: { updated_at: new Date() },
       });
 
-      const normalizedItem = normalizeObjectEncoding(newItem);
+      const normalizedItem = (newItem);
       return res.status(201).json(normalizedItem);
     }
   } catch (err) {
@@ -270,7 +269,7 @@ export const updateCartItem = async (req, res) => {
       data: { updated_at: new Date() },
     });
 
-    const normalizedItem = normalizeObjectEncoding(updatedItem);
+    const normalizedItem = (updatedItem);
     res.json(normalizedItem);
   } catch (err) {
     console.error("Error updating cart item:", err);

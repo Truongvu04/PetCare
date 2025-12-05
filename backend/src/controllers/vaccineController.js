@@ -1,7 +1,6 @@
 import { vaccineService } from '../services/vaccineService.js';
 import { prisma } from '../config/prisma.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
-import { normalizeObjectEncoding } from '../utils/encodingHelper.js';
 import crypto from 'crypto';
 
 export const getVaccinesBySpecies = async (req, res) => {
@@ -13,8 +12,7 @@ export const getVaccinesBySpecies = async (req, res) => {
     }
 
     const vaccines = await vaccineService.getVaccinesBySpecies(species);
-    const normalizedVaccines = normalizeObjectEncoding(vaccines);
-    return res.status(200).json(normalizedVaccines);
+    return res.status(200).json(vaccines);
   } catch (error) {
     console.error('Error fetching vaccines by species:', error);
     return res.status(500).json({ error: 'Internal server error' });
@@ -30,8 +28,7 @@ export const getVaccineSchedule = async (req, res) => {
     }
 
     const schedule = await vaccineService.getVaccineSchedule(vaccineId);
-    const normalizedSchedule = normalizeObjectEncoding(schedule);
-    return res.status(200).json(normalizedSchedule);
+    return res.status(200).json(schedule);
   } catch (error) {
     console.error('Error fetching vaccine schedule:', error);
     return res.status(500).json({ error: 'Internal server error' });
@@ -52,8 +49,7 @@ export const getVaccineById = async (req, res) => {
       return res.status(404).json({ error: 'Vaccine not found' });
     }
 
-    const normalizedVaccine = normalizeObjectEncoding(vaccine);
-    return res.status(200).json(normalizedVaccine);
+    return res.status(200).json(vaccine);
   } catch (error) {
     console.error('Error fetching vaccine:', error);
     return res.status(500).json({ error: 'Internal server error' });
@@ -121,8 +117,7 @@ export const getAllVaccines = async (req, res) => {
       ],
     });
 
-    const normalizedVaccines = normalizeObjectEncoding(vaccines);
-    return res.status(200).json(normalizedVaccines);
+    return res.status(200).json(vaccines);
   } catch (error) {
     console.error('Error fetching all vaccines:', error);
     return res.status(500).json({ error: 'Internal server error' });

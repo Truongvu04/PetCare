@@ -1,5 +1,4 @@
 import { prisma } from "../config/prisma.js";
-import { normalizeObjectEncoding } from "../utils/encodingHelper.js";
 
 /**
  * GET /api/admin/stats
@@ -338,7 +337,7 @@ export const getPendingProducts = async (req, res) => {
       }
     });
 
-    const normalizedProducts = normalizeObjectEncoding(products);
+    const normalizedProducts = (products);
     res.json({ products: normalizedProducts });
   } catch (error) {
     console.error("❌ Error in getPendingProducts:", error);
