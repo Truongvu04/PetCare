@@ -53,7 +53,7 @@
 
     // ✅ Xóa thú cưng
     const handleDeletePet = async (id) => {
-      const result = await showConfirm("Xóa thú cưng", "Bạn có chắc chắn muốn xóa thú cưng này?");
+      const result = await showConfirm("Delete Pet", "Are you sure you want to delete this pet?");
       if (!result.isConfirmed) return;
 
       try {
@@ -62,10 +62,10 @@
 
         // Xóa khỏi danh sách UI
         setPets((prev) => prev.filter((pet) => pet.id !== id));
-        showSuccess("Thành công", "Đã xóa thú cưng thành công!");
+        showSuccess("Success", "Pet deleted successfully!");
       } catch (err) {
         console.error("❌ Error deleting pet:", err);
-        const errorMsg = err.response?.data?.message || "Không thể xóa thú cưng. Vui lòng thử lại.";
+        const errorMsg = err.response?.data?.message || "Unable to delete pet. Please try again.";
         showError("Lỗi", errorMsg);
       }
     };

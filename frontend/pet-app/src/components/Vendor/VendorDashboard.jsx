@@ -31,13 +31,13 @@ const StatCard = ({ title, value, icon: Icon, colorClass }) => (
 
 const renderStatus = (status) => {
     let classes = 'bg-gray-100 text-gray-700';
-    let label = status || 'Chờ xác nhận';
-    if (status === 'shipped') { classes = 'bg-blue-100 text-blue-700'; label = 'Đang giao'; }
-    else if (status === 'delivered') { classes = 'bg-green-100 text-green-700'; label = 'Giao thành công'; }
-    else if (status === 'processing') { classes = 'bg-yellow-100 text-yellow-700'; label = 'Đang xử lý'; }
-    else if (status === 'cancelled') { classes = 'bg-red-100 text-red-700'; label = 'Đã hủy'; }
-    else if (status === 'paid') { classes = 'bg-green-100 text-green-700'; label = 'Đã thanh toán'; }
-    else if (status === 'pending') { classes = 'bg-yellow-100 text-yellow-700'; label = 'Chờ xử lý'; }
+    let label = status || 'Pending Confirmation';
+    if (status === 'shipped') { classes = 'bg-blue-100 text-blue-700'; label = 'Shipping'; }
+    else if (status === 'delivered') { classes = 'bg-green-100 text-green-700'; label = 'Delivered'; }
+    else if (status === 'processing') { classes = 'bg-yellow-100 text-yellow-700'; label = 'Processing'; }
+    else if (status === 'cancelled') { classes = 'bg-red-100 text-red-700'; label = 'Cancelled'; }
+    else if (status === 'paid') { classes = 'bg-green-100 text-green-700'; label = 'Paid'; }
+    else if (status === 'pending') { classes = 'bg-yellow-100 text-yellow-700'; label = 'Pending'; }
     return <span className={`px-3 py-1 text-xs font-medium rounded-full ${classes}`}>{label}</span>;
 };
 
@@ -45,8 +45,8 @@ const CustomTooltip = ({ active, payload, label, formatCurrency }) => {
     if (active && payload && payload.length) {
         return (
             <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg">
-                <p className="text-sm font-semibold">{`Ngày: ${label}`}</p>
-                <p className="text-sm text-green-600">{`Doanh thu: ${formatCurrency(payload[0].value)}`}</p>
+                <p className="text-sm font-semibold">{`Date: ${label}`}</p>
+                <p className="text-sm text-green-600">{`Revenue: ${formatCurrency(payload[0].value)}`}</p>
             </div>
         );
     }
@@ -104,7 +104,7 @@ const VendorDashboard = () => {
                 const nameToShow = parsedData.shopName || parsedData.store_name || parsedData.full_name || parsedData.email;
                 if (nameToShow) setVendorName(nameToShow);
             } catch (err) {
-                console.error("Lỗi đọc LocalStorage:", err);
+                console.error("Error reading LocalStorage:", err);
             }
         }
 
@@ -221,7 +221,7 @@ const VendorDashboard = () => {
         }
     }, [location.pathname, fetchData]);
 
-    if (loading) return <div className="p-10 text-center text-gray-600 font-medium">Đang tải dữ liệu...</div>;
+    if (loading) return <div className="p-10 text-center text-gray-600 font-medium">Loading data...</div>;
 
     return (
         <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
@@ -229,7 +229,7 @@ const VendorDashboard = () => {
             <div className="flex justify-between items-end mb-8">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-                    <p className="mt-1 text-gray-600">Xin chào, <span className="font-semibold text-green-600">{vendorName}</span></p>
+                    <p className="mt-1 text-gray-600">Hello, <span className="font-semibold text-green-600">{vendorName}</span></p>
                 </div>
                 {/* Notification button hidden as requested */}
                 {/* <button onClick={() => navigate('/vendor/notifications')} className="relative p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 transition">
@@ -240,27 +240,27 @@ const VendorDashboard = () => {
 
             {/* Stats */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
-                <StatCard title="Tổng sản phẩm" value={stats.productCount} icon={Package} colorClass="bg-blue-500" />
-                <StatCard title="Tổng đơn hàng" value={stats.newOrders} icon={ShoppingCart} colorClass="bg-yellow-500" />
-                <StatCard title="Doanh thu" value={formatCurrency(stats.totalRevenue)} icon={DollarSign} colorClass="bg-green-500" />
+                <StatCard title="Total Products" value={stats.productCount} icon={Package} colorClass="bg-blue-500" />
+                <StatCard title="Total Orders" value={stats.newOrders} icon={ShoppingCart} colorClass="bg-yellow-500" />
+                <StatCard title="Revenue" value={formatCurrency(stats.totalRevenue)} icon={DollarSign} colorClass="bg-green-500" />
             </div>
 
             {/* Orders & Notifications */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                 <div className="lg:col-span-2">
                     <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden h-full">
-                        <div className="px-6 py-4 border-b border-gray-100 font-semibold text-gray-800">Đơn hàng mới nhất</div>
+                        <div className="px-6 py-4 border-b border-gray-100 font-semibold text-gray-800">Latest Orders</div>
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase text-left">Mã</th>
-                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase text-left">Trạng thái</th>
-                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase text-right">Tiền</th>
+                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase text-left">ID</th>
+                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase text-left">Status</th>
+                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase text-right">Amount</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {orders.length === 0 ? (
-                                    <tr><td colSpan="3" className="p-4 text-center text-gray-500">Chưa có đơn hàng</td></tr>
+                                    <tr><td colSpan="3" className="p-4 text-center text-gray-500">No orders yet</td></tr>
                                 ) : (
                                     orders.map(order => (
                                         <tr key={order.order_id} onClick={() => navigate('/vendor/orders')} className="hover:bg-gray-50 cursor-pointer">
@@ -277,7 +277,7 @@ const VendorDashboard = () => {
                 <div className="lg:col-span-1">
                     <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 min-h-[200px]">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold text-gray-800">Thông báo</h3>
+                            <h3 className="font-semibold text-gray-800">Notifications</h3>
                             {notifications.length > 0 && (
                                 <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
                                     {notifications.length}
@@ -288,7 +288,7 @@ const VendorDashboard = () => {
                             {notifications.length === 0 ? (
                                 <div className="text-center py-8">
                                     <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                    <p className="text-sm text-gray-400">Không có thông báo mới</p>
+                                    <p className="text-sm text-gray-400">No new notifications</p>
                                 </div>
                             ) : (
                                 // Notifications are already sorted by backend (newest first)
@@ -338,8 +338,8 @@ const VendorDashboard = () => {
                                                 {getIcon()}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-xs font-semibold text-gray-800 mb-1">{notif.title || 'Thông báo mới'}</p>
-                                                <p className="text-sm text-gray-600 line-clamp-2">{notif.message || notif.content || 'Thông báo mới'}</p>
+                                                <p className="text-xs font-semibold text-gray-800 mb-1">{notif.title || 'New Notification'}</p>
+                                                <p className="text-sm text-gray-600 line-clamp-2">{notif.message || notif.content || 'New Notification'}</p>
                                                 {notif.timeAgo && (
                                                     <p className="text-xs text-gray-400 mt-1">{notif.timeAgo}</p>
                                                 )}
@@ -358,8 +358,8 @@ const VendorDashboard = () => {
             {/* Chart */}
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
                 <div className="mb-6">
-                    <h3 className="text-lg font-bold text-gray-800">Biểu đồ doanh thu (7 Ngày)</h3>
-                    <p className="text-sm text-gray-500">Theo dõi xu hướng doanh thu gần nhất</p>
+                    <h3 className="text-lg font-bold text-gray-800">Revenue Chart (7 Days)</h3>
+                    <p className="text-sm text-gray-500">Track recent revenue trends</p>
                 </div>
                 <div className="h-[300px] w-full">
                     {chartData.length > 0 ? (
@@ -381,7 +381,7 @@ const VendorDashboard = () => {
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-200">
                             <DollarSign className="w-10 h-10 mb-2 opacity-50" />
-                            <p>Chưa có dữ liệu doanh thu để hiển thị</p>
+                            <p>No revenue data to display</p>
                         </div>
                     )}
                 </div>

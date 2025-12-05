@@ -53,7 +53,7 @@ const AIChatbot = () => {
         setMessages(response.history || []);
       } catch (error) {
         console.error("Error loading chat history:", error);
-        showError("Lỗi", "Không thể tải lịch sử chat");
+        showError("Error", "Unable to load chat history");
       } finally {
         setLoadingHistory(false);
       }
@@ -104,7 +104,7 @@ const AIChatbot = () => {
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
       console.error("Error sending message:", error);
-      showError("Lỗi", "Không thể gửi tin nhắn. Vui lòng thử lại.");
+      showError("Error", "Unable to send message. Please try again.");
       // Remove temp user message on error
       setMessages((prev) => prev.filter((m) => m.id !== tempUserMessage.id));
     } finally {
@@ -114,10 +114,10 @@ const AIChatbot = () => {
 
   const handleClearHistory = async () => {
     const result = await showConfirm(
-      "Xóa lịch sử chat",
-      "Bạn có chắc chắn muốn xóa toàn bộ lịch sử chat?",
-      "Xóa",
-      "Hủy"
+      "Clear Chat History",
+      "Are you sure you want to delete all chat history?",
+      "Delete",
+      "Cancel"
     );
 
     if (result.isConfirmed) {
@@ -128,10 +128,10 @@ const AIChatbot = () => {
         // Clear selectedPetId from localStorage
         localStorage.removeItem("selectedPetId");
         setSelectedPetId(null);
-        showSuccess("Thành công", "Đã xóa lịch sử chat");
+        showSuccess("Success", "Chat history cleared");
       } catch (error) {
         console.error("Error clearing history:", error);
-        showError("Lỗi", "Không thể xóa lịch sử chat");
+        showError("Error", "Unable to clear chat history");
       }
     }
   };
@@ -155,17 +155,17 @@ const AIChatbot = () => {
         <div className="mb-4 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-4">
             <label className="text-sm font-medium text-gray-700">
-              Chọn thú cưng (tùy chọn để có tư vấn cá nhân hóa):
+              Select Pet (optional for personalized advice):
             </label>
             <select
               value={selectedPetId || ""}
               onChange={(e) => setSelectedPetId(e.target.value || null)}
               className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
             >
-              <option value="">Không chọn</option>
+              <option value="">None</option>
               {pets.map((pet) => (
                 <option key={pet.id} value={pet.id}>
-                  {pet.name} ({pet.species === "dog" ? "Chó" : pet.species === "cat" ? "Mèo" : pet.species})
+                  {pet.name} ({pet.species === "dog" ? "Dog" : pet.species === "cat" ? "Cat" : pet.species})
                 </option>
               ))}
             </select>
@@ -173,10 +173,10 @@ const AIChatbot = () => {
           <button
             onClick={handleClearHistory}
             className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-600 hover:text-red-600 transition"
-            title="Xóa lịch sử chat"
+            title="Clear chat history"
           >
             <Trash2 size={16} />
-            <span>Xóa lịch sử</span>
+            <span>Clear History</span>
           </button>
         </div>
 
@@ -192,7 +192,7 @@ const AIChatbot = () => {
                 </div>
               ) : messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-gray-500">
-                  <p>Chào bạn! Tôi có thể giúp gì cho bạn hôm nay?</p>
+                  <p>Hello! How can I help you today?</p>
                 </div>
               ) : (
                 <>
@@ -221,7 +221,7 @@ const AIChatbot = () => {
                   type="text"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="Nhập câu hỏi của bạn..."
+                  placeholder="Type your question..."
                   disabled={loading}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
@@ -235,7 +235,7 @@ const AIChatbot = () => {
                   ) : (
                     <Send size={16} />
                   )}
-                  <span>Gửi</span>
+                  <span>Send</span>
                 </button>
               </form>
             </div>

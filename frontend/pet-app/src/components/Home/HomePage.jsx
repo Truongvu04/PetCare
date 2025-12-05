@@ -520,10 +520,10 @@ const Header = ({ onLoginClick }) => {
                 : 'font-normal border-b-2 pb-[0] border-transparent' // INACTIVE (border trong suốt để giữ chiều cao)
             }`
           }>
-          Trang chủ
+          Home
         </NavLink>
         <NavLink to="/intropage" className="hover:text-[#29a980]">
-          Giới thiệu
+          About
         </NavLink>
         <NavLink to="/shops" className="hover:text-[#29a980]">
           Shop
@@ -538,7 +538,7 @@ const Header = ({ onLoginClick }) => {
           <i className="fa-solid fa-magnifying-glass text-[#29a980] mr-[2px] text-sm"></i>
           <input
             type="text"
-            placeholder="Tìm kiếm"
+            placeholder="Search"
             className="bg-transparent focus:outline-none text-xs md:text-sm w-[80px] md:w-[100px]"/>
         </div>
 
@@ -561,7 +561,7 @@ const Header = ({ onLoginClick }) => {
           <button
             onClick={onLoginClick}
             className="px-3 md:px-[15px] py-2 md:py-[9px] rounded-[12px] font-bold text-xs md:text-[14px] bg-[#29a980] text-white hover:bg-[#1d926d] flex-shrink-0 whitespace-nowrap">
-            Đăng nhập
+            Login
           </button>
         ) : (
           <div className="relative z-[60] flex-shrink-0" style={{ minWidth: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -608,7 +608,7 @@ const Header = ({ onLoginClick }) => {
                   }}
                   className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
                   <i className="fa-solid fa-chart-simple text-green-500"></i>
-                  <span>Bảng điều khiển</span>
+                  <span>Dashboard</span>
                 </button>
 
                 <button
@@ -618,7 +618,7 @@ const Header = ({ onLoginClick }) => {
                   }}
                   className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
                   <i className="fa-solid fa-receipt text-green-500"></i>
-                  <span>Đơn hàng của tôi</span>
+                  <span>My Orders</span>
                 </button>
 
                 <button
@@ -628,14 +628,14 @@ const Header = ({ onLoginClick }) => {
                   }}
                   className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
                   <i className="fa-solid fa-user-gear text-green-500"></i>
-                  <span>Cài đặt Tài khoản</span>
+                  <span>Account Settings</span>
                 </button>
 
                 <button
                   onClick={logout}
                   className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-red-500 hover:bg-red-50 mt-2">
                   <i className="fa-solid fa-arrow-right-from-bracket"></i>
-                  <span>Đăng xuất</span>
+                  <span>Logout</span>
                 </button>
               </div>
             )}

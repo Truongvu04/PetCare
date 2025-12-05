@@ -138,9 +138,9 @@ export const createOrder = async (req, res) => {
         }
 
         const subtotalAfterDiscount = Math.max(0, vendorSubtotal - discountAmount);
-        const tax = subtotalAfterDiscount * 0.1;
+        const tax = 0; // Tax removed - no tax applied to orders
         const shipping = subtotalAfterDiscount > 100000 ? 0 : 30000;
-        const total = subtotalAfterDiscount + tax + shipping;
+        const total = subtotalAfterDiscount + shipping; // Total without tax
 
         // Create order for this vendor
         // Ensure payment_method is either a valid enum value or null
@@ -670,33 +670,82 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid status" });
     }
 
+    const newStatus = status.toLowerCase();
+
     // Check if order contains products from this vendor
-    const orderItems = await prisma.order_items.findMany({
-      where: {
-        order_id: parseInt(id),
-        products: {
-          vendor_id: vendor_id,
-        },
-      },
+    const order = await prisma.orders.findUnique({
+      where: { order_id: parseInt(id) },
+      include: {
+        order_items: {
+          include: {
+            products: {
+              select: {
+                vendor_id: true
+              }
+            }
+          }
+        }
+      }
     });
 
-    if (orderItems.length === 0) {
-      return res.status(404).json({ message: "Order not found or unauthorized" });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Verify order contains products from this vendor
+    const hasVendorProducts = order.order_items.some(
+      item => item.products.vendor_id === vendor_id
+    );
+
+    if (!hasVendorProducts) {
+      return res.status(403).json({ message: "Order does not contain products from this vendor" });
+    }
+
+    // Validation: Chỉ cho phép chuyển đổi trạng thái hợp lệ
+    const currentStatus = order.status || 'pending';
+    const validTransitions = {
+      'pending': ['paid', 'cancelled'],
+      'paid': ['shipped', 'cancelled', 'refunded'],
+      'shipped': ['delivered'],
+      'delivered': [], // Không thể chuyển từ delivered
+      'cancelled': [], // Không thể chuyển từ cancelled
+      'refunded': [] // Không thể chuyển từ refunded
+    };
+
+    const allowedStatuses = validTransitions[currentStatus] || [];
+    if (!allowedStatuses.includes(newStatus)) {
+      return res.status(400).json({ 
+        message: `Không thể chuyển từ trạng thái '${currentStatus}' sang '${newStatus}'. Chỉ có thể chuyển sang: ${allowedStatuses.join(', ')}` 
+      });
     }
 
     const updatedOrder = await prisma.orders.update({
       where: { order_id: parseInt(id) },
-      data: { status: status.toLowerCase() },
+      data: { 
+        status: newStatus,
+        updated_at: new Date()
+      },
       include: {
         order_items: {
           include: {
             products: true,
           },
         },
+        users: {
+          select: {
+            user_id: true,
+            full_name: true,
+            email: true,
+            phone: true
+          }
+        }
       },
     });
 
-    res.json(updatedOrder);
+    res.json({
+      message: `Đã cập nhật trạng thái đơn hàng thành '${newStatus}'`,
+      order: updatedOrder
+    });
   } catch (err) {
     console.error("Error updating order status:", err);
     console.error("Error stack:", err.stack);

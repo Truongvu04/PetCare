@@ -10,7 +10,7 @@ const WeightForm = ({ petId, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!weight || parseFloat(weight) <= 0) {
-      showError("Lỗi", "Vui lòng nhập cân nặng hợp lệ");
+      showError("Error", "Please enter a valid weight");
       return;
     }
 
@@ -26,13 +26,13 @@ const WeightForm = ({ petId, onSuccess }) => {
         record_date: recordDate,
       });
 
-      showSuccess("Thành công", "Đã thêm cân nặng mới");
+      showSuccess("Success", "Weight record added successfully");
       setWeight("");
       setRecordDate(new Date().toISOString().split("T")[0]);
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Error creating weight record:", error);
-      showError("Lỗi", "Không thể thêm cân nặng");
+      showError("Error", "Unable to add weight record");
     } finally {
       setLoading(false);
     }
@@ -40,11 +40,11 @@ const WeightForm = ({ petId, onSuccess }) => {
 
   return (
     <form onSubmit={handleSubmit} className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
-      <h3 className="text-lg font-semibold mb-4">Thêm cân nặng</h3>
+      <h3 className="text-lg font-semibold mb-4">Add Weight</h3>
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Cân nặng (kg) *
+            Weight (kg) *
           </label>
           <input
             type="number"
@@ -54,12 +54,12 @@ const WeightForm = ({ petId, onSuccess }) => {
             onChange={(e) => setWeight(e.target.value)}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            placeholder="Nhập cân nặng (kg)"
+            placeholder="Enter weight (kg)"
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Ngày *
+            Date *
           </label>
           <input
             type="date"
@@ -74,7 +74,7 @@ const WeightForm = ({ petId, onSuccess }) => {
           disabled={loading}
           className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
         >
-          {loading ? "Đang thêm..." : "Thêm cân nặng"}
+          {loading ? "Adding..." : "Add Weight"}
         </button>
       </div>
     </form>

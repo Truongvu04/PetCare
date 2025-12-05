@@ -152,7 +152,7 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
         const maxImages = 5;
         
         if (currentTotal >= maxImages) {
-            showError("Lỗi", `Chỉ có thể upload tối đa ${maxImages} ảnh`);
+            showError("Error", `Maximum ${maxImages} images allowed`);
             e.target.value = ''; // Reset input
             return;
         }
@@ -162,18 +162,18 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
         const filesToProcess = files.slice(0, remainingSlots);
         
         if (files.length > remainingSlots) {
-            showError("Lỗi", `Chỉ có thể thêm tối đa ${remainingSlots} ảnh nữa (tổng ${maxImages} ảnh)`);
+            showError("Error", `Can only add ${remainingSlots} more images (total ${maxImages} images)`);
         }
 
         const newImages = filesToProcess.filter(file => {
             const isValidType = file.type.startsWith('image/');
             const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB
             if (!isValidType) {
-                showError("Lỗi", "Chỉ chấp nhận file ảnh");
+                showError("Error", "Only image files are accepted");
                 return false;
             }
             if (!isValidSize) {
-                showError("Lỗi", "Kích thước file không được vượt quá 5MB");
+                showError("Error", "File size must not exceed 5MB");
                 return false;
             }
             return true;
@@ -243,7 +243,7 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
                 <div className="bg-white p-6 rounded-xl shadow-2xl">
                     <div className="flex flex-col items-center gap-3">
                         <Loader2 className="animate-spin text-green-600" size={32} />
-                        <p className="text-gray-600 font-medium">Đang tải thông tin sản phẩm...</p>
+                        <p className="text-gray-600 font-medium">Loading product information...</p>
                     </div>
                 </div>
             </div>
@@ -255,7 +255,7 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
             <div className="bg-white p-6 rounded-xl w-full max-w-lg shadow-2xl transform transition-all max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-gray-800">
-                        {product ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}
+                        {product ? "Update Product" : "Add New Product"}
                     </h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
                         <X size={24} />
@@ -264,20 +264,20 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Tên sản phẩm</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
                         <input
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
                             className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
                             required
-                            placeholder="Ví dụ: Thức ăn hạt Royal Canin"
+                            placeholder="e.g., Royal Canin Dry Food"
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Giá bán (VNĐ)</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Price (VND)</label>
                             <input
                                 type="number"
                                 name="price"
@@ -290,7 +290,7 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Tồn kho</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
                             <input
                                 type="number"
                                 name="stock"
@@ -304,33 +304,33 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Danh mục</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                         <input
                             name="category"
                             value={formData.category}
                             onChange={handleChange}
                             className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
                             required
-                            placeholder="VD: Food, Toy..."
+                            placeholder="e.g., Food, Toy..."
                         />
                     </div>
                     
                     {/* Thêm trường mô tả nếu muốn đầy đủ */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả (Tùy chọn)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
                         <textarea
                             name="description"
                             value={formData.description}
                             onChange={handleChange}
                             className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-green-500 outline-none h-20 resize-none"
-                            placeholder="Mô tả chi tiết sản phẩm..."
+                            placeholder="Detailed product description..."
                         />
                     </div>
 
                     {/* Image Upload */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Hình ảnh sản phẩm (Tùy chọn, tối đa 5 ảnh)
+                            Product Images (Optional, max 5 images)
                         </label>
                         <div className="mt-2">
                             <input
@@ -351,12 +351,12 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
                                 }`}
                             >
                                 <Plus size={16} className="mr-2" />
-                                Chọn ảnh
+                                Select Images
                             </label>
                             <p className={`text-xs mt-1 ${
                                 (existingImages.length + images.length) >= 5 ? "text-red-500 font-medium" : "text-gray-500"
                             }`}>
-                                {existingImages.length + images.length}/5 ảnh đã chọn
+                                {existingImages.length + images.length}/5 images selected
                             </p>
                         </div>
 
@@ -378,13 +378,13 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
                                             }}
                                         />
                                         <div className="absolute top-1 left-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-                                            {index < existingImages.length ? 'Có sẵn' : 'Mới'}
+                                            {index < existingImages.length ? 'Existing' : 'New'}
                                         </div>
                                         <button
                                             type="button"
                                             onClick={() => removeImage(index)}
                                             className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                                            title={index < existingImages.length ? 'Xóa ảnh hiện có' : 'Xóa ảnh mới'}
+                                            title={index < existingImages.length ? 'Remove existing image' : 'Remove new image'}
                                         >
                                             <X size={14} />
                                         </button>
@@ -393,7 +393,7 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
                             </div>
                         ) : (
                             <div className="mt-4 text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-lg border border-gray-200">
-                                {product ? 'Chưa có hình ảnh. Hãy thêm ảnh cho sản phẩm.' : 'Chưa có hình ảnh. Hãy chọn ảnh để upload.'}
+                                {product ? 'No images yet. Please add images for the product.' : 'No images yet. Please select images to upload.'}
                             </div>
                         )}
                     </div>
@@ -405,7 +405,7 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
                             className="px-5 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                             disabled={isSaving}
                         >
-                            Hủy bỏ
+                            Cancel
                         </button>
                         <button
                             type="submit"
@@ -413,7 +413,7 @@ const ProductModal = ({ product, onClose, onSave, isSaving }) => {
                             disabled={isSaving}
                         >
                             {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                            {isSaving ? "Đang lưu..." : "Lưu sản phẩm"}
+                            {isSaving ? "Saving..." : "Save Product"}
                         </button>
                     </div>
                 </form>
@@ -526,14 +526,14 @@ const ProductManagement = () => {
             
             await fetchProducts(); // Tải lại danh sách mới nhất từ DB
             setModalData({ show: false, product: null });
-            showSuccess("Thành công", "Lưu sản phẩm thành công!");
+            showSuccess("Success", "Product saved successfully!");
             
             // Dispatch event để VendorDashboard refresh stats
             window.dispatchEvent(new CustomEvent('productUpdated'));
         } catch (err) {
             console.error("Error saving product:", err);
-            const errorMsg = err.response?.data?.error || err.response?.data?.message || "Có lỗi xảy ra khi lưu sản phẩm. Vui lòng thử lại.";
-            showError("Lỗi", errorMsg);
+            const errorMsg = err.response?.data?.error || err.response?.data?.message || "An error occurred while saving the product. Please try again.";
+            showError("Error", errorMsg);
         } finally {
             setSaving(false);
         }
@@ -541,7 +541,7 @@ const ProductManagement = () => {
 
     // Hàm xóa sản phẩm khỏi Database
     const handleDelete = async (product) => {
-        const result = await showConfirm("Xóa sản phẩm", `Bạn chắc chắn muốn xóa "${product.name}"?`);
+        const result = await showConfirm("Delete Product", `Are you sure you want to delete "${product.name}"?`);
         if (!result.isConfirmed) return;
         
             try {
@@ -550,13 +550,13 @@ const ProductManagement = () => {
                 
                 // Cập nhật UI ngay lập tức
                 setProducts(prev => prev.filter(p => (p.product_id || p.id) !== productId));
-            showSuccess("Thành công", "Đã xóa sản phẩm thành công!");
+            showSuccess("Success", "Product deleted successfully!");
             
             // Dispatch event để VendorDashboard refresh stats
             window.dispatchEvent(new CustomEvent('productUpdated'));
             } catch (err) {
                 console.error("Error deleting product:", err);
-            showError("Lỗi", "Không thể xóa sản phẩm.");
+            showError("Error", "Failed to delete product.");
         }
     };
 
@@ -565,26 +565,74 @@ const ProductManagement = () => {
         p.category?.toLowerCase().includes(filter.toLowerCase())
     );
 
-    // Render trạng thái (Logic này chỉ dùng để hiển thị, không cần gửi lên DB nếu DB chưa có cột status)
-    const renderStatus = (stock) => {
-        if (stock > 0) {
-            return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">Đang bán</span>;
+    // Render trạng thái sản phẩm (status từ DB)
+    const renderStatus = (product) => {
+        const status = product.status || 'PENDING';
+        const stock = product.stock || 0;
+        
+        // Status badge
+        let statusBadge = null;
+        switch (status) {
+            case 'APPROVED':
+                statusBadge = (
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
+                        Approved
+                    </span>
+                );
+                break;
+            case 'REJECTED':
+                statusBadge = (
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+                        Rejected
+                    </span>
+                );
+                break;
+            case 'PENDING':
+            default:
+                statusBadge = (
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 border border-yellow-200">
+                        Pending
+                    </span>
+                );
+                break;
         }
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">Hết hàng</span>;
+        
+        // Stock badge
+        const stockBadge = stock > 0 ? (
+            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200 ml-2">
+                In Stock
+            </span>
+        ) : (
+            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200 ml-2">
+                Out of Stock
+            </span>
+        );
+        
+        return (
+            <div className="flex flex-col gap-1 items-center">
+                {statusBadge}
+                {stockBadge}
+                {status === 'REJECTED' && product.rejection_reason && (
+                    <span className="text-xs text-red-600 mt-1 max-w-xs text-center" title={product.rejection_reason}>
+                        Reason: {product.rejection_reason.length > 30 ? product.rejection_reason.substring(0, 30) + '...' : product.rejection_reason}
+                    </span>
+                )}
+            </div>
+        );
     };
 
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Quản lý Sản phẩm</h1>
-                    <p className="text-gray-600 text-sm mt-1">Quản lý danh sách sản phẩm và kho hàng của bạn</p>
+                    <h1 className="text-2xl font-bold text-gray-800">Product Management</h1>
+                    <p className="text-gray-600 text-sm mt-1">Manage your product list and inventory</p>
                 </div>
                 <button
                     onClick={() => setModalData({ show: true, product: null })}
                     className="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-md shadow-green-200 font-medium"
                 >
-                    <Plus size={20} /> Thêm sản phẩm
+                    <Plus size={20} /> Add Product
                 </button>
             </div>
 
@@ -593,7 +641,7 @@ const ProductManagement = () => {
                     <Search className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                    placeholder="Tìm kiếm theo tên hoặc danh mục..."
+                    placeholder="Search by name or category..."
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none bg-white shadow-sm"
                     value={filter}
                     onChange={e => setFilter(e.target.value)}
@@ -605,12 +653,12 @@ const ProductManagement = () => {
                     <table className="w-full text-left whitespace-nowrap">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th className="p-4 font-semibold text-gray-600 text-sm uppercase tracking-wider">Tên sản phẩm</th>
-                                <th className="p-4 font-semibold text-gray-600 text-sm uppercase tracking-wider">Danh mục</th>
-                                <th className="p-4 font-semibold text-gray-600 text-sm uppercase tracking-wider">Giá bán</th>
-                                <th className="p-4 font-semibold text-gray-600 text-sm uppercase tracking-wider text-center">Kho</th>
-                                <th className="p-4 font-semibold text-gray-600 text-sm uppercase tracking-wider text-center">Trạng thái</th>
-                                <th className="p-4 font-semibold text-gray-600 text-sm uppercase tracking-wider text-right">Hành động</th>
+                                <th className="p-4 font-semibold text-gray-600 text-sm uppercase tracking-wider">Product Name</th>
+                                <th className="p-4 font-semibold text-gray-600 text-sm uppercase tracking-wider">Category</th>
+                                <th className="p-4 font-semibold text-gray-600 text-sm uppercase tracking-wider">Price</th>
+                                <th className="p-4 font-semibold text-gray-600 text-sm uppercase tracking-wider text-center">Stock</th>
+                                <th className="p-4 font-semibold text-gray-600 text-sm uppercase tracking-wider text-center">Status</th>
+                                <th className="p-4 font-semibold text-gray-600 text-sm uppercase tracking-wider text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -619,14 +667,14 @@ const ProductManagement = () => {
                                     <td colSpan="6" className="p-12 text-center">
                                         <div className="flex flex-col items-center justify-center text-gray-500">
                                             <Loader2 className="w-8 h-8 animate-spin mb-2 text-green-500" />
-                                            <span>Đang tải dữ liệu...</span>
+                                            <span>Loading data...</span>
                                         </div>
                                     </td>
                                 </tr>
                             ) : filteredProducts.length === 0 ? (
                                 <tr>
                                     <td colSpan="6" className="p-12 text-center text-gray-500">
-                                        Không tìm thấy sản phẩm nào.
+                                        No products found.
                                     </td>
                                 </tr>
                             ) : (
@@ -645,7 +693,7 @@ const ProductManagement = () => {
                                             {p.stock > 0 ? <span className="font-medium">{p.stock}</span> : <span className="text-red-500 text-xs font-bold">0</span>}
                                         </td>
                                         <td className="p-4 text-center">
-                                            {renderStatus(p.stock)}
+                                            {renderStatus(p)}
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex justify-end gap-2">

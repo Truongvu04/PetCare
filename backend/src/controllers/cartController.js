@@ -69,7 +69,8 @@ export const getCart = async (req, res) => {
       })));
     }
     
-    res.json(cart);
+    const normalizedCart = (cart);
+    res.json(normalizedCart);
   } catch (err) {
     console.error("Error fetching cart:", err);
     res.status(500).json({ message: "Server error" });
@@ -161,7 +162,8 @@ export const addToCart = async (req, res) => {
         data: { updated_at: new Date() },
       });
 
-      return res.json(updatedItem);
+      const normalizedItem = (updatedItem);
+      return res.json(normalizedItem);
     } else {
       // Create new cart item
       const newItem = await prisma.cart_items.create({
@@ -194,7 +196,8 @@ export const addToCart = async (req, res) => {
         data: { updated_at: new Date() },
       });
 
-      return res.status(201).json(newItem);
+      const normalizedItem = (newItem);
+      return res.status(201).json(normalizedItem);
     }
   } catch (err) {
     console.error("Error adding to cart:", err);
@@ -266,7 +269,8 @@ export const updateCartItem = async (req, res) => {
       data: { updated_at: new Date() },
     });
 
-    res.json(updatedItem);
+    const normalizedItem = (updatedItem);
+    res.json(normalizedItem);
   } catch (err) {
     console.error("Error updating cart item:", err);
     res.status(500).json({ message: "Server error" });

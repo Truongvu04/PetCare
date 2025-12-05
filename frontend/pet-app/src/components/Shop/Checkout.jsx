@@ -35,9 +35,9 @@ const Checkout = () => {
   
   const subtotalAfterDiscount = Math.max(0, subtotalRaw - discountAmount);
   const subtotal = subtotalRaw; // Price is already in VND (smallest unit)
-  const tax = subtotalAfterDiscount * 0.1; // Tax in VND
+  const tax = 0; // Tax removed - no tax applied to orders
   const shipping = subtotalAfterDiscount > 100000 ? 0 : 30000; // Shipping in VND (free if > 100,000 VND)
-  const total = subtotalAfterDiscount + tax + shipping; // Total in VND
+  const total = subtotalAfterDiscount + shipping; // Total without tax
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -305,10 +305,6 @@ const Checkout = () => {
               <div className="flex justify-between">
                 <span>Phí vận chuyển</span>
                 <span>{shipping === 0 ? "Miễn phí" : `${shipping.toLocaleString("vi-VN")} VND`}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Thuế ước tính</span>
-                <span>{tax.toLocaleString("vi-VN")} VND</span>
               </div>
               <div className="flex justify-between font-bold text-lg pt-2 border-t">
                 <span>Tổng cộng</span>

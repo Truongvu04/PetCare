@@ -30,6 +30,7 @@ export const createProduct = async (req, res) => {
       price: parseFloat(price),
       stock: parseInt(stock),
       category: category ? category.trim() : null,
+      status: 'PENDING', // Set status PENDING khi tạo mới
     };
 
     console.log("Creating product with data:", productData);
@@ -116,6 +117,17 @@ export const updateProduct = async (req, res) => {
     if (price !== undefined) updateData.price = parseFloat(price);
     if (stock !== undefined) updateData.stock = parseInt(stock);
     if (category !== undefined) updateData.category = category;
+    
+    // Nếu thay đổi thông tin quan trọng (name, price, category), set lại status = PENDING
+    const importantFieldsChanged = 
+      (name !== undefined && name !== existingProduct.name) ||
+      (price !== undefined && parseFloat(price) !== parseFloat(existingProduct.price)) ||
+      (category !== undefined && category !== existingProduct.category);
+    
+    if (importantFieldsChanged && existingProduct.status === 'APPROVED') {
+      updateData.status = 'PENDING';
+      updateData.rejection_reason = null; // Clear rejection reason if any
+    }
 
     const updatedProduct = await prisma.products.update({
       where: { product_id: parseInt(id) },
@@ -171,12 +183,13 @@ export const getAllProducts = async (req, res) => {
     const products = await prisma.products.findMany({
       where: {
         stock: { gt: 0 },
+        status: 'APPROVED',
       },
       include: {
         product_images: {
           orderBy: [
-            { is_thumbnail: "desc" }, // Thumbnail first
-            { id: "asc" }, // Then by id
+            { is_thumbnail: "desc" },
+            { id: "asc" },
           ],
         },
         vendors: {

@@ -1,7 +1,7 @@
 // src/components/Admin/AdminLayout.jsx
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Home, Users, Tag, LogOut, Store, Shield, Menu, X } from 'lucide-react';
+import { Home, Users, Tag, LogOut, Store, Shield, Menu, X, Package, Building2, Syringe } from 'lucide-react';
 import { getAvatarUrl } from '../../utils/avatarHelper';
 import { performCompleteLogout } from '../../utils/logoutHelper';
 import { useAuth } from '../../hooks/useAuth';
@@ -13,10 +13,10 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
 
     const handleLogout = async () => {
         const result = await showConfirm(
-            'Đăng xuất',
-            'Bạn có muốn đăng xuất khỏi hệ thống?',
-            'Đăng xuất',
-            'Hủy'
+            'Logout',
+            'Do you want to logout from the system?',
+            'Logout',
+            'Cancel'
         );
         if (result.isConfirmed) {
             performCompleteLogout();
@@ -65,11 +65,20 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                 <NavLink to="/admin/dashboard" className={getNavLinkClass}>
                     <Home size={20} /> Dashboard
                 </NavLink>
+                <NavLink to="/admin/users" className={getNavLinkClass}>
+                    <Users size={20} /> User Management
+                </NavLink>
+                <NavLink to="/admin/approvals" className={getNavLinkClass}>
+                    <Package size={20} /> Product Moderation
+                </NavLink>
                 <NavLink to="/admin/vendors" className={getNavLinkClass}>
-                    <Users size={20} /> Danh sách Vendors
+                    <Building2 size={20} /> Vendor Management
                 </NavLink>
                 <NavLink to="/admin/coupons" className={getNavLinkClass}>
                     <Tag size={20} /> Coupons
+                </NavLink>
+                <NavLink to="/admin/vaccines" className={getNavLinkClass}>
+                    <Syringe size={20} /> Vaccine Management
                 </NavLink>
             </nav>
 
@@ -88,13 +97,13 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                     onClick={() => navigate("/dashboard")}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors"
                 >
-                    <Home size={20} /> Về trang chủ
+                    <Home size={20} /> Back to Home
                 </button>
                 <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 font-medium transition-colors"
                 >
-                    <LogOut size={20} /> Đăng xuất
+                    <LogOut size={20} /> Logout
                 </button>
             </div>
         </div>

@@ -18,7 +18,7 @@ const CalendarEventModal = ({ isOpen, onClose, events, date }) => {
       <div className="bg-white rounded-lg p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-800">
-            Sự kiện ngày {new Date(date).toLocaleDateString("vi-VN", {
+            Events on {new Date(date).toLocaleDateString("en-US", {
               weekday: "long",
               day: "numeric",
               month: "long",
@@ -35,8 +35,8 @@ const CalendarEventModal = ({ isOpen, onClose, events, date }) => {
 
         {events.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">Không có sự kiện nào</p>
-            <p className="text-gray-400 text-sm mt-2">Chọn ngày khác để xem sự kiện</p>
+            <p className="text-gray-500 text-lg">No events</p>
+            <p className="text-gray-400 text-sm mt-2">Select another date to view events</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -57,7 +57,7 @@ const CalendarEventModal = ({ isOpen, onClose, events, date }) => {
                               : "bg-yellow-100 text-yellow-800"
                           }`}
                         >
-                          {event.status === "done" ? "Hoàn thành" : "Chưa hoàn thành"}
+                          {event.status === "done" ? "Completed" : "Pending"}
                         </span>
                       )}
                     </div>
@@ -73,7 +73,7 @@ const CalendarEventModal = ({ isOpen, onClose, events, date }) => {
                       {event.expense && (
                         <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded font-medium">
                           💰 {categoryLabels[event.expense.category] || event.expense.category}:{" "}
-                          {parseFloat(event.expense.amount).toLocaleString("vi-VN")} VND
+                          {parseFloat(event.expense.amount).toLocaleString("en-US")} VND
                         </span>
                       )}
                     </div>

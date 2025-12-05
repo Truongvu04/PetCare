@@ -34,14 +34,14 @@ const GoongVetMapPage = () => {
       
       if (result.success) {
         setClinics(result.data || []);
-        console.log(`Tìm thấy ${result.data?.length || 0} phòng khám`);
+        console.log(`Found ${result.data?.length || 0} clinics`);
       } else {
-        setError(result.message || 'Không thể tải danh sách phòng khám');
+        setError(result.message || 'Failed to load clinic list');
         setClinics([]);
       }
     } catch (err) {
       console.error('Error fetching clinics:', err);
-      setError(err.message || 'Có lỗi xảy ra khi tải dữ liệu');
+      setError(err.message || 'An error occurred while loading data');
       setClinics([]);
     } finally {
       setLoading(false);
@@ -58,7 +58,7 @@ const GoongVetMapPage = () => {
     if (currentLocation) {
       fetchClinics(currentLocation.latitude, currentLocation.longitude, searchQuery);
     } else {
-      setError('Vui lòng cho phép truy cập vị trí để tìm kiếm');
+      setError('Please allow location access to search');
     }
   };
 
@@ -114,7 +114,7 @@ const GoongVetMapPage = () => {
       setAddressSuggestions([]);
       setError(null);
     } else {
-      setError('Địa điểm này không có tọa độ');
+      setError('This location has no coordinates');
     }
   };
 
@@ -148,7 +148,7 @@ const GoongVetMapPage = () => {
 
   const handleGetDirections = async (clinic) => {
     if (!currentLocation || !clinic.coordinates) {
-      setError('Không thể tìm đường đi');
+      setError('Cannot find route');
       return;
     }
 
@@ -165,11 +165,11 @@ const GoongVetMapPage = () => {
         setRouteData(result.data);
         setSelectedClinic(clinic);
       } else {
-        setError('Không thể tìm đường đi');
+        setError('Cannot find route');
       }
     } catch (err) {
       console.error('Error getting directions:', err);
-      setError('Lỗi khi tìm đường đi');
+      setError('Error finding route');
     } finally {
       setLoading(false);
     }
@@ -191,14 +191,14 @@ const GoongVetMapPage = () => {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Quay lại
+              Back
             </button>
             <div className="text-center flex-1">
               <h1 className="text-2xl font-bold flex items-center justify-center gap-2">
                 <span className="text-3xl">🏥</span>
-                Tìm Phòng Khám Thú Y
+                Find Veterinary Clinic
               </h1>
-              <p className="text-blue-100 text-sm mt-1">Tìm kiếm phòng khám gần bạn với Goong Map</p>
+              <p className="text-blue-100 text-sm mt-1">Search for clinics near you with Goong Map</p>
             </div>
             <div className="w-24"></div>
           </div>
@@ -213,7 +213,7 @@ const GoongVetMapPage = () => {
                 </div>
                 <input
                   className="w-full pl-9 pr-3 py-2 rounded-lg border-0 bg-white/90 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-white text-sm"
-                  placeholder="Tìm kiếm phòng khám thú y..."
+                  placeholder="Search for veterinary clinics..."
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -225,12 +225,12 @@ const GoongVetMapPage = () => {
                 <button
                   onClick={() => setShowLocationModal(true)}
                   className="flex items-center gap-1 px-3 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-medium transition-all text-sm"
-                  title="Đổi vị trí"
+                  title="Change Location"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   </svg>
-                  Đổi vị trí
+                  Change Location
                 </button>
 
                 <button
@@ -240,7 +240,7 @@ const GoongVetMapPage = () => {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
                   </svg>
-                  Bộ lọc
+                  Filter
                 </button>
                 
                 <button
@@ -251,14 +251,14 @@ const GoongVetMapPage = () => {
                   {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Đang tìm...
+                      Searching...
                     </>
                   ) : (
                     <>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
-                      Tìm kiếm
+                      Search
                     </>
                   )}
                 </button>
@@ -269,7 +269,7 @@ const GoongVetMapPage = () => {
               <div className="mt-3 pt-3 border-t border-white/20">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs font-medium text-white mb-1">Bán kính tìm kiếm</label>
+                    <label className="block text-xs font-medium text-white mb-1">Search Radius</label>
                     <select
                       value={searchRadius}
                       onChange={(e) => setSearchRadius(parseInt(e.target.value))}
@@ -294,7 +294,7 @@ const GoongVetMapPage = () => {
           {locationError && !currentLocation && (
             <div className="bg-red-50 border-l-4 border-red-400 p-3 rounded-r-lg shadow-sm mb-2">
               <p className="text-sm text-red-700">
-                <strong>Lỗi vị trí:</strong> {locationError}
+                <strong>Location Error:</strong> {locationError}
               </p>
             </div>
           )}
@@ -302,7 +302,7 @@ const GoongVetMapPage = () => {
           {error && (
             <div className="bg-red-50 border-l-4 border-red-400 p-3 rounded-r-lg shadow-sm mb-2">
               <p className="text-sm text-red-700">
-                <strong>Lỗi:</strong> {error}
+                <strong>Error:</strong> {error}
               </p>
             </div>
           )}
@@ -311,20 +311,20 @@ const GoongVetMapPage = () => {
             <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r-lg shadow-sm mb-2">
               <div className="flex items-center justify-between">
                 <p className="text-amber-700 font-medium text-sm">
-                  Cần quyền truy cập vị trí để tìm phòng khám gần bạn
+                  Location access required to find clinics near you
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowLocationModal(true)}
                     className="px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium text-sm"
                   >
-                    Nhập địa chỉ
+                    Enter Address
                   </button>
                   <button
                     onClick={handleLocationRequest}
                     className="px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-medium text-sm"
                   >
-                    Cho phép vị trí
+                    Allow Location
                   </button>
                 </div>
               </div>
@@ -336,7 +336,7 @@ const GoongVetMapPage = () => {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <p className={`${customLocation ? 'text-blue-700' : 'text-green-700'} font-medium text-sm`}>
-                    {customLocation ? `📍 ${customLocation.address || 'Vị trí tùy chỉnh'}` : '✅ Vị trí hiện tại'} • Hiển thị {clinics.length} phòng khám trong bán kính {getRadiusText(searchRadius)}
+                    {customLocation ? `📍 ${customLocation.address || 'Custom Location'}` : '✅ Current Location'} • Showing {clinics.length} clinics within radius {getRadiusText(searchRadius)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -347,7 +347,7 @@ const GoongVetMapPage = () => {
                     <button
                       onClick={handleResetLocation}
                       className="text-xs px-2 py-1 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-                      title="Về vị trí hiện tại"
+                      title="Back to Current Location"
                     >
                       Reset
                     </button>
@@ -364,12 +364,12 @@ const GoongVetMapPage = () => {
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="lg:hidden mb-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium"
         >
-          {isSidebarOpen ? 'Ẩn danh sách' : 'Hiện danh sách'}
+          {isSidebarOpen ? 'Hide List' : 'Show List'}
         </button>
 
         <div className={`${isSidebarOpen ? 'block' : 'hidden'} lg:block w-full lg:w-80 flex-shrink-0 bg-white rounded-lg shadow-lg mr-0 lg:mr-4 mb-4 lg:mb-0 overflow-hidden`}>
           <div className="p-3 bg-gray-50 border-b">
-            <h2 className="font-semibold text-gray-800 text-sm">Danh sách phòng khám ({clinics.length})</h2>
+            <h2 className="font-semibold text-gray-800 text-sm">Clinic List ({clinics.length})</h2>
           </div>
           <div className="overflow-y-auto h-64 lg:h-full">
             {clinics.map((clinic, index) => (
@@ -396,13 +396,13 @@ const GoongVetMapPage = () => {
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                   </svg>
-                  Chỉ đường
+                  Get Directions
                 </button>
               </div>
             ))}
             {clinics.length === 0 && !loading && (
               <div className="p-4 text-center text-gray-500 text-sm">
-                Không tìm thấy phòng khám nào
+                No clinics found
               </div>
             )}
           </div>
@@ -426,18 +426,18 @@ const GoongVetMapPage = () => {
             <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-10">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs text-gray-600">Khoảng cách</p>
+                  <p className="text-xs text-gray-600">Distance</p>
                   <p className="text-sm font-semibold text-gray-900">{routeData.distance?.text || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600">Thời gian</p>
+                  <p className="text-xs text-gray-600">Time</p>
                   <p className="text-sm font-semibold text-gray-900">{routeData.duration?.text || 'N/A'}</p>
                 </div>
                 <button
                   onClick={() => setRouteData(null)}
                   className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
                 >
-                  Xóa
+                  Remove
                 </button>
               </div>
             </div>
@@ -449,7 +449,7 @@ const GoongVetMapPage = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">Đổi vị trí tìm kiếm</h3>
+              <h3 className="text-xl font-bold text-gray-900">Change Search Location</h3>
               <button
                 onClick={() => setShowLocationModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -463,14 +463,14 @@ const GoongVetMapPage = () => {
             <div className="space-y-4">
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nhập địa chỉ hoặc tên địa điểm
+                  Enter address or location name
                 </label>
                 <div className="relative">
                   <input
                     type="text"
                     value={addressInput}
                     onChange={(e) => handleAddressInputChange(e.target.value)}
-                    placeholder="VD: Quận 1, TP.HCM hoặc Bến Thành"
+                    placeholder="e.g., District 1, Ho Chi Minh City or Ben Thanh"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   {searchingAddress && (
@@ -496,7 +496,7 @@ const GoongVetMapPage = () => {
                 )}
                 
                 <p className="text-xs text-gray-500 mt-2">
-                  💡 Gõ ít nhất 3 ký tự để xem gợi ý địa chỉ
+                  💡 Type at least 3 characters to see address suggestions
                 </p>
               </div>
 
@@ -509,7 +509,7 @@ const GoongVetMapPage = () => {
                   }}
                   className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
                 >
-                  Hủy
+                  Cancel
                 </button>
               </div>
 
@@ -524,7 +524,7 @@ const GoongVetMapPage = () => {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   </svg>
-                  Dùng vị trí hiện tại
+                  Use Current Location
                 </button>
               </div>
             </div>

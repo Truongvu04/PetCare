@@ -56,7 +56,7 @@ const Expenses = () => {
       setExpenses(response.expenses || []);
     } catch (error) {
       console.error("Error loading expenses:", error);
-      showError("Lỗi", "Không thể tải danh sách chi phí");
+      showError("Error", "Unable to load expenses list");
     } finally {
       setLoading(false);
     }
@@ -84,12 +84,12 @@ const Expenses = () => {
   };
 
   const categoryLabels = {
-    food: "Thức ăn",
-    medicine: "Thuốc",
-    accessories: "Phụ kiện",
-    vet_visit: "Khám thú y",
-    grooming: "Chải chuốt",
-    other: "Khác",
+    food: "Food",
+    medicine: "Medicine",
+    accessories: "Accessories",
+    vet_visit: "Vet Visit",
+    grooming: "Grooming",
+    other: "Other",
   };
 
   return (
@@ -97,15 +97,15 @@ const Expenses = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Chi phí</h1>
-            <p className="text-gray-600">Theo dõi chi phí thú cưng</p>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">Expenses</h1>
+            <p className="text-gray-600">Track your pet expenses</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
           >
             <Plus size={20} />
-            <span>Thêm chi phí</span>
+            <span>Add Expense</span>
           </button>
         </div>
 
@@ -116,9 +116,9 @@ const Expenses = () => {
         <div className="border-b border-gray-200">
           <nav className="flex space-x-4">
             {[
-              { id: "all", label: "Tất cả" },
-              { id: "this_month", label: "Tháng này" },
-              { id: "last_month", label: "Tháng trước" },
+              { id: "all", label: "All" },
+              { id: "this_month", label: "This Month" },
+              { id: "last_month", label: "Last Month" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -139,29 +139,29 @@ const Expenses = () => {
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             {loading ? (
-              <div className="p-8 text-center text-gray-500">Đang tải...</div>
+              <div className="p-8 text-center text-gray-500">Loading...</div>
             ) : expenses.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
-                Chưa có chi phí nào
+                No expenses found
               </div>
             ) : (
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Ngày
+                      Date
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Thú cưng
+                      Pet
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Danh mục
+                      Category
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Mô tả
+                      Description
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Số tiền
+                      Amount
                     </th>
                   </tr>
                 </thead>
@@ -169,7 +169,7 @@ const Expenses = () => {
                   {expenses.map((expense) => (
                     <tr key={expense.id}>
                       <td className="px-4 py-3 text-sm">
-                        {new Date(expense.expense_date).toLocaleDateString("vi-VN")}
+                        {new Date(expense.expense_date).toLocaleDateString("en-US")}
                       </td>
                       <td className="px-4 py-3 text-sm">
                         {expense.pet?.name || "N/A"}
@@ -179,7 +179,7 @@ const Expenses = () => {
                       </td>
                       <td className="px-4 py-3 text-sm">{expense.description}</td>
                       <td className="px-4 py-3 text-sm font-medium text-green-700">
-                        {parseFloat(expense.amount).toLocaleString("vi-VN")} VND
+                        {parseFloat(expense.amount).toLocaleString("en-US")} VND
                       </td>
                     </tr>
                   ))}

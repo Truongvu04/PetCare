@@ -43,9 +43,8 @@ export const registerVendor = async (req, res) => {
                     address: address || null, 
                     phone: phone || null,
                     
-                    // --- THAY ĐỔI Ở ĐÂY ---
-                    // Để trạng thái là 'approved' để coi như Admin đã duyệt
-                    status: 'approved', 
+                    // Set status = 'pending' để chờ admin duyệt
+                    status: 'pending', 
                     
                     // Lưu ý: Nếu trong Prisma Schema bạn định nghĩa field là isApproved (Boolean) 
                     // thì dùng dòng dưới đây thay cho dòng status ở trên:
@@ -89,6 +88,91 @@ export const loginVendor = async (req, res) => {
         res.json({ message: "Đăng nhập thành công", token, vendor: { id: user.vendor.vendor_id, shopName: user.vendor.store_name, email: user.email, avatar: user.avatar_url } });
     } catch (error) {
         res.status(500).json({ error: "Lỗi đăng nhập." });
+    }
+};
+
+/**
+ * POST /api/vendors/request
+ * User đăng ký làm vendor (user đã tồn tại, chỉ tạo vendor record)
+ */
+export const requestVendorAccount = async (req, res) => {
+    try {
+        // Lấy user từ token (middleware verifyToken đã set req.user)
+        const userId = req.user?.user_id;
+        
+        if (!userId) {
+            return res.status(401).json({ message: "Vui lòng đăng nhập để đăng ký làm vendor" });
+        }
+
+        const { store_name, phone, address, logo_url, description } = req.body;
+
+        // Validate required fields - 3 fields bắt buộc
+        if (!store_name || store_name.trim().length === 0) {
+            return res.status(400).json({ message: "Tên cửa hàng là bắt buộc" });
+        }
+        if (!phone || phone.trim().length === 0) {
+            return res.status(400).json({ message: "Số điện thoại là bắt buộc" });
+        }
+        if (!address || address.trim().length === 0) {
+            return res.status(400).json({ message: "Địa chỉ kho là bắt buộc" });
+        }
+
+        // Kiểm tra user đã có vendor record chưa
+        const existingVendor = await prisma.vendors.findUnique({
+            where: { user_id: userId }
+        });
+
+        if (existingVendor) {
+            if (existingVendor.status === 'pending') {
+                return res.status(400).json({ message: "Bạn đã có yêu cầu đăng ký vendor đang chờ duyệt" });
+            }
+            if (existingVendor.status === 'approved') {
+                return res.status(400).json({ message: "Bạn đã là vendor được duyệt" });
+            }
+            // Nếu rejected, cho phép đăng ký lại
+        }
+
+        // Tạo hoặc cập nhật vendor record với status = 'pending'
+        const vendor = await prisma.vendors.upsert({
+            where: { user_id: userId },
+            update: {
+                store_name: store_name.trim(),
+                phone: phone.trim(),
+                address: address.trim(),
+                logo_url: logo_url?.trim() || null,
+                description: description?.trim() || null,
+                status: 'pending' // Reset về pending khi đăng ký lại
+            },
+            create: {
+                user_id: userId,
+                store_name: store_name.trim(),
+                phone: phone.trim(),
+                address: address.trim(),
+                logo_url: logo_url?.trim() || null,
+                description: description?.trim() || null,
+                status: 'pending'
+            },
+            include: {
+                users: {
+                    select: {
+                        user_id: true,
+                        full_name: true,
+                        email: true
+                    }
+                }
+            }
+        });
+
+        res.status(201).json({
+            message: "Đăng ký làm vendor thành công! Yêu cầu của bạn đang chờ admin duyệt.",
+            vendor
+        });
+    } catch (error) {
+        console.error("❌ Error in requestVendorAccount:", error);
+        if (error.code === 'P2002') {
+            return res.status(400).json({ message: "Bạn đã có vendor record. Vui lòng kiểm tra lại." });
+        }
+        res.status(500).json({ message: "Lỗi hệ thống khi đăng ký vendor", error: error.message });
     }
 };
 
@@ -146,28 +230,25 @@ export const updateVendorProfile = async (req, res) => {
     try {
         const { shopName, phone, address, description, logo } = req.body;
         
-        // Validate required field
+        // Validate 3 fields bắt buộc
         if (!shopName || shopName.trim() === '') {
             return res.status(400).json({ message: "Tên cửa hàng là bắt buộc" });
         }
+        if (!phone || phone.trim() === '') {
+            return res.status(400).json({ message: "Số điện thoại là bắt buộc" });
+        }
+        if (!address || address.trim() === '') {
+            return res.status(400).json({ message: "Địa chỉ kho là bắt buộc" });
+        }
         
-        // Build update data object - chỉ include các field có giá trị (không phải empty string)
+        // Build update data object với 3 fields bắt buộc
         const updateData = {
             store_name: shopName.trim(),
+            phone: phone.trim(),
+            address: address.trim(),
         };
         
         // Chỉ thêm các field optional nếu có giá trị
-        if (phone !== undefined && phone !== null && phone.trim() !== '') {
-            updateData.phone = phone.trim();
-        } else if (phone === '') {
-            updateData.phone = null; // Cho phép xóa phone
-        }
-        
-        if (address !== undefined && address !== null && address.trim() !== '') {
-            updateData.address = address.trim();
-        } else if (address === '') {
-            updateData.address = null; // Cho phép xóa address
-        }
         
         if (description !== undefined && description !== null && description.trim() !== '') {
             updateData.description = description.trim();
@@ -201,12 +282,13 @@ export const getVendorProducts = async (req, res) => {
             where: { vendor_id: req.vendor.vendor_id }, 
             include: { 
                 product_images: {
-                    orderBy: { is_thumbnail: 'desc' } // Thumbnail first
+                    orderBy: { is_thumbnail: 'desc' }
                 }
             },
             orderBy: { created_at: 'desc' } 
         });
-        res.json(list);
+        const normalizedList = (list);
+        res.json(normalizedList);
     } catch (error) { 
         console.error("Error fetching vendor products:", error);
         res.status(500).json({ error: error.message }); 
@@ -1322,7 +1404,8 @@ export const getAllVendors = async (req, res) => {
             })
         );
 
-        res.json(vendorsWithRating);
+        const normalizedVendors = (vendorsWithRating);
+        res.json(normalizedVendors);
     } catch (error) {
         console.error("Get All Vendors Error:", error);
         res.status(500).json({ error: error.message });

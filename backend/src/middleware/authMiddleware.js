@@ -46,23 +46,14 @@ export const verifyToken = async (req, res, next) => {
 
     const customer = vendor ? null : { customer_id: user.user_id };
 
-    // IMPORTANT: Preserve admin role even if user has vendor record
-    // This ensures admin users can access admin routes even if they have vendor data
-    let finalRole = user.role;
-    
-    // Only override role if user has vendor AND role is NOT 'admin' (preserve admin role)
-    if (vendor && user.role !== 'admin') {
-      if (!finalRole || finalRole === null || finalRole === undefined) {
-        // If no role set and has vendor, default to 'vendor'
-        finalRole = 'vendor';
-      } else if (finalRole !== 'vendor') {
-        // User has vendor but role is something else (not admin) - keep original role
-        finalRole = finalRole;
-      }
-    }
-    // If user.role === 'admin', preserve it regardless of vendor existence
+    // QUAN TRỌNG: LUÔN dùng role từ users table làm nguồn chính xác duy nhất
+    // KHÔNG override role dựa trên vendor record vì:
+    // - Admin có thể downgrade user từ vendor về owner
+    // - Role trong users table là nguồn chính xác nhất
+    // - Vendor record chỉ là metadata, không phải quyết định role
+    const finalRole = user.role || 'owner'; // Default to 'owner' nếu không có role
 
-    // Create user object with preserved role
+    // Create user object với role từ users table
     const userWithRole = {
       ...user,
       role: finalRole

@@ -2,12 +2,12 @@ import React from "react";
 
 const ExpenseSummary = ({ summary, loading }) => {
   const categoryLabels = {
-    food: "Thức ăn",
-    medicine: "Thuốc",
-    accessories: "Phụ kiện",
-    vet_visit: "Khám thú y",
-    grooming: "Chải chuốt",
-    other: "Khác",
+    food: "Food",
+    medicine: "Medicine",
+    accessories: "Accessories",
+    vet_visit: "Vet Visit",
+    grooming: "Grooming",
+    other: "Other",
   };
 
   if (loading) {
@@ -30,9 +30,9 @@ const ExpenseSummary = ({ summary, loading }) => {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       {/* Total Spent */}
       <div className="bg-white p-4 rounded-lg border border-gray-200">
-        <p className="text-sm text-gray-600 mb-1">Tổng chi tiêu</p>
+        <p className="text-sm text-gray-600 mb-1">Total Spent</p>
         <p className="text-2xl font-bold text-green-700">
-          {totalSpent.toLocaleString("vi-VN")} VND
+          {totalSpent.toLocaleString("en-US")} VND
         </p>
       </div>
 
@@ -43,7 +43,7 @@ const ExpenseSummary = ({ summary, loading }) => {
             {categoryLabels[item.category] || item.category}
           </p>
           <p className="text-2xl font-bold text-green-700">
-            {item.amount.toLocaleString("vi-VN")} VND
+            {item.amount.toLocaleString("en-US")} VND
           </p>
         </div>
       ))}
@@ -51,7 +51,7 @@ const ExpenseSummary = ({ summary, loading }) => {
       {/* Empty slot if less than 2 categories */}
       {topCategories.length < 2 && (
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <p className="text-sm text-gray-600 mb-1">Chưa có dữ liệu</p>
+          <p className="text-sm text-gray-600 mb-1">No data</p>
           <p className="text-2xl font-bold text-gray-400">0 VND</p>
         </div>
       )}

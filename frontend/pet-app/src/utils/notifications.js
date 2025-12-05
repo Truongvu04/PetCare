@@ -139,7 +139,7 @@ export const showInfo = (title, message = '', timer = 3000) => {
 /**
  * Confirmation dialog
  */
-export const showConfirm = (title, message = '', confirmText = "Xác nhận", cancelText = "Hủy") => {
+export const showConfirm = (title, message = '', confirmText = "Confirm", cancelText = "Cancel") => {
   return Swal.fire({
     ...commonConfig,
     title: `<strong>${title}</strong>`,
@@ -196,7 +196,7 @@ export const showToast = (message, type = "info", duration = 3000) => {
 /**
  * Loading notification
  */
-export const showLoading = (title = "Đang xử lý...") => {
+export const showLoading = (title = "Processing...") => {
   return Swal.fire({
     ...commonConfig,
     title: title,

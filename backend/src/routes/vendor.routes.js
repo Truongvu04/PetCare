@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import { 
     registerVendor,
     loginVendor,
+    requestVendorAccount,
     getVendorProfile,
     updateVendorProfile,
     // Sản phẩm
@@ -32,7 +33,8 @@ import {
 } from '../controllers/vendorController.js';
 
 // Middleware bảo vệ (đảm bảo đã đăng nhập mới được làm)
-import { vendorAuth } from '../middleware/vendorAuthMiddleware.js'; 
+import { vendorAuth } from '../middleware/vendorAuthMiddleware.js';
+import { verifyToken } from '../middleware/authMiddleware.js'; 
 
 const router = express.Router();
 
@@ -85,6 +87,9 @@ router.post('/login', loginVendor);
 router.get('/list', getAllVendors); // Public endpoint for browsing vendors
 
 // --- PROTECTED ROUTES (Phải có Token) ---
+
+// User đăng ký làm vendor (cần đăng nhập nhưng chưa cần là vendor)
+router.post('/request', verifyToken, requestVendorAccount);
 
 // 1. Profile & Account
 router.get('/profile', vendorAuth, getVendorProfile);

@@ -66,10 +66,11 @@ export const getProductRecommendations = async (req, res) => {
 
     // Limit to top 10
     const recommendations = filteredProducts.slice(0, 10);
+    const normalizedRecommendations = (recommendations);
 
     return res.json({
       success: true,
-      products: recommendations,
+      products: normalizedRecommendations,
     });
   } catch (error) {
     console.error("Error in getProductRecommendations:", error);
