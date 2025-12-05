@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "seed:vaccines": "node scripts/seed-vaccines.js"
+    "seed:vaccines": "node scripts/seed-vaccines.js",
+    "fix:encoding": "node scripts/fix-product-encoding.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",

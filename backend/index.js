@@ -61,13 +61,23 @@ app.use((req, res, next) => {
 
 app.use((req, res, next) => {
   res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-  res.setHeader('Content-Encoding', 'UTF-8');
+  res.charset = 'utf-8';
   next();
 });
 
-app.use(express.json({ charset: 'utf-8' }));
-app.use(bodyParser.json({ charset: 'utf-8' }));
-app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
+app.use(express.json({ 
+  charset: 'utf-8',
+  type: 'application/json'
+}));
+app.use(bodyParser.json({ 
+  charset: 'utf-8',
+  type: 'application/json'
+}));
+app.use(express.urlencoded({ 
+  extended: true, 
+  charset: 'utf-8',
+  type: 'application/x-www-form-urlencoded'
+}));
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(passport.initialize());
