@@ -55,6 +55,47 @@ const fixLatin1ToUtf8 = (text) => {
   return text;
 };
 
+const fixWindows1252ToUtf8 = (text) => {
+  try {
+    const bytes = [];
+    for (let i = 0; i < text.length; i++) {
+      const charCode = text.charCodeAt(i);
+      if (charCode <= 0xFF) {
+        bytes.push(charCode);
+      }
+    }
+    
+    if (bytes.length === 0) return text;
+    
+    const buffer = Buffer.from(bytes);
+    let utf8Text = '';
+    
+    for (let i = 0; i < buffer.length; i++) {
+      const byte = buffer[i];
+      if (byte < 0x80) {
+        utf8Text += String.fromCharCode(byte);
+      } else if (byte < 0xC0) {
+        utf8Text += String.fromCharCode(0xC0 | (byte >> 6));
+        utf8Text += String.fromCharCode(0x80 | (byte & 0x3F));
+      } else {
+        utf8Text += String.fromCharCode(0xE0 | (byte >> 12));
+        utf8Text += String.fromCharCode(0x80 | ((byte >> 6) & 0x3F));
+        utf8Text += String.fromCharCode(0x80 | (byte & 0x3F));
+      }
+    }
+    
+    const decoded = Buffer.from(utf8Text, 'binary').toString('utf8');
+    const hasVietnamese = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]/.test(decoded);
+    const hasBroken = BROKEN_ENCODING_PATTERNS.test(decoded);
+    
+    if (hasVietnamese && !hasBroken && decoded !== text) {
+      return decoded;
+    }
+  } catch (e) {
+  }
+  return text;
+};
+
 export const normalizeTextEncoding = (text) => {
   if (!text || typeof text !== 'string') {
     return text;
@@ -80,6 +121,10 @@ export const normalizeTextEncoding = (text) => {
     
     if (fixed === text) {
       fixed = fixLatin1ToUtf8(text);
+    }
+    
+    if (fixed === text) {
+      fixed = fixWindows1252ToUtf8(text);
     }
 
     if (fixed === text && hasBrokenEncoding) {

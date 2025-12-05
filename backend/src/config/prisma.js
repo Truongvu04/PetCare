@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { normalizeObjectEncoding } from '../utils/encodingHelper.js';
 
 let databaseUrl = process.env.DATABASE_URL || '';
 
@@ -21,17 +22,35 @@ const prismaClientOptions = {
   }
 };
 
-export const prisma = new PrismaClient(prismaClientOptions);
+const basePrisma = new PrismaClient(prismaClientOptions);
 
-prisma.$connect().then(async () => {
-  console.log('✅ Prisma connected');
+const normalizeResult = (result) => {
+  if (result === null || result === undefined) {
+    return result;
+  }
+  return normalizeObjectEncoding(result);
+};
+
+export const prisma = basePrisma.$extends({
+  query: {
+    $allModels: {
+      async $allOperations({ operation, model, args, query }) {
+        const result = await query(args);
+        return normalizeResult(result);
+      },
+    },
+  },
+});
+
+basePrisma.$connect().then(async () => {
+  console.log('✅ Prisma connected with auto-encoding fix');
   
   try {
-    await prisma.$executeRaw`SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci`;
-    await prisma.$executeRaw`SET CHARACTER SET utf8mb4`;
-    await prisma.$executeRaw`SET character_set_client = utf8mb4`;
-    await prisma.$executeRaw`SET character_set_connection = utf8mb4`;
-    await prisma.$executeRaw`SET character_set_results = utf8mb4`;
+    await basePrisma.$executeRaw`SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci`;
+    await basePrisma.$executeRaw`SET CHARACTER SET utf8mb4`;
+    await basePrisma.$executeRaw`SET character_set_client = utf8mb4`;
+    await basePrisma.$executeRaw`SET character_set_connection = utf8mb4`;
+    await basePrisma.$executeRaw`SET character_set_results = utf8mb4`;
     console.log('✅ Database charset set to utf8mb4');
   } catch (err) {
     console.warn('⚠️ Could not set database charset:', err.message);
