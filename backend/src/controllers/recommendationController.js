@@ -1,5 +1,6 @@
 import { prisma } from "../config/prisma.js";
 import { removeVietnameseAccents, generateSearchPatterns } from "../utils/vietnameseUtils.js";
+import { normalizeObjectEncoding } from "../utils/encodingHelper.js";
 
 /**
  * Get product recommendations
@@ -66,10 +67,11 @@ export const getProductRecommendations = async (req, res) => {
 
     // Limit to top 10
     const recommendations = filteredProducts.slice(0, 10);
+    const normalizedRecommendations = normalizeObjectEncoding(recommendations);
 
     return res.json({
       success: true,
-      products: recommendations,
+      products: normalizedRecommendations,
     });
   } catch (error) {
     console.error("Error in getProductRecommendations:", error);

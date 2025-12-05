@@ -1,6 +1,7 @@
 import { prisma } from "../config/prisma.js";
 import path from "path";
 import fs from "fs";
+import { normalizeObjectEncoding } from "../utils/encodingHelper.js";
 
 export const createProduct = async (req, res) => {
   try {
@@ -171,7 +172,8 @@ export const getVendorProducts = async (req, res) => {
       orderBy: { created_at: "desc" },
     });
 
-    res.json(products);
+    const normalizedProducts = normalizeObjectEncoding(products);
+    res.json(normalizedProducts);
   } catch (err) {
     console.error("Error fetching vendor products:", err);
     res.status(500).json({ message: "Server error" });
@@ -183,13 +185,13 @@ export const getAllProducts = async (req, res) => {
     const products = await prisma.products.findMany({
       where: {
         stock: { gt: 0 },
-        status: 'APPROVED', // Chỉ hiển thị sản phẩm đã được duyệt
+        status: 'APPROVED',
       },
       include: {
         product_images: {
           orderBy: [
-            { is_thumbnail: "desc" }, // Thumbnail first
-            { id: "asc" }, // Then by id
+            { is_thumbnail: "desc" },
+            { id: "asc" },
           ],
         },
         vendors: {
@@ -199,7 +201,8 @@ export const getAllProducts = async (req, res) => {
       orderBy: { created_at: "desc" },
     });
 
-    res.json(products);
+    const normalizedProducts = normalizeObjectEncoding(products);
+    res.json(normalizedProducts);
   } catch (err) {
     console.error("Error fetching products:", err);
     res.status(500).json({ message: "Server error" });
@@ -238,7 +241,8 @@ export const getProductById = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    res.json(product);
+    const normalizedProduct = normalizeObjectEncoding(product);
+    res.json(normalizedProduct);
   } catch (err) {
     console.error("Error fetching product:", err);
     res.status(500).json({ message: "Server error" });

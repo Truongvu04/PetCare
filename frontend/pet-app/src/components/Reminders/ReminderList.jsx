@@ -198,9 +198,19 @@ const ReminderList = () => {
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">
                         {reminder.display_title || `${reminder.pet?.name}'s ${reminder.type}`}
+                        {reminder.type === "vaccination" && reminder.dose_number && (
+                          <span className="ml-2 text-sm font-normal text-gray-600">
+                            - Dose {reminder.dose_number}
+                          </span>
+                        )}
                       </h3>
                       <p className="text-sm text-gray-600 mb-2">
                         {reminder.subtitle || "No description"}
+                        {reminder.type === "vaccination" && reminder.vaccine?.name && (
+                          <span className="ml-2 text-xs text-gray-500">
+                            ({reminder.vaccine.name})
+                          </span>
+                        )}
                       </p>
                       <div className="flex items-center gap-4 text-sm text-gray-500">
                         <span>

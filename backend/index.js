@@ -34,6 +34,7 @@ import calendarRoutes from "./src/routes/calendar.routes.js";
 import aiRoutes from "./src/routes/ai.routes.js";
 import recommendationRoutes from "./src/routes/recommendation.routes.js";
 import adminRoutes from "./src/routes/admin.routes.js";
+import vaccineRoutes from "./src/routes/vaccine.js";
 import "./src/config/passport.js";
 import './src/scheduler/reminderJob.js'; // Đã kích hoạt cron job
 
@@ -58,9 +59,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Set charset UTF-8 for all responses
 app.use((req, res, next) => {
   res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+  res.setHeader('Content-Encoding', 'UTF-8');
   next();
 });
 
@@ -91,6 +92,7 @@ app.use("/api/calendar", calendarRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/vaccines", vaccineRoutes);
 console.log("✅ Payments routes registered at /api/payments");
 console.log("✅ Coupon routes registered at /api/coupons");
 console.log("✅ Cart routes registered at /api/cart");

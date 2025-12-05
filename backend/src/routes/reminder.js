@@ -1,7 +1,8 @@
 import express from 'express';
 import { Prisma } from '@prisma/client';
 import { verifyToken } from '../middleware/authMiddleware.js';
-import { prisma } from '../config/prisma.js'; // <--- THÊM DÒNG NÀY ĐỂ FIX LỖI CRASH
+import { prisma } from '../config/prisma.js';
+import { vaccineService } from '../services/vaccineService.js';
 
 // Get enum values from Prisma - use correct enum names from schema
 const ReminderTypeEnum = Prisma.RemindersType || {};
@@ -26,6 +27,24 @@ const ALLOWED_STATUS = Object.keys(ReminderStatusEnum).length > 0
 const VIETNAM_OFFSET_HOURS = 7;
 
 // 3. HELPERS 
+function mapSpeciesToEnglish(species) {
+    if (!species) return '';
+    const normalized = species.toLowerCase().trim();
+    const speciesMap = {
+        'mèo': 'cat',
+        'meo': 'cat',
+        'cat': 'cat',
+        'chó': 'dog',
+        'cho': 'dog',
+        'dog': 'dog',
+        'chó con': 'dog',
+        'mèo con': 'cat',
+        'puppy': 'dog',
+        'kitten': 'cat',
+    };
+    return speciesMap[normalized] || normalized;
+}
+
 function isValidDateString(dateStr) {
     if (!dateStr) return false;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
@@ -53,8 +72,15 @@ function calculateDisplayFields(reminder) {
     const humanType = humanizeType(reminder.type);
     let display_title = `${petName}’s ${humanType}`;
 
-    if (reminder.type === 'vaccination' && reminder.vaccination_type) {
-        display_title += `: ${reminder.vaccination_type}`;
+    if (reminder.type === 'vaccination') {
+        if (reminder.vaccine?.name) {
+            display_title += `: ${reminder.vaccine.name}`;
+            if (reminder.dose_number) {
+                display_title += ` - Dose ${reminder.dose_number}`;
+            }
+        } else if (reminder.vaccination_type) {
+            display_title += `: ${reminder.vaccination_type}`;
+        }
     }
 
     let subtitle = 'Date not set';
@@ -123,7 +149,7 @@ function calculateDisplayFields(reminder) {
 router.post('/', verifyToken, async (req, res) => {
     try {
         const {
-            pet_id, type, vaccination_type, feeding_time, reminder_date, frequency = 'none',
+            pet_id, type, vaccination_type, vaccine_id, dose_number, feeding_time, reminder_date, frequency = 'none',
             end_date
         } = req.body;
         const user_id = req.user.user_id;
@@ -142,6 +168,24 @@ router.post('/', verifyToken, async (req, res) => {
         }
         if (!ALLOWED_FREQUENCIES.includes(frequency)) {
             return res.status(400).json({ error: 'Invalid frequency.' });
+        }
+
+        if (type === 'vaccination' && vaccine_id) {
+            if (!dose_number || dose_number < 1) {
+                return res.status(400).json({ error: 'dose_number is required and must be >= 1 when vaccine_id is provided' });
+            }
+            const vaccine = await prisma.vaccine.findUnique({
+                where: { vaccine_id: vaccine_id }
+            });
+            if (!vaccine) {
+                return res.status(404).json({ error: 'Vaccine not found' });
+            }
+            const petSpeciesEnglish = mapSpeciesToEnglish(pet.species);
+            const vaccineSpeciesEnglish = mapSpeciesToEnglish(vaccine.species);
+            
+            if (vaccineSpeciesEnglish !== petSpeciesEnglish) {
+                return res.status(400).json({ error: `Vaccine is for ${vaccine.species}, but pet is ${pet.species}` });
+            }
         }
 
         let feedingTimeObj = null;
@@ -206,23 +250,63 @@ router.post('/', verifyToken, async (req, res) => {
                 pet_id: pet_id,
                 type: type,
                 vaccination_type: finalVaccinationType,
+                vaccine_id: vaccine_id || null,
+                dose_number: dose_number || null,
                 feeding_time: feedingTimeObj,
                 reminder_date: finalReminderDate,
                 frequency: validatedFrequency, 
-                status: ReminderStatusEnum.pending, // Sử dụng Enum đã khai báo
+                status: ReminderStatusEnum.pending,
                 end_date: validEndDate,
                 is_read: false, 
                 is_instance: false,
                 email_sent: false
             },
             include: {
-                pet: { select: { name: true } } 
+                pet: { select: { name: true } },
+                vaccine: { select: { name: true } }
             }
         });
 
-        const displayData = calculateDisplayFields(newReminder);
-        res.status(201).json({ ...newReminder, ...displayData });
+        const createdReminders = [newReminder];
 
+        if (type === 'vaccination' && vaccine_id && dose_number) {
+            try {
+                const futureDoses = await vaccineService.getFutureDoses(vaccine_id, dose_number, reminder_date);
+                
+                for (const futureDose of futureDoses) {
+                    const boosterReminder = await prisma.reminder.create({
+                        data: {
+                            pet_id: pet_id,
+                            type: 'vaccination',
+                            vaccine_id: vaccine_id,
+                            dose_number: futureDose.doseNumber,
+                            reminder_date: futureDose.date,
+                            frequency: 'none',
+                            status: ReminderStatusEnum.pending,
+                            is_read: false,
+                            is_instance: false,
+                            email_sent: false
+                        },
+                        include: {
+                            pet: { select: { name: true } },
+                            vaccine: { select: { name: true } }
+                        }
+                    });
+                    createdReminders.push(boosterReminder);
+                }
+            } catch (boosterError) {
+                console.error('Error creating booster reminders:', boosterError);
+            }
+        }
+
+        const displayData = calculateDisplayFields(newReminder);
+        const response = {
+            ...newReminder,
+            ...displayData,
+            boosterRemindersCreated: createdReminders.length - 1
+        };
+        
+        res.status(201).json(response);
 
     } catch (err) {
         console.error('POST /api/reminders error (Prisma):', err);
@@ -237,12 +321,15 @@ router.post('/', verifyToken, async (req, res) => {
 router.get('/', verifyToken, async (req, res) => {
      try {
         const user_id = req.user.user_id;
+        
         const allReminders = await prisma.reminder.findMany({
             where: {
                 pet: { user_id },
                 status: ReminderStatusEnum.pending 
             },
-            include: { pet: { select: { name: true } } },
+            include: { 
+                pet: { select: { name: true } }
+            },
             orderBy: [
                 { reminder_date: 'asc' },
                 { feeding_time: 'asc' },
@@ -287,6 +374,21 @@ router.get('/', verifyToken, async (req, res) => {
             return true; 
         });
         
+        for (const reminder of filteredReminders) {
+            if (reminder.vaccine_id && !reminder.vaccine) {
+                try {
+                    if (prisma.vaccine) {
+                        reminder.vaccine = await prisma.vaccine.findUnique({
+                            where: { vaccine_id: reminder.vaccine_id },
+                            select: { name: true, vaccine_id: true }
+                        });
+                    }
+                } catch (e) {
+                    console.warn(`Could not load vaccine ${reminder.vaccine_id}:`, e.message);
+                }
+            }
+        }
+        
         const enriched = filteredReminders.map(r => ({ ...r, ...calculateDisplayFields(r) }));
         
         enriched.sort((a, b) => {
@@ -306,7 +408,16 @@ router.get('/', verifyToken, async (req, res) => {
         return res.status(200).json(enriched);
     } catch (err) {
         console.error('GET /api/reminders error (Prisma):', err);
-        res.status(500).json({ error: 'Internal server error while fetching reminders' });
+        console.error('Error details:', {
+            message: err.message,
+            code: err.code,
+            meta: err.meta,
+            stack: err.stack
+        });
+        res.status(500).json({ 
+            error: 'Internal server error while fetching reminders',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 });
 

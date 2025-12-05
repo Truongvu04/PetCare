@@ -36,6 +36,8 @@ model Reminder {
   pet_id           String             @db.Char(12)
   type             RemindersType
   vaccination_type String?            @db.VarChar(255)
+  vaccine_id       String?            @db.Char(25)
+  dose_number      Int?
   feeding_time     DateTime?          @db.Time(0)
   reminder_date    DateTime           @db.Date
   frequency        ReminderFrequency? @default(none)
@@ -47,6 +49,7 @@ model Reminder {
   updated_at       DateTime?          @default(now()) @updatedAt @db.Timestamp(6)
   end_date         DateTime?          @db.Date
   pet              Pet                @relation(fields: [pet_id], references: [id], onDelete: Cascade, map: "reminders_ibfk_1")
+  vaccine          Vaccine?           @relation(fields: [vaccine_id], references: [vaccine_id], onDelete: SetNull)
   // Temporarily commented out to avoid foreign key constraint error
   // calendarEvents   CalendarEvent[]
 
@@ -56,7 +59,38 @@ model Reminder {
   @@index([is_read], map: "idx_reminders_is_read")
   @@index([pet_id], map: "idx_reminders_pet_id")
   @@index([reminder_date], map: "idx_reminders_reminder_date")
+  @@index([vaccine_id], map: "idx_reminders_vaccine_id")
   @@map("reminders")
+}
+
+model Vaccine {
+  vaccine_id       String                @id @default(cuid()) @db.Char(25)
+  name             String                @db.VarChar(255)
+  species          String                @db.VarChar(50)
+  description      String?               @db.Text
+  is_active        Boolean               @default(true)
+  created_at       DateTime              @default(now()) @db.Timestamp(6)
+  updated_at       DateTime              @default(now()) @updatedAt @db.Timestamp(6)
+  dose_schedules   VaccineDoseSchedule[]
+  reminders        Reminder[]
+
+  @@index([species], map: "idx_vaccines_species")
+  @@index([is_active], map: "idx_vaccines_is_active")
+  @@map("vaccines")
+}
+
+model VaccineDoseSchedule {
+  schedule_id          String   @id @default(cuid()) @db.Char(25)
+  vaccine_id           String   @db.Char(25)
+  dose_number          Int
+  days_after_previous  Int      @default(0)
+  is_booster           Boolean  @default(false)
+  notes                String?  @db.Text
+  vaccine              Vaccine  @relation(fields: [vaccine_id], references: [vaccine_id], onDelete: Cascade)
+
+  @@unique([vaccine_id, dose_number], map: "unique_vaccine_dose")
+  @@index([vaccine_id], map: "idx_vaccine_dose_schedules_vaccine_id")
+  @@map("vaccine_dose_schedules")
 }
 
 model coupon_usages {

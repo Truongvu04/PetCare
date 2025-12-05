@@ -53,6 +53,7 @@ import AdminCouponManagement from "./components/Admin/CouponManagement.jsx";
 import UserManagement from "./components/Admin/UserManagement.jsx";
 import ProductModeration from "./components/Admin/ProductModeration.jsx";
 import VendorManagement from "./components/Admin/VendorManagement.jsx";
+import VaccineManagement from "./components/Admin/VaccineManagement.jsx";
 
 // AdminProtectedRoute - checks if user has admin role
 const AdminProtectedRouteWrapper = ({ children }) => {
@@ -385,6 +386,7 @@ function App() {
               <Route path="users" element={<UserManagement />} />
               <Route path="approvals" element={<ProductModeration />} />
               <Route path="coupons" element={<AdminCouponManagement />} />
+              <Route path="vaccines" element={<VaccineManagement />} />
             </Route>
 
             {/* Vendor login redirects to main login (unified auth) */}

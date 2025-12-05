@@ -1,7 +1,7 @@
 // src/components/Admin/AdminLayout.jsx
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Home, Users, Tag, LogOut, Store, Shield, Menu, X, Package, Building2 } from 'lucide-react';
+import { Home, Users, Tag, LogOut, Store, Shield, Menu, X, Package, Building2, Syringe } from 'lucide-react';
 import { getAvatarUrl } from '../../utils/avatarHelper';
 import { performCompleteLogout } from '../../utils/logoutHelper';
 import { useAuth } from '../../hooks/useAuth';
@@ -76,6 +76,9 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                 </NavLink>
                 <NavLink to="/admin/coupons" className={getNavLinkClass}>
                     <Tag size={20} /> Coupons
+                </NavLink>
+                <NavLink to="/admin/vaccines" className={getNavLinkClass}>
+                    <Syringe size={20} /> Vaccine Management
                 </NavLink>
             </nav>
 

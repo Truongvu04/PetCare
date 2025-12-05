@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
 import api from "../../api/axiosConfig.js";
+import { vaccineApi } from "../../api/vaccineApi.js";
 import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
 import { showSuccess, showError, showWarning, showConfirm, showToast } from "../../utils/notifications";
 import {
@@ -57,6 +58,11 @@ const RemindersAuto = () => {
   // --- States cho từng loại reminder ---
   const [vPet, setVPet] = useState("");
   const [vaccinationType, setVaccinationType] = useState("");
+  const [vVaccineId, setVVaccineId] = useState("");
+  const [vDoseNumber, setVDoseNumber] = useState(1);
+  const [vVaccines, setVVaccines] = useState([]);
+  const [vSchedule, setVSchedule] = useState([]);
+  const [vLoadingVaccines, setVLoadingVaccines] = useState(false);
   const [vDate, setVDate] = useState("");
   const [vFreq, setVFreq] = useState("none");
 
@@ -91,6 +97,86 @@ const RemindersAuto = () => {
     }
     loadPets();
   }, [user]);
+
+  const mapSpeciesToEnglish = (species) => {
+    if (!species) return '';
+    const normalized = species.toLowerCase().trim();
+    const speciesMap = {
+      'mèo': 'cat',
+      'meo': 'cat',
+      'cat': 'cat',
+      'chó': 'dog',
+      'cho': 'dog',
+      'dog': 'dog',
+      'chó con': 'dog',
+      'mèo con': 'cat',
+      'puppy': 'dog',
+      'kitten': 'cat',
+    };
+    return speciesMap[normalized] || normalized;
+  };
+
+  useEffect(() => {
+    async function loadVaccines() {
+      if (!vPet) {
+        setVVaccines([]);
+        setVVaccineId("");
+        setVSchedule([]);
+        setVLoadingVaccines(false);
+        return;
+      }
+      const selectedPet = pets.find(p => p.id === vPet);
+      if (!selectedPet || !selectedPet.species) {
+        setVVaccines([]);
+        setVLoadingVaccines(false);
+        return;
+      }
+      try {
+        setVLoadingVaccines(true);
+        const englishSpecies = mapSpeciesToEnglish(selectedPet.species);
+        console.log("Loading vaccines for species:", selectedPet.species, "-> mapped to:", englishSpecies);
+        if (!englishSpecies) {
+          console.warn("Pet species could not be mapped:", selectedPet.species);
+          setVVaccines([]);
+          setVLoadingVaccines(false);
+          return;
+        }
+        const vaccines = await vaccineApi.getVaccinesBySpecies(englishSpecies);
+        console.log("Loaded vaccines:", vaccines);
+        setVVaccines(Array.isArray(vaccines) ? vaccines : []);
+      } catch (err) {
+        console.error("Failed to load vaccines", err);
+        console.error("Error details:", err.response?.data || err.message);
+        setVVaccines([]);
+      } finally {
+        setVLoadingVaccines(false);
+      }
+    }
+    loadVaccines();
+  }, [vPet, pets]);
+
+  useEffect(() => {
+    async function loadSchedule() {
+      if (!vVaccineId) {
+        setVSchedule([]);
+        return;
+      }
+      try {
+        const schedule = await vaccineApi.getVaccineSchedule(vVaccineId);
+        setVSchedule(schedule || []);
+        if (schedule && schedule.length > 0) {
+          const maxDose = Math.max(...schedule.map(s => s.dose_number));
+          if (vDoseNumber > maxDose) {
+            setVDoseNumber(1);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load vaccine schedule", err);
+        setVSchedule([]);
+      }
+    }
+    loadSchedule();
+  }, [vVaccineId]);
 
   // Load reminders on component mount
   useEffect(() => {
@@ -217,13 +303,36 @@ const RemindersAuto = () => {
     }
   };
 
-  // Lưu từng loại reminder riêng lẻ
   const handleSaveVaccination = async () => {
     if (!validateReminder(vPet, vDate, vFreq, null, "Vaccination", null)) return;
+    
+    const payload = {
+      pet_id: vPet,
+      type: "vaccination",
+      reminder_date: vDate,
+      frequency: vFreq,
+      end_date: null,
+    };
+
+    if (vVaccineId) {
+      payload.vaccine_id = vVaccineId;
+      payload.dose_number = vDoseNumber;
+    } else if (vaccinationType) {
+      payload.vaccination_type = vaccinationType;
+    }
+
     await handleSaveSingleReminder(
       "vaccination",
-      { pet_id: vPet, type: "vaccination", vaccination_type: vaccinationType || null, reminder_date: vDate, frequency: vFreq, end_date: null },
-      () => { setVPet(""); setVaccinationType(""); setVDate(""); setVFreq("none"); }
+      payload,
+      () => {
+        setVPet("");
+        setVaccinationType("");
+        setVVaccineId("");
+        setVDoseNumber(1);
+        setVDate("");
+        setVFreq("none");
+        setVSchedule([]);
+      }
     );
   };
 
@@ -269,7 +378,22 @@ const RemindersAuto = () => {
     // Vaccination
     const isVValid = validateReminder(vPet, vDate, vFreq, null, "Vaccination", null);
     if (isVValid === false) return;
-    if (isVValid) toCreate.push({ pet_id: vPet, type: "vaccination", vaccination_type: vaccinationType || null, reminder_date: vDate, frequency: vFreq, end_date: null });
+    if (isVValid) {
+      const vPayload = {
+        pet_id: vPet,
+        type: "vaccination",
+        reminder_date: vDate,
+        frequency: vFreq,
+        end_date: null,
+      };
+      if (vVaccineId) {
+        vPayload.vaccine_id = vVaccineId;
+        vPayload.dose_number = vDoseNumber;
+      } else if (vaccinationType) {
+        vPayload.vaccination_type = vaccinationType;
+      }
+      toCreate.push(vPayload);
+    }
 
     // Check-Up
     const isCValid = validateReminder(cPet, cDate, cFreq, null, "Check-Up", null);
@@ -305,7 +429,7 @@ const RemindersAuto = () => {
       // Refresh reminders list
       fetchReminders();
       // Reset all form fields
-      setVPet(""); setVaccinationType(""); setVDate(""); setVFreq("none");
+      setVPet(""); setVaccinationType(""); setVVaccineId(""); setVDoseNumber(1); setVDate(""); setVFreq("none"); setVSchedule([]);
       setCPet(""); setCDate(""); setCFreq("none");
       setFPet(""); setFeedingTime(""); setFFreq("none"); setFEndDate("");
       setGPet(""); setGDate(""); setGFreq("none");
@@ -396,6 +520,8 @@ const RemindersAuto = () => {
                             <h3 className="text-base font-semibold text-gray-900 mb-1">
                               {reminder.pet?.name}'s {reminder.type === "vaccination" && reminder.vaccination_type 
                                 ? `Vaccination: ${reminder.vaccination_type}` 
+                                : reminder.type === "vaccination" && reminder.vaccine?.name
+                                ? `Vaccination: ${reminder.vaccine.name}${reminder.dose_number ? ` - Dose ${reminder.dose_number}` : ""}`
                                 : reminder.type === "vet_visit" 
                                 ? "Check-Up" 
                                 : reminder.type}
@@ -482,10 +608,75 @@ const RemindersAuto = () => {
                       {pets.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Vaccine Type (optional)</label>
-                    <input type="text" placeholder="VD: Dại, FVRCP, ..." value={vaccinationType} onChange={(e) => setVaccinationType(e.target.value)} className="w-full bg-green-50 rounded-xl p-3 text-sm text-gray-800 focus:ring-2 focus:ring-green-400 border border-gray-200 focus:outline-none focus:border-green-300" />
-                  </div>
+                  {vPet && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Vaccine Type *</label>
+                        <select 
+                          value={vVaccineId} 
+                          onChange={(e) => setVVaccineId(e.target.value)} 
+                          disabled={vLoadingVaccines}
+                          className={`w-full bg-green-50 rounded-xl p-3 text-sm text-gray-800 focus:ring-2 focus:ring-green-400 border border-gray-200 focus:outline-none focus:border-green-300 ${vLoadingVaccines ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <option value="">
+                            {vLoadingVaccines ? 'Loading vaccines...' : 'Select vaccine'}
+                          </option>
+                          {vVaccines.length > 0 ? (
+                            vVaccines.map((v) => (
+                              <option key={v.vaccine_id} value={v.vaccine_id}>
+                                {v.name}
+                              </option>
+                            ))
+                          ) : !vLoadingVaccines ? (
+                            <option value="" disabled>No vaccines available</option>
+                          ) : null}
+                        </select>
+                        {vLoadingVaccines && (
+                          <p className="text-xs text-blue-600 mt-1">Loading vaccines for {pets.find(p => p.id === vPet)?.species || 'this pet'}...</p>
+                        )}
+                        {!vLoadingVaccines && vVaccines.length === 0 && (
+                          <p className="text-xs text-yellow-600 mt-1">No vaccines found for {pets.find(p => p.id === vPet)?.species || 'this species'}. Please enter custom vaccine type below.</p>
+                        )}
+                        {!vLoadingVaccines && vVaccines.length > 0 && (
+                          <p className="text-xs text-gray-500 mt-1">Or enter custom vaccine type below</p>
+                        )}
+                      </div>
+                      {vVaccineId && vSchedule.length > 0 && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Dose Number *</label>
+                          <select value={vDoseNumber} onChange={(e) => setVDoseNumber(parseInt(e.target.value))} className="w-full bg-green-50 rounded-xl p-3 text-sm text-gray-800 focus:ring-2 focus:ring-green-400 border border-gray-200 focus:outline-none focus:border-green-300">
+                            {vSchedule.map((s) => (
+                              <option key={s.schedule_id} value={s.dose_number}>
+                                Dose {s.dose_number} {s.is_booster ? "(Booster)" : ""} {s.notes ? `- ${s.notes}` : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      {vVaccineId && vSchedule.length > 0 && vDoseNumber && (
+                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                          <p className="text-sm font-medium text-blue-900 mb-2">Upcoming Doses:</p>
+                          <ul className="text-xs text-blue-800 space-y-1">
+                            {vSchedule
+                              .filter(s => s.dose_number > vDoseNumber)
+                              .map((s) => {
+                                const daysAfter = s.days_after_previous;
+                                const nextDate = vDate ? new Date(new Date(vDate).getTime() + daysAfter * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : 'Select date first';
+                                return (
+                                  <li key={s.schedule_id}>
+                                    Dose {s.dose_number} {s.is_booster ? "(Booster)" : ""}: {daysAfter} days after ({nextDate})
+                                  </li>
+                                );
+                              })}
+                          </ul>
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Custom Vaccine Type (if not in list)</label>
+                        <input type="text" placeholder="VD: Dại, FVRCP, ..." value={vaccinationType} onChange={(e) => setVaccinationType(e.target.value)} disabled={!!vVaccineId} className={`w-full bg-green-50 rounded-xl p-3 text-sm text-gray-800 focus:ring-2 focus:ring-green-400 border border-gray-200 focus:outline-none focus:border-green-300 ${vVaccineId ? "opacity-50 cursor-not-allowed" : ""}`} />
+                      </div>
+                    </>
+                  )}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Reminder Date *</label>
                     <input type="date" value={vDate} onChange={(e) => setVDate(e.target.value)} min={todayStr} className="w-full bg-green-50 rounded-xl p-3 text-sm text-gray-800 focus:ring-2 focus:ring-green-400 border border-gray-200 focus:outline-none focus:border-green-300" />

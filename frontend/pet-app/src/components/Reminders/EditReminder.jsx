@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
 import api from "../../api/axiosConfig.js";
+import { vaccineApi } from "../../api/vaccineApi.js";
 import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
 import { showSuccess, showError, showWarning } from "../../utils/notifications";
 
@@ -21,6 +22,10 @@ const EditReminder = () => {
   const [reminderDate, setReminderDate] = useState("");
   const [frequency, setFrequency] = useState("none");
   const [vaccinationType, setVaccinationType] = useState("");
+  const [vaccineId, setVaccineId] = useState("");
+  const [doseNumber, setDoseNumber] = useState(1);
+  const [vaccines, setVaccines] = useState([]);
+  const [schedule, setSchedule] = useState([]);
   const [feedingTime, setFeedingTime] = useState("");
   const [endDate, setEndDate] = useState("");
 
@@ -59,6 +64,8 @@ const EditReminder = () => {
         }
         setFrequency(foundReminder.frequency || "none");
         setVaccinationType(foundReminder.vaccination_type || "");
+        setVaccineId(foundReminder.vaccine_id || "");
+        setDoseNumber(foundReminder.dose_number || 1);
         
         if (foundReminder.feeding_time) {
           // Backend stores time in UTC with Vietnam offset adjustment
@@ -85,6 +92,73 @@ const EditReminder = () => {
     }
     loadData();
   }, [user, reminderId, navigate]);
+
+  const mapSpeciesToEnglish = (species) => {
+    if (!species) return '';
+    const normalized = species.toLowerCase().trim();
+    const speciesMap = {
+      'mèo': 'cat',
+      'meo': 'cat',
+      'cat': 'cat',
+      'chó': 'dog',
+      'cho': 'dog',
+      'dog': 'dog',
+      'chó con': 'dog',
+      'mèo con': 'cat',
+      'puppy': 'dog',
+      'kitten': 'cat',
+    };
+    return speciesMap[normalized] || normalized;
+  };
+
+  useEffect(() => {
+    async function loadVaccines() {
+      if (!selectedPet) {
+        setVaccines([]);
+        setVaccineId("");
+        setSchedule([]);
+        return;
+      }
+      const selectedPetObj = pets.find(p => p.id === selectedPet);
+      if (!selectedPetObj || !selectedPetObj.species) {
+        setVaccines([]);
+        return;
+      }
+      try {
+        const englishSpecies = mapSpeciesToEnglish(selectedPetObj.species);
+        console.log("Loading vaccines for species:", selectedPetObj.species, "-> mapped to:", englishSpecies);
+        const vaccinesData = await vaccineApi.getVaccinesBySpecies(englishSpecies);
+        setVaccines(vaccinesData || []);
+      } catch (err) {
+        console.error("Failed to load vaccines", err);
+        setVaccines([]);
+      }
+    }
+    loadVaccines();
+  }, [selectedPet, pets]);
+
+  useEffect(() => {
+    async function loadSchedule() {
+      if (!vaccineId) {
+        setSchedule([]);
+        return;
+      }
+      try {
+        const scheduleData = await vaccineApi.getVaccineSchedule(vaccineId);
+        setSchedule(scheduleData || []);
+        if (scheduleData && scheduleData.length > 0) {
+          const maxDose = Math.max(...scheduleData.map(s => s.dose_number));
+          if (doseNumber > maxDose) {
+            setDoseNumber(1);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load vaccine schedule", err);
+        setSchedule([]);
+      }
+    }
+    loadSchedule();
+  }, [vaccineId]);
 
   const calculateDaysDiff = (dateStr1, dateStr2) => {
     if (!dateStr1 || !dateStr2) return Infinity;
@@ -146,8 +220,16 @@ const EditReminder = () => {
         frequency: frequency,
       };
       
-      if (reminder.type === "vaccination" && vaccinationType) {
-        updateData.vaccination_type = vaccinationType;
+      if (reminder.type === "vaccination") {
+        if (vaccineId) {
+          updateData.vaccine_id = vaccineId;
+          updateData.dose_number = doseNumber;
+          updateData.vaccination_type = null;
+        } else if (vaccinationType) {
+          updateData.vaccination_type = vaccinationType;
+          updateData.vaccine_id = null;
+          updateData.dose_number = null;
+        }
       }
       
       if (reminder.type === "feeding" && feedingTime) {
@@ -240,16 +322,69 @@ const EditReminder = () => {
 
             {/* Vaccination Type (only for vaccination) */}
             {reminder.type === "vaccination" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Vaccine Type</label>
-                <input
-                  type="text"
-                  placeholder="VD: Dại, FVRCP, ..."
-                  value={vaccinationType}
-                  onChange={(e) => setVaccinationType(e.target.value)}
-                  className="w-full bg-green-50 rounded-xl p-3 text-sm text-gray-800 focus:ring-2 focus:ring-green-400 border border-gray-200 focus:outline-none focus:border-green-300"
-                />
-              </div>
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Vaccine Type *</label>
+                  <select
+                    value={vaccineId}
+                    onChange={(e) => setVaccineId(e.target.value)}
+                    className="w-full bg-green-50 rounded-xl p-3 text-sm text-gray-800 focus:ring-2 focus:ring-green-400 border border-gray-200 focus:outline-none focus:border-green-300"
+                  >
+                    <option value="">Select vaccine</option>
+                    {vaccines.map((v) => (
+                      <option key={v.vaccine_id} value={v.vaccine_id}>
+                        {v.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Or enter custom vaccine type below</p>
+                </div>
+                {vaccineId && schedule.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Dose Number *</label>
+                    <select
+                      value={doseNumber}
+                      onChange={(e) => setDoseNumber(parseInt(e.target.value))}
+                      className="w-full bg-green-50 rounded-xl p-3 text-sm text-gray-800 focus:ring-2 focus:ring-green-400 border border-gray-200 focus:outline-none focus:border-green-300"
+                    >
+                      {schedule.map((s) => (
+                        <option key={s.schedule_id} value={s.dose_number}>
+                          Dose {s.dose_number} {s.is_booster ? "(Booster)" : ""} {s.notes ? `- ${s.notes}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {vaccineId && schedule.length > 0 && doseNumber && reminderDate && (
+                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <p className="text-sm font-medium text-blue-900 mb-2">Upcoming Doses:</p>
+                    <ul className="text-xs text-blue-800 space-y-1">
+                      {schedule
+                        .filter(s => s.dose_number > doseNumber)
+                        .map((s) => {
+                          const daysAfter = s.days_after_previous;
+                          const nextDate = new Date(new Date(reminderDate).getTime() + daysAfter * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                          return (
+                            <li key={s.schedule_id}>
+                              Dose {s.dose_number} {s.is_booster ? "(Booster)" : ""}: {daysAfter} days after ({nextDate})
+                            </li>
+                          );
+                        })}
+                    </ul>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Custom Vaccine Type (if not in list)</label>
+                  <input
+                    type="text"
+                    placeholder="VD: Dại, FVRCP, ..."
+                    value={vaccinationType}
+                    onChange={(e) => setVaccinationType(e.target.value)}
+                    disabled={!!vaccineId}
+                    className={`w-full bg-green-50 rounded-xl p-3 text-sm text-gray-800 focus:ring-2 focus:ring-green-400 border border-gray-200 focus:outline-none focus:border-green-300 ${vaccineId ? "opacity-50 cursor-not-allowed" : ""}`}
+                  />
+                </div>
+              </>
             )}
 
             {/* Feeding Time (only for feeding) */}
