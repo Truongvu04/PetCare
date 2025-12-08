@@ -132,6 +132,7 @@ const HealthTracking = () => {
                 { id: "overview", label: "Overview" },
                 { id: "weight", label: "Weight" },
                 { id: "vaccination", label: "Medical History" },
+                { id: "health_note", label: "Checkup" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -234,6 +235,17 @@ const HealthTracking = () => {
             )}
           </div>
         )}
+        {activeTab === "health_note" && (
+          <div className={!selectedPetId || pets.length === 0 ? 'opacity-50 pointer-events-none' : ''}>
+            {selectedPetId ? (
+              <HealthNoteForm petId={selectedPetId} onSuccess={handleSuccess} />
+            ) : (
+              <div className="bg-white p-6 rounded-lg border border-gray-200">
+                <p className="text-gray-500 text-center">Please select a pet to add checkup information</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Records List */}
         <div className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${!selectedPetId || pets.length === 0 ? 'opacity-50' : ''}`}>
@@ -242,6 +254,7 @@ const HealthTracking = () => {
               {activeTab === "overview" && "Overview"}
               {activeTab === "weight" && "Weight"}
               {activeTab === "vaccination" && "Medical History"}
+              {activeTab === "health_note" && "Checkup Records"}
             </h3>
           </div>
           <div className="overflow-x-auto">
@@ -355,6 +368,38 @@ const HealthTracking = () => {
                             </td>
                             <td className="px-4 py-3 text-sm font-medium">{record.vaccination_name}</td>
                             <td className="px-4 py-3 text-sm text-gray-600">Annual vaccination</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </>
+                )}
+                {activeTab === "health_note" && (
+                  <>
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Date
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Health Note
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {healthNotes.length === 0 ? (
+                        <tr>
+                          <td colSpan={2} className="px-4 py-8 text-center text-gray-500">
+                            No checkup records available
+                          </td>
+                        </tr>
+                      ) : (
+                        healthNotes.map((record) => (
+                          <tr key={record.id}>
+                            <td className="px-4 py-3 text-sm">
+                              {new Date(record.record_date).toLocaleDateString("vi-VN")}
+                            </td>
+                            <td className="px-4 py-3 text-sm">{record.health_note}</td>
                           </tr>
                         ))
                       )}

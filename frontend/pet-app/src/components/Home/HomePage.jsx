@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react"; // Sửa: Thêm useEffect
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
 import api from "../../api/axiosConfig.js";
+import { healthApi } from "../../api/healthApi.js";
+import { expenseApi } from "../../api/expenseApi.js";
 import LoginForm from "../Auth/LoginForm";
 
 // --- Constants (Thay thế các đường dẫn file ảnh cục bộ bằng Placeholder URL) ---
@@ -462,41 +464,132 @@ const SupportCard = ({ iconClass, title, description }) => (
 // --- HEADER ---
 const Header = ({ onLoginClick }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // === YÊU CẦU 4: THÊM STATE VÀ LOGIC CHO CHUÔNG THÔNG BÁO ===
   const [hasNewReminders, setHasNewReminders] = useState(false);
+  const [hasNewHealth, setHasNewHealth] = useState(false);
+  const [hasNewExpenses, setHasNewExpenses] = useState(false);
+
+  const getReadStatusKey = (type) => {
+    const today = new Date().toISOString().split('T')[0];
+    return `read_${type}_${user?.user_id || 'guest'}_${today}`;
+  };
+
+  const isRead = (type) => {
+    if (!user) return true;
+    const key = getReadStatusKey(type);
+    return localStorage.getItem(key) === 'true';
+  };
 
   useEffect(() => {
     let isMounted = true;
+    let intervalId = null;
     
-    const checkForNewReminders = async () => {
-      // Chỉ fetch nếu đã đăng nhập
+    const checkForNewData = async () => {
       if (user) {
         try {
-          const res = await api.get("/reminders");
-          if (isMounted && Array.isArray(res.data)) {
-            // Kiểm tra xem có reminder nào (is_new_today === true) không
-            const hasNew = res.data.some(r => r.is_new_today === true);
-            setHasNewReminders(hasNew);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+
+          const remindersRes = await api.get("/reminders");
+          let hasNewReminder = false;
+          if (isMounted && Array.isArray(remindersRes.data)) {
+            hasNewReminder = remindersRes.data.some(r => r.is_new_today === true);
+          }
+
+          const petsRes = await api.get("/pets");
+          let hasNewHealthRecord = false;
+          if (isMounted && Array.isArray(petsRes.data) && petsRes.data.length > 0) {
+            for (const pet of petsRes.data) {
+              try {
+                const healthRes = await healthApi.getHealthRecords(pet.id);
+                if (healthRes && healthRes.success && Array.isArray(healthRes.records)) {
+                  const todayHealthRecords = healthRes.records.filter(r => {
+                    const recordDate = new Date(r.record_date);
+                    return recordDate >= today && recordDate < tomorrow;
+                  });
+                  if (todayHealthRecords.length > 0) {
+                    hasNewHealthRecord = true;
+                    break;
+                  }
+                }
+              } catch (err) {
+                console.error(`Error checking health for pet ${pet.id}:`, err);
+              }
+            }
+          }
+
+          let hasNewExpense = false;
+          try {
+            const expensesRes = await expenseApi.getExpenses();
+            if (expensesRes && expensesRes.success && Array.isArray(expensesRes.expenses)) {
+              hasNewExpense = expensesRes.expenses.some(e => {
+                const expenseDate = new Date(e.expense_date);
+                return expenseDate >= today && expenseDate < tomorrow;
+              });
+            }
+          } catch (err) {
+            console.error("Error checking expenses:", err);
+          }
+
+          if (isMounted) {
+            setHasNewReminders(hasNewReminder && !isRead('reminders'));
+            setHasNewHealth(hasNewHealthRecord && !isRead('health'));
+            setHasNewExpenses(hasNewExpense && !isRead('expenses'));
           }
         } catch (err) {
-          console.error("Error fetching reminders for bell icon:", err);
-          if (isMounted) setHasNewReminders(false);
+          console.error("Error fetching data for bell icon:", err);
+          if (isMounted) {
+            setHasNewReminders(false);
+            setHasNewHealth(false);
+            setHasNewExpenses(false);
+          }
         }
       } else {
-         // Reset khi logout
-         if (isMounted) setHasNewReminders(false);
+        if (isMounted) {
+          setHasNewReminders(false);
+          setHasNewHealth(false);
+          setHasNewExpenses(false);
+        }
       }
     };
     
-    checkForNewReminders();
+    checkForNewData();
     
-    // Cleanup
-    return () => { isMounted = false; };
-  }, [user]); // Chạy lại khi 'user' thay đổi (login/logout)
-  // ==========================================================
+    if (user) {
+      intervalId = setInterval(() => {
+        checkForNewData();
+      }, 30000);
+      
+      const handleFocus = () => {
+        checkForNewData();
+      };
+      
+      const handleDataRead = () => {
+        checkForNewData();
+      };
+      
+      window.addEventListener('focus', handleFocus);
+      window.addEventListener('dataRead', handleDataRead);
+      
+      return () => {
+        isMounted = false;
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+        window.removeEventListener('focus', handleFocus);
+        window.removeEventListener('dataRead', handleDataRead);
+      };
+    }
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [user, location.pathname]);
 
   return (
     <header className="flex items-center justify-between px-4 md:px-8 py-3 bg-white shadow-sm top-0 z-50 sticky overflow-visible w-full">
@@ -550,8 +643,7 @@ const Header = ({ onLoginClick }) => {
           <i
             className="fa-regular fa-bell text-[#29a980] bg-[#e8f7f0] p-2 md:p-3 rounded-[10px] transition duration-300 ease hover:bg-[#d8f5e7] text-sm md:text-base"
           ></i>
-          {/* Dấu chấm đỏ (chỉ hiển thị nếu hasNewReminders là true) */}
-          {hasNewReminders && (
+          {(hasNewReminders || hasNewHealth || hasNewExpenses) && (
             <span className="absolute top-0 right-0 h-2 w-2 md:h-2.5 md:w-2.5 bg-red-500 rounded-full animate-pulse border border-white"></span>
           )}
         </div>

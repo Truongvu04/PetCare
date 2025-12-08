@@ -16,6 +16,7 @@ import {
   CheckCircle,
   Filter,
   Plus,
+  X,
 } from "lucide-react";
 
 const getReminderIcon = (type) => {
@@ -97,6 +98,16 @@ const RemindersAuto = () => {
     }
     loadPets();
   }, [user]);
+
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && showForm) {
+        setShowForm(false);
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showForm]);
 
   const mapSpeciesToEnglish = (species) => {
     if (!species) return '';
@@ -235,7 +246,11 @@ const RemindersAuto = () => {
 
   const handleCancel = (e) => {
     e.preventDefault();
-    navigate("/dashboard");
+    setShowForm(false);
+    setVPet(""); setVaccinationType(""); setVVaccineId(""); setVDoseNumber(1); setVDate(""); setVFreq("none"); setVSchedule([]);
+    setCPet(""); setCDate(""); setCFreq("none");
+    setFPet(""); setFeedingTime(""); setFFreq("none"); setFEndDate("");
+    setGPet(""); setGDate(""); setGFreq("none");
   };
 
   const calculateDaysDiff = (dateStr1, dateStr2) => {
@@ -580,12 +595,21 @@ const RemindersAuto = () => {
               )}
             </div>
 
-            {/* Form Section - Toggleable */}
+            {/* Modal Overlay */}
             {showForm && (
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Add New Reminder</h2>
-
-            <form className="space-y-8" onSubmit={handleSubmit}>
+              <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
+                <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+                    <h2 className="text-xl font-semibold text-gray-800">Add New Reminder</h2>
+                    <button
+                      onClick={() => setShowForm(false)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition"
+                    >
+                      <X size={20} className="text-gray-600" />
+                    </button>
+                  </div>
+                  <div className="p-6">
+                    <form className="space-y-8" onSubmit={handleSubmit}>
               {/* Vaccination */}
               <section className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 hover:shadow-lg transition">
                 <div className="flex justify-between items-center mb-4">
@@ -826,8 +850,10 @@ const RemindersAuto = () => {
                   </div>
                 </div>
               </div>
-            </form>
-            </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
     </CustomerLayout>
