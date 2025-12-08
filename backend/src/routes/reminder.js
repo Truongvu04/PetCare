@@ -4,7 +4,6 @@ import { verifyToken } from '../middleware/authMiddleware.js';
 import { prisma } from '../config/prisma.js';
 import { vaccineService } from '../services/vaccineService.js';
 
-<<<<<<< HEAD
 // Get enum values from Prisma - use correct enum names from schema
 const ReminderTypeEnum = Prisma.RemindersType || {};
 const ReminderFrequencyEnum = Prisma.ReminderFrequency || {};
@@ -25,28 +24,6 @@ const ALLOWED_STATUS = Object.keys(ReminderStatusEnum).length > 0
   ? Object.values(ReminderStatusEnum) 
   : ['pending', 'done'];
 
-=======
-let ReminderTypeEnum = Prisma.ReminderType || Prisma.RemindersType || {};
-let ReminderFrequencyEnum = Prisma.ReminderFrequency || Prisma.ReminderFrequencies || {};
-let ReminderStatusEnum = Prisma.ReminderStatus || Prisma.ReminderStatuses || {};
-
-const router = express.Router();
-
-let ALLOWED_FREQUENCIES = Object.values(ReminderFrequencyEnum || {});
-let ALLOWED_TYPES = Object.values(ReminderTypeEnum || {});
-let ALLOWED_STATUS = Object.values(ReminderStatusEnum || {});
-
-// Fallbacks when Prisma enums are not available at runtime
-if (!Array.isArray(ALLOWED_TYPES) || ALLOWED_TYPES.length === 0) {
-    ALLOWED_TYPES = ['vaccination', 'vet_visit', 'checkup', 'feeding', 'grooming', 'medication', 'other'];
-}
-if (!Array.isArray(ALLOWED_FREQUENCIES) || ALLOWED_FREQUENCIES.length === 0) {
-    ALLOWED_FREQUENCIES = ['none', 'daily', 'weekly', 'monthly', 'yearly'];
-}
-if (!Array.isArray(ALLOWED_STATUS) || ALLOWED_STATUS.length === 0) {
-    ALLOWED_STATUS = ['pending', 'success', 'fail', 'cancelled'];
-}
->>>>>>> 680eddda4c461c7b7cbf73d8fd2b2f0596855c39
 const VIETNAM_OFFSET_HOURS = 7;
 
 // 3. HELPERS 
@@ -264,11 +241,7 @@ router.post('/', verifyToken, async (req, res) => {
                 return res.status(400).json({ error: 'end_date cannot be before the reminder_date' });
             }
         }
-<<<<<<< HEAD
         
-=======
-
->>>>>>> 680eddda4c461c7b7cbf73d8fd2b2f0596855c39
         /** @type {import('@prisma/client').ReminderFrequency} */
         const validatedFrequency = frequency;
 
@@ -282,11 +255,7 @@ router.post('/', verifyToken, async (req, res) => {
                 feeding_time: feedingTimeObj,
                 reminder_date: finalReminderDate,
                 frequency: validatedFrequency, 
-<<<<<<< HEAD
                 status: ReminderStatusEnum.pending,
-=======
-                status: 'pending', // use literal string to avoid enum runtime issues
->>>>>>> 680eddda4c461c7b7cbf73d8fd2b2f0596855c39
                 end_date: validEndDate,
                 is_read: false, 
                 is_instance: false,
