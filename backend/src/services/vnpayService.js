@@ -92,4 +92,58 @@ function verifySignature(queryObj) {
   const computed = hmac.update(signData).digest('hex');
   return computed === queryObj.vnp_SecureHash;
 }
-export { buildPaymentUrl, verifySignature };
+
+/**
+ * VNPay Refund Function
+ * Gửi yêu cầu hoàn tiền đến VNPay
+ * Note: VNPay Sandbox có thể không hỗ trợ API refund thực sự
+ * Trong production, cần dùng VNPay Refund API với chứng chỉ SSL
+ */
+async function vnpayRefund({ transaction_id, amount }) {
+  try {
+    if (!transaction_id || !amount) {
+      throw new Error('Missing transaction_id or amount');
+    }
+
+    console.log(`[vnpay] Initiating refund for transaction: ${transaction_id}, amount: ${amount}`);
+
+    // ⚠️ LƯU Ý: VNPay Sandbox KHÔNG hỗ trợ API refund thực sự
+    // Cần implement đầy đủ trong production với chứng chỉ SSL
+    // Hiện tại chỉ log và trả success để demo
+
+    // Nếu dùng production, sẽ cần:
+    // 1. Chứng chỉ SSL client (certificate + key)
+    // 2. API endpoint riêng cho refund
+    // 3. Xác thực bằng signature
+
+    // For now, mock successful refund
+    const refundRecord = {
+      transaction_id,
+      original_amount: amount,
+      refund_amount: amount,
+      status: 'initiated',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development'
+    };
+
+    console.log(`✅ [vnpay] Refund initiated:`, refundRecord);
+
+    return {
+      success: true,
+      message: 'Refund initiated successfully',
+      transaction_id,
+      refund_amount: amount,
+      timestamp: new Date().toISOString()
+    };
+
+  } catch (err) {
+    console.error('[vnpay] Refund error:', err);
+    return {
+      success: false,
+      message: err.message,
+      transaction_id
+    };
+  }
+}
+
+export { buildPaymentUrl, verifySignature, vnpayRefund };

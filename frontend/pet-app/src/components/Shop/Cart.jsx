@@ -1,21 +1,110 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "./CartContext.jsx";
-import { Trash2, Plus, Minus, ArrowLeft, ShoppingBag, ShieldCheck, CreditCard, CheckCircle } from "lucide-react";
+import { Trash2, Plus, Minus, ArrowLeft, ShoppingBag, ShieldCheck, CreditCard, CheckCircle, X } from "lucide-react";
 import CartIcon from "./CartIcon.jsx";
+import api from "../../api/axiosConfig.js";
+import { showSuccess, showError, showWarning } from "../../utils/notifications";
 
 const Cart = () => {
   const navigate = useNavigate();
   const { cartItems, removeFromCart, updateQuantity, getTotal, clearCart } = useCart();
 
+  // Coupon state
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+
   // getTotal() already returns price in smallest unit
   const subtotalRaw = getTotal();
   const subtotal = subtotalRaw / 1000; // Convert to dollars for display
-  const tax = subtotalRaw * 0.1; // Tax in smallest unit
-  const shipping = subtotalRaw > 100000 ? 0 : 30000; // Shipping in smallest unit
-  const total = subtotalRaw + tax + shipping; // Total in smallest unit
+  
+  // Calculate discount if coupon is applied
+  let discountAmount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.discount_percent) {
+      discountAmount = (subtotalRaw * appliedCoupon.discount_percent) / 100;
+    } else if (appliedCoupon.discount_amount) {
+      discountAmount = appliedCoupon.discount_amount * 1000; // Convert to smallest unit
+    }
+  }
+  
+  const subtotalAfterDiscount = subtotalRaw - discountAmount;
+  const tax = 0; // Tax removed - no tax applied to orders
+  const shipping = subtotalAfterDiscount > 100000 ? 0 : 30000; // Shipping in smallest unit
+  const total = subtotalAfterDiscount + shipping; // Total without tax
 
   const [showConfirmation, setShowConfirmation] = React.useState(false);
+
+  // Get vendor_id from cart items (assume all items are from same vendor for coupon)
+  const getVendorId = () => {
+    if (cartItems.length === 0) return null;
+    // Try multiple paths to get vendor_id
+    const firstItem = cartItems[0];
+    
+    // Priority: vendors.vendor_id > product.vendor_id (direct field) > vendor_id
+    const vendorId = 
+      firstItem?.product?.vendors?.vendor_id || 
+      firstItem?.product?.vendor_id ||  // Direct vendor_id from products table
+      firstItem?.vendor_id ||
+      null;
+    
+    console.log("🔍 Cart - getVendorId:", {
+      cartItemsLength: cartItems.length,
+      firstItem: firstItem,
+      product: firstItem?.product,
+      productKeys: firstItem?.product ? Object.keys(firstItem.product) : [],
+      vendors: firstItem?.product?.vendors,
+      vendor_id_from_vendors: firstItem?.product?.vendors?.vendor_id,
+      vendor_id_from_product: firstItem?.product?.vendor_id,
+      final_vendor_id: vendorId,
+      type: typeof vendorId
+    });
+    
+    return vendorId;
+  };
+
+  // Handle apply coupon
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      showWarning("Cảnh báo", "Vui lòng nhập mã coupon");
+      return;
+    }
+
+    setApplyingCoupon(true);
+    try {
+      const vendorId = getVendorId();
+      console.log("🔍 Applying coupon - vendorId:", vendorId, "code:", couponCode.trim().toUpperCase());
+      
+      const response = await api.post("/coupons/validate", {
+        code: couponCode.trim().toUpperCase(),
+        vendor_id: vendorId !== null && vendorId !== undefined ? parseInt(vendorId) : null // Ensure it's an integer or null
+      });
+      
+      console.log("✅ Coupon validation response:", response.data);
+
+      if (response.data.valid && response.data.coupon) {
+        setAppliedCoupon(response.data.coupon);
+        setCouponCode(""); // Clear input
+        showSuccess("Thành công", `Đã áp dụng coupon "${response.data.coupon.code}" thành công!`);
+      } else {
+        showError("Lỗi", "Coupon không hợp lệ");
+      }
+    } catch (error) {
+      console.error("Error applying coupon:", error);
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || "Không thể áp dụng coupon. Vui lòng thử lại.";
+      showError("Lỗi", errorMsg);
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
+  // Handle remove coupon
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    showSuccess("Thành công", "Đã xóa coupon");
+  };
 
   const handleCheckout = () => {
     setShowConfirmation(true);
@@ -44,28 +133,28 @@ const Cart = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 md:p-8 relative">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 relative">
       {/* Floating Cart Button - hidden on cart page */}
       <div className="hidden">
         <CartIcon showFloating={true} />
       </div>
 
       {/* Progress Indicator */}
-      <div className="mb-12">
+      <div className="mb-8 sm:mb-12">
         <div className="flex items-center justify-center w-full max-w-3xl mx-auto">
           <div className="flex flex-col items-center relative z-10">
-            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold mb-2 ring-4 ring-white">1</div>
-            <span className="text-sm font-semibold text-green-700">Cart</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold mb-1 sm:mb-2 ring-2 sm:ring-4 ring-white text-sm sm:text-base">1</div>
+            <span className="text-xs sm:text-sm font-semibold text-green-700">Cart</span>
           </div>
-          <div className="flex-1 h-1 bg-gray-200 -mx-4 relative top-[-14px] z-0"></div>
+          <div className="flex-1 h-1 bg-gray-200 -mx-2 sm:-mx-4 relative top-[-10px] sm:top-[-14px] z-0"></div>
           <div className="flex flex-col items-center relative z-10">
-            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold mb-2 ring-4 ring-white">2</div>
-            <span className="text-sm font-medium text-gray-500">Shipping</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold mb-1 sm:mb-2 ring-2 sm:ring-4 ring-white text-sm sm:text-base">2</div>
+            <span className="text-xs sm:text-sm font-medium text-gray-500">Shipping</span>
           </div>
-          <div className="flex-1 h-1 bg-gray-200 -mx-4 relative top-[-14px] z-0"></div>
+          <div className="flex-1 h-1 bg-gray-200 -mx-2 sm:-mx-4 relative top-[-10px] sm:top-[-14px] z-0"></div>
           <div className="flex flex-col items-center relative z-10">
-            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold mb-2 ring-4 ring-white">3</div>
-            <span className="text-sm font-medium text-gray-500">Payment</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold mb-1 sm:mb-2 ring-2 sm:ring-4 ring-white text-sm sm:text-base">3</div>
+            <span className="text-xs sm:text-sm font-medium text-gray-500">Payment</span>
           </div>
         </div>
       </div>
@@ -78,18 +167,18 @@ const Cart = () => {
         Continue Shopping
       </button>
 
-      <h1 className="text-3xl font-bold mb-8 text-gray-900">Shopping Cart ({cartItems.length} items)</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-900">Shopping Cart ({cartItems.length} items)</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 xl:gap-12">
         {/* Cart Items List */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {cartItems.map((item) => {
             const thumbnail = item.product?.product_images?.find(
               (img) => img.is_thumbnail === true
             );
             return (
-              <div key={item.productId} className="flex gap-6 p-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="w-32 h-32 flex-shrink-0 bg-gray-50 rounded-xl overflow-hidden">
+              <div key={item.productId} className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-6 bg-white border border-gray-100 rounded-xl sm:rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-full sm:w-24 sm:h-24 lg:w-32 lg:h-32 h-48 flex-shrink-0 bg-gray-50 rounded-lg sm:rounded-xl overflow-hidden">
                   <img
                     src={
                       thumbnail
@@ -109,10 +198,10 @@ const Cart = () => {
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-bold text-lg text-gray-800 mb-1">{item.product?.name || "Product"}</h3>
-                      <p className="text-sm text-gray-500">Unit Price: ${((item.product?.price || 0) / 1000).toFixed(2)}</p>
+                      <p className="text-sm text-gray-500">Giá đơn vị: {((item.product?.price || 0)).toLocaleString("vi-VN")} VND</p>
                     </div>
                     <p className="font-bold text-lg text-green-700">
-                      ${(((item.product?.price || 0) * item.quantity) / 1000).toFixed(2)}
+                      {(((item.product?.price || 0) * item.quantity)).toLocaleString("vi-VN")} VND
                     </p>
                   </div>
 
@@ -155,38 +244,74 @@ const Cart = () => {
 
             <div className="space-y-4 mb-8">
               <div className="flex justify-between text-gray-600">
-                <span>Subtotal</span>
-                <span className="font-medium">${(subtotal / 1000).toFixed(2)}</span>
+                <span>Tạm tính</span>
+                <span className="font-medium">{subtotalRaw.toLocaleString("vi-VN")} VND</span>
               </div>
+              
+              {appliedCoupon && discountAmount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span className="flex items-center gap-2">
+                    Giảm giá ({appliedCoupon.code})
+                    {appliedCoupon.discount_percent && ` ${appliedCoupon.discount_percent}%`}
+                  </span>
+                  <span className="font-medium">-{discountAmount.toLocaleString("vi-VN")} VND</span>
+                </div>
+              )}
+              
               <div className="flex justify-between text-gray-600">
-                <span>Shipping</span>
-                <span className="font-medium text-green-600">{shipping === 0 ? "Free" : `$${(shipping / 1000).toFixed(2)}`}</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Estimated Tax</span>
-                <span className="font-medium">${(tax / 1000).toFixed(2)}</span>
+                <span>Phí vận chuyển</span>
+                <span className="font-medium text-green-600">{shipping === 0 ? "Miễn phí" : `${shipping.toLocaleString("vi-VN")} VND`}</span>
               </div>
               <div className="h-px bg-gray-100 my-4"></div>
               <div className="flex justify-between items-end">
-                <span className="text-lg font-bold text-gray-900">Total</span>
+                <span className="text-lg font-bold text-gray-900">Tổng cộng</span>
                 <div className="text-right">
-                  <span className="text-2xl font-bold text-green-700">${(total / 1000).toFixed(2)}</span>
-                  <p className="text-xs text-gray-400 mt-1">Including VAT</p>
+                  <span className="text-2xl font-bold text-green-700">{total.toLocaleString("vi-VN")} VND</span>
                 </div>
               </div>
             </div>
 
             <div className="mb-6">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Enter coupon code"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                />
-                <button className="absolute right-2 top-2 px-4 py-1 bg-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-300 transition-colors">
-                  Apply
-                </button>
-              </div>
+              {appliedCoupon ? (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-green-800">Coupon Applied</p>
+                      <p className="text-xs text-green-600 mt-1">{appliedCoupon.code}</p>
+                    </div>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="p-1 hover:bg-green-100 rounded-lg transition-colors"
+                      title="Remove coupon"
+                    >
+                      <X size={18} className="text-green-600" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Enter coupon code"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleApplyCoupon();
+                      }
+                    }}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                    disabled={applyingCoupon}
+                  />
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={applyingCoupon || !couponCode.trim()}
+                    className="absolute right-2 top-2 px-4 py-1 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    {applyingCoupon ? "Applying..." : "Apply"}
+                  </button>
+                </div>
+              )}
             </div>
 
             <button

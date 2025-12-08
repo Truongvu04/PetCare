@@ -59,7 +59,7 @@ const CartIntegrationTest = () => {
       <h3 className="font-bold mb-2">Cart Integration Test</h3>
       <div className="text-sm mb-2">
         <p>Cart Items: {cartItems.length}</p>
-        <p>Total: ${(getTotal() / 1000).toFixed(2)}</p>
+        <p>Total: {getTotal().toLocaleString("vi-VN")} VND</p>
         <p>User: {user ? user.full_name : "Not logged in"}</p>
       </div>
       <button

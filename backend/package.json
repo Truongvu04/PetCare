@@ -6,9 +6,12 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "seed:vaccines": "node scripts/seed-vaccines.js",
+    "fix:encoding": "node scripts/fix-product-encoding.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "@prisma/client": "^6.19.0",
     "animate.css": "^4.1.1",
     "axios": "^1.13.1",

@@ -40,21 +40,34 @@ export const verifyToken = async (req, res, next) => {
       return res.status(401).json({ message: "User not found" });
     }
 
-    const customer = await prisma.vendors.findUnique({
-      where: { user_id: user.user_id }
-    }).then(v => v ? null : { customer_id: user.user_id });
-
     const vendor = await prisma.vendors.findUnique({
       where: { user_id: user.user_id }
     });
 
-    req.user = user;
+    const customer = vendor ? null : { customer_id: user.user_id };
+
+    // QUAN TRỌNG: LUÔN dùng role từ users table làm nguồn chính xác duy nhất
+    // KHÔNG override role dựa trên vendor record vì:
+    // - Admin có thể downgrade user từ vendor về owner
+    // - Role trong users table là nguồn chính xác nhất
+    // - Vendor record chỉ là metadata, không phải quyết định role
+    const finalRole = user.role || 'owner'; // Default to 'owner' nếu không có role
+
+    // Create user object với role từ users table
+    const userWithRole = {
+      ...user,
+      role: finalRole
+    };
+
+    req.user = userWithRole;
     req.customer = customer;
     req.vendor = vendor;
 
     console.log("✅ Token verified. User:", { 
       user_id: user.user_id, 
       email: user.email,
+      originalRole: user.role,
+      finalRole: finalRole,
       hasCustomer: !!customer,
       hasVendor: !!vendor
     });

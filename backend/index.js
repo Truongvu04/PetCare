@@ -17,17 +17,27 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./src/routes/auth.routes.js";
 import petRoutes from "./src/routes/pets.js";
 import reminderRoutes from "./src/routes/reminder.js";
-import geoapifyRoutes from "./src/routes/geoapify.routes.js";
+import goongRoutes from "./src/routes/goong.routes.js";
 import productRoutes from "./src/routes/productRoutes.js";
 import orderRoutes from "./src/routes/orderRoutes.js";
 import serviceRoutes from "./src/routes/serviceRoutes.js";
 import appointmentRoutes from "./src/routes/appointmentRoutes.js";
 import reviewRoutes from "./src/routes/reviewRoutes.js";
 import cartRoutes from "./src/routes/cartRoutes.js";
+import vendorRoutes from './src/routes/vendor.routes.js';
 import paymentsRoutes from "./src/routes/payments.routes.js";
-
+import notificationSettingsRoutes from "./src/routes/notificationSettings.js";
+import couponRoutes from "./src/routes/coupon.routes.js";
+import healthRoutes from "./src/routes/health.routes.js";
+import expenseRoutes from "./src/routes/expense.routes.js";
+import calendarRoutes from "./src/routes/calendar.routes.js";
+import aiRoutes from "./src/routes/ai.routes.js";
+import recommendationRoutes from "./src/routes/recommendation.routes.js";
+import adminRoutes from "./src/routes/admin.routes.js";
+import vaccineRoutes from "./src/routes/vaccine.js";
 import "./src/config/passport.js";
 import './src/scheduler/reminderJob.js'; // Đã kích hoạt cron job
+import startCleanupPendingOrdersJob from './src/jobs/cleanupPendingOrders.js'; // Import cron job cleanup
 
 if (!process.env.JWT_SECRET) {
   console.error("❌ Missing JWT_SECRET in .env");
@@ -50,9 +60,25 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
-app.use(bodyParser.json());
-app.use(express.urlencoded({ extended: true }));
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+  res.charset = 'utf-8';
+  next();
+});
+
+app.use(express.json({ 
+  charset: 'utf-8',
+  type: 'application/json'
+}));
+app.use(bodyParser.json({ 
+  charset: 'utf-8',
+  type: 'application/json'
+}));
+app.use(express.urlencoded({ 
+  extended: true, 
+  charset: 'utf-8',
+  type: 'application/x-www-form-urlencoded'
+}));
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(passport.initialize());
@@ -60,16 +86,36 @@ app.use(passport.initialize());
 app.use("/api/auth", authRoutes);
 app.use("/api/pets", petRoutes);
 app.use("/api/reminders", reminderRoutes);
-app.use("/api/geoapify", geoapifyRoutes);
+app.use("/api/goong", goongRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/cart", cartRoutes);
+app.use('/api/v1/vendor', vendorRoutes);
 app.use("/api/payments", paymentsRoutes);
+app.use("/api/notification-settings", notificationSettingsRoutes);
+app.use("/api/coupons", couponRoutes);
+app.use("/api/health", healthRoutes);
+app.use("/api/expenses", expenseRoutes);
+app.use("/api/calendar", calendarRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/recommendations", recommendationRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/vaccines", vaccineRoutes);
 console.log("✅ Payments routes registered at /api/payments");
+console.log("✅ Coupon routes registered at /api/coupons");
 console.log("✅ Cart routes registered at /api/cart");
+console.log("✅ Vendor routes registered at /api/v1/vendor");
+console.log("✅ Notification settings routes registered at /api/notification-settings");
+console.log("✅ Health routes registered at /api/health");
+console.log("✅ Expense routes registered at /api/expenses");
+console.log("✅ Calendar routes registered at /api/calendar");
+console.log("✅ AI routes registered at /api/ai");
+console.log("✅ Recommendation routes registered at /api/recommendations");
+console.log("✅ Admin routes registered at /api/admin");
+console.log("✅ Goong routes registered at /api/goong");
 
 app.get(
   "/auth/google",
@@ -142,6 +188,9 @@ app.get(
 
 
 app.get("/", (req, res) => res.send("✅ PetCare+ Backend (Prisma+JWT) is running!"));
+
+// ✅ Khởi động cleanup job
+startCleanupPendingOrdersJob();
 
 app.listen(PORT, () =>
   console.log(`🚀 Server (Prisma) running at http://localhost:${PORT}`)

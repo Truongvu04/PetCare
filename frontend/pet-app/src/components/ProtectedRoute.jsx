@@ -1,9 +1,10 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   // 1️⃣ Chờ auth load xong
   if (loading) {
@@ -14,9 +15,9 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  // 2️⃣ Nếu chưa login → redirect /login
+  // 2️⃣ Nếu chưa login → redirect /login với returnUrl để quay lại sau khi đăng nhập
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />;
   }
 
   // 3️⃣ Nếu đã login → render component con

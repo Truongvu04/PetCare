@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
 import { Camera } from "lucide-react";
 import CustomerLayout from "../DashBoard/CustomerLayout.jsx";
+import { showSuccess, showError, showWarning } from "../../utils/notifications";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ const EditProfile = () => {
         setPreviewImage(data.photo_url ? `http://localhost:5000${data.photo_url}` : null);
       } catch (err) {
         console.error("❌ Error fetching pet:", err);
-        alert("❌ Không thể lấy thông tin thú cưng");
+        showError("Lỗi", "Không thể lấy thông tin thú cưng");
       } finally {
         setLoading(false);
       }
@@ -74,7 +75,7 @@ const EditProfile = () => {
     e.preventDefault();
     try {
       if (!token) {
-        alert("⚠️ Bạn cần đăng nhập!");
+        showWarning("Yêu cầu đăng nhập", "Bạn cần đăng nhập!");
         navigate("/login");
         return;
       }
@@ -100,14 +101,14 @@ const EditProfile = () => {
 
       const data = await res.json();
       if (res.ok) {
-        alert("✅ Cập nhật thú cưng thành công!");
+        showSuccess("Thành công", "Cập nhật thú cưng thành công!");
         navigate(`/viewprofile/${id}`);
       } else {
-        alert(data.message || "❌ Không thể cập nhật thú cưng");
+        showError("Lỗi", data.message || "Không thể cập nhật thú cưng");
       }
     } catch (err) {
       console.error("❌ Error updating pet:", err);
-      alert("❌ Lỗi server, vui lòng thử lại");
+      showError("Lỗi", "Lỗi server, vui lòng thử lại");
     }
   };
 

@@ -22,6 +22,10 @@ model Pet {
   created_at      DateTime   @default(now()) @db.Timestamp(6)
   owner           users?     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   reminders       Reminder[]
+  healthRecords   HealthRecord[]
+  expenses        Expense[]
+  calendarEvents  CalendarEvent[]
+  chatHistory     ChatHistory[]
 
   @@index([user_id], map: "pets_user_id_fkey")
   @@map("pets")
@@ -32,6 +36,8 @@ model Reminder {
   pet_id           String             @db.Char(12)
   type             RemindersType
   vaccination_type String?            @db.VarChar(255)
+  vaccine_id       String?            @db.Char(25)
+  dose_number      Int?
   feeding_time     DateTime?          @db.Time(0)
   reminder_date    DateTime           @db.Date
   frequency        ReminderFrequency? @default(none)
@@ -43,6 +49,9 @@ model Reminder {
   updated_at       DateTime?          @default(now()) @updatedAt @db.Timestamp(6)
   end_date         DateTime?          @db.Date
   pet              Pet                @relation(fields: [pet_id], references: [id], onDelete: Cascade, map: "reminders_ibfk_1")
+  vaccine          Vaccine?           @relation(fields: [vaccine_id], references: [vaccine_id], onDelete: SetNull)
+  // Temporarily commented out to avoid foreign key constraint error
+  // calendarEvents   CalendarEvent[]
 
   @@index([created_at], map: "idx_reminders_created_at")
   @@index([end_date], map: "idx_reminders_end_date")
@@ -50,7 +59,38 @@ model Reminder {
   @@index([is_read], map: "idx_reminders_is_read")
   @@index([pet_id], map: "idx_reminders_pet_id")
   @@index([reminder_date], map: "idx_reminders_reminder_date")
+  @@index([vaccine_id], map: "idx_reminders_vaccine_id")
   @@map("reminders")
+}
+
+model Vaccine {
+  vaccine_id       String                @id @default(cuid()) @db.Char(25)
+  name             String                @db.VarChar(255)
+  species          String                @db.VarChar(50)
+  description      String?               @db.Text
+  is_active        Boolean               @default(true)
+  created_at       DateTime              @default(now()) @db.Timestamp(6)
+  updated_at       DateTime              @default(now()) @updatedAt @db.Timestamp(6)
+  dose_schedules   VaccineDoseSchedule[]
+  reminders        Reminder[]
+
+  @@index([species], map: "idx_vaccines_species")
+  @@index([is_active], map: "idx_vaccines_is_active")
+  @@map("vaccines")
+}
+
+model VaccineDoseSchedule {
+  schedule_id          String   @id @default(cuid()) @db.Char(25)
+  vaccine_id           String   @db.Char(25)
+  dose_number          Int
+  days_after_previous  Int      @default(0)
+  is_booster           Boolean  @default(false)
+  notes                String?  @db.Text
+  vaccine              Vaccine  @relation(fields: [vaccine_id], references: [vaccine_id], onDelete: Cascade)
+
+  @@unique([vaccine_id, dose_number], map: "unique_vaccine_dose")
+  @@index([vaccine_id], map: "idx_vaccine_dose_schedules_vaccine_id")
+  @@map("vaccine_dose_schedules")
 }
 
 model coupon_usages {
@@ -128,26 +168,17 @@ model otp {
 }
 
 model payments {
-  payment_id         Int              @id @default(autoincrement())
-  order_id           Int
-  user_id            Int
-  // THAY ĐỔI 1: Đổi Float thành Decimal để tính tiền chính xác
-  amount             Decimal          @db.Decimal(15, 2)
-  method             payments_method
-  status             payments_status? @default(pending)
-  
-  // Mã tham chiếu của Merchant (bạn gửi đi)
-  transaction_id     String?          @db.VarChar(100) 
-
-  // THAY ĐỔI 2: Thêm các trường lưu kết quả từ VNPay trả về
-  vnp_transaction_no String?          @db.VarChar(50) // Mã giao dịch duy nhất của VNPay
-  bank_code          String?          @db.VarChar(20) // Ngân hàng thanh toán (VD: NCB, VCB)
-  card_type          String?          @db.VarChar(20) // Loại thẻ (VD: ATM, QRCODE)
-
-  created_at         DateTime?        @default(now()) @db.DateTime(0)
-  updated_at         DateTime?        @default(now()) @db.DateTime(0)
-  orders             orders           @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
-  users              users            @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  payment_id     Int              @id @default(autoincrement())
+  order_id       Int
+  user_id        Int
+  amount         Float            @db.Float
+  method         payments_method
+  status         payments_status? @default(pending)
+  transaction_id String?
+  created_at     DateTime?        @default(now()) @db.DateTime(0)
+  updated_at     DateTime?        @default(now()) @db.DateTime(0)
+  orders         orders           @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
+  users          users            @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
   @@index([order_id], map: "payments_order_id_fkey")
   @@index([user_id], map: "payments_user_id_fkey")
@@ -165,22 +196,25 @@ model product_images {
 }
 
 model products {
-  product_id     Int              @id @default(autoincrement())
-  vendor_id      Int
-  name           String
-  description    String?          @db.Text
-  price          Float            @db.Float
-  stock          Int?             @default(0)
-  category       String?          @db.VarChar(100)
-  created_at     DateTime?        @default(now()) @db.DateTime(0)
-  updated_at     DateTime?        @default(now()) @db.DateTime(0)
-  cart_items     cart_items[]
-  order_items    order_items[]
-  product_images product_images[]
-  vendors        vendors          @relation(fields: [vendor_id], references: [vendor_id], onDelete: Cascade)
-  reviews        reviews[]
+  product_id      Int              @id @default(autoincrement())
+  vendor_id       Int
+  name            String
+  description     String?          @db.Text
+  price           Float            @db.Float
+  stock           Int?             @default(0)
+  category        String?          @db.VarChar(100)
+  status          ProductStatus    @default(PENDING)
+  rejection_reason String?         @db.Text
+  created_at      DateTime?        @default(now()) @db.DateTime(0)
+  updated_at      DateTime?        @default(now()) @db.DateTime(0)
+  cart_items      cart_items[]
+  order_items     order_items[]
+  product_images  product_images[]
+  vendors         vendors          @relation(fields: [vendor_id], references: [vendor_id], onDelete: Cascade)
+  reviews         reviews[]
 
   @@index([vendor_id], map: "products_vendor_id_fkey")
+  @@index([status])
 }
 
 model reviews {
@@ -234,41 +268,49 @@ model services {
 }
 
 model users {
-  user_id              Int                    @id @default(autoincrement())
-  full_name            String
-  email                String                 @unique
-  password_hash        String?
-  phone                String?
-  role                 users_role             @default(owner)
-  googleId             String?                @unique
-  facebookId           String?                @unique
-  created_at           DateTime               @default(now())
-  avatar_url           String?                @db.VarChar(255)
-  carts                carts[]
-  orders               orders[]
-  payments             payments[]
-  pets                 Pet[]
-  reviews              reviews[]
-  service_appointments service_appointments[]
-  vendors              vendors?
+  user_id                  Int                       @id @default(autoincrement())
+  full_name                String
+  email                    String                    @unique
+  password_hash            String?
+  phone                    String?
+  role                     users_role                @default(owner)
+  is_active                Boolean                   @default(true)
+  googleId                 String?                   @unique
+  facebookId               String?                   @unique
+  created_at               DateTime                  @default(now())
+  avatar_url               String?                   @db.VarChar(255)
+  carts                    carts[]
+  notification_preferences notification_preferences?
+  orders                   orders[]
+  payments                 payments[]
+  pets                     Pet[]
+  reviews                  reviews[]
+  service_appointments     service_appointments[]
+  vendors                  vendors?
+  expenses                 Expense[]
+  calendarEvents           CalendarEvent[]
+  chatHistory              ChatHistory[]
+
+  @@index([is_active])
 }
 
 model vendors {
-  vendor_id   Int             @id @default(autoincrement())
-  user_id     Int             @unique(map: "unique_user_vendor")
-  store_name  String          @db.VarChar(150)
-  description String?         @db.Text
-  address     String?         @db.VarChar(255)
-  phone       String?         @db.VarChar(50)
-  logo_url    String?         @db.VarChar(255)
-  status      vendors_status? @default(pending)
-  created_at  DateTime        @default(now())
-  updated_at  DateTime        @default(now())
-  coupons     coupons[]
-  orders      orders[]
-  products    products[]
-  services    services[]
-  users       users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_vendor_user")
+  vendor_id        Int             @id @default(autoincrement())
+  user_id          Int             @unique(map: "unique_user_vendor")
+  store_name       String          @db.VarChar(150)
+  description      String?         @db.Text
+  address          String?         @db.VarChar(255)
+  phone            String?         @db.VarChar(50)
+  logo_url         String?         @db.VarChar(255)
+  status           vendors_status? @default(pending)
+  rejection_reason String?         @db.Text
+  created_at       DateTime        @default(now())
+  updated_at       DateTime        @default(now())
+  coupons          coupons[]
+  orders           orders[]
+  products         products[]
+  services         services[]
+  users            users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_vendor_user")
 }
 
 model cart_items {
@@ -294,6 +336,23 @@ model carts {
   users      users        @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
   @@index([user_id], map: "carts_user_id_fkey")
+}
+
+model notification_preferences {
+  id                      Int       @id @default(autoincrement())
+  user_id                 Int       @unique(map: "user_id")
+  appointment_reminders   Boolean?  @default(true)
+  community_events        Boolean?  @default(true)
+  platform_updates        Boolean?  @default(true)
+  new_products_services   Boolean?  @default(true)
+  urgent_care_alerts      Boolean?  @default(true)
+  account_activity_alerts Boolean?  @default(true)
+  created_at              DateTime? @default(now()) @db.DateTime(0)
+  updated_at              DateTime? @default(now()) @updatedAt @db.DateTime(0)
+  users                   users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id])
+  @@map("notification_preferences")
 }
 
 enum ReminderFrequency {
@@ -322,6 +381,7 @@ enum orders_status {
   pending
   paid
   shipped
+  delivered
   cancelled
   refunded
 }
@@ -330,6 +390,7 @@ enum orders_payment_method {
   momo
   vnpay
   zalopay
+  cod
 }
 
 enum payments_method {
@@ -354,4 +415,111 @@ enum vendors_status {
   pending
   approved
   rejected
+}
+
+enum ProductStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum HealthRecordType {
+  weight
+  vaccination
+  health_note
+}
+
+enum ExpenseCategory {
+  food
+  medicine
+  accessories
+  vet_visit
+  grooming
+  other
+}
+
+enum CalendarEventType {
+  vet_visit
+  expense
+  reminder
+}
+
+model HealthRecord {
+  id              String           @id @default(cuid()) @db.Char(25)
+  pet_id          String           @db.Char(12)
+  record_type     HealthRecordType
+  value           Decimal?         @db.Decimal(5, 2)
+  vaccination_name String?        @db.VarChar(255)
+  health_note     String?         @db.Text
+  record_date     DateTime         @db.Date
+  created_at      DateTime         @default(now()) @db.Timestamp(6)
+  updated_at      DateTime         @default(now()) @updatedAt @db.Timestamp(6)
+  pet             Pet              @relation(fields: [pet_id], references: [id], onDelete: Cascade)
+
+  @@index([pet_id])
+  @@index([record_type])
+  @@index([record_date])
+  @@map("health_records")
+}
+
+model Expense {
+  id           String          @id @default(cuid()) @db.Char(25)
+  pet_id       String          @db.Char(12)
+  user_id      Int
+  category     ExpenseCategory
+  description  String          @db.VarChar(500)
+  amount       Decimal         @db.Decimal(10, 2)
+  expense_date DateTime         @db.Date
+  created_at   DateTime        @default(now()) @db.Timestamp(6)
+  updated_at   DateTime        @default(now()) @updatedAt @db.Timestamp(6)
+  pet          Pet             @relation(fields: [pet_id], references: [id], onDelete: Cascade)
+  user         users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  calendarEvents CalendarEvent[]
+
+  @@index([pet_id])
+  @@index([user_id])
+  @@index([category])
+  @@index([expense_date])
+  @@map("expenses")
+}
+
+model CalendarEvent {
+  id                  String            @id @default(cuid()) @db.Char(25)
+  pet_id              String            @db.Char(12)
+  user_id             Int
+  event_type          CalendarEventType
+  title               String            @db.VarChar(255)
+  description         String?           @db.Text
+  event_date          DateTime          @db.Date
+  related_expense_id  String?           @db.Char(25)
+  related_reminder_id String?           @db.Char(25)
+  created_at          DateTime          @default(now()) @db.Timestamp(6)
+  pet                 Pet               @relation(fields: [pet_id], references: [id], onDelete: Cascade)
+  user                users             @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  expense             Expense?          @relation(fields: [related_expense_id], references: [id], onDelete: SetNull)
+  // Temporarily commented out to avoid foreign key constraint error
+  // reminder            Reminder?         @relation(fields: [related_reminder_id], references: [reminder_id], onDelete: SetNull)
+
+  @@index([pet_id])
+  @@index([user_id])
+  @@index([event_type])
+  @@index([event_date])
+  @@map("calendar_events")
+}
+
+model ChatHistory {
+  id             String    @id @default(cuid()) @db.Char(25)
+  user_id        Int
+  pet_id         String?   @db.Char(12)
+  message        String    @db.Text
+  response       String?   @db.Text
+  is_user_message Boolean  @default(true)
+  created_at     DateTime  @default(now()) @db.Timestamp(6)
+  user           users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  pet            Pet?      @relation(fields: [pet_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([pet_id])
+  @@index([created_at])
+  @@map("chat_history")
 }

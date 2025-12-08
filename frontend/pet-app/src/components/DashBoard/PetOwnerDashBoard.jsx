@@ -139,34 +139,34 @@ const PetOwnerDashboard = () => {
   return (
     <CustomerLayout currentPage="dashboard">
           <QuickAccessCards />
-          <h2 className="text-3xl font-extrabold text-gray-900 mb-5">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-4 sm:mb-5">
             Dashboard
           </h2>
           
           {/* 👈 Thêm chào mừng user */}
           {!user && (
             <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800">
-              Chào mừng! Vui lòng <a href="/login" className="font-bold underline">đăng nhập</a> để xem thú cưng và nhắc nhở của bạn.
+              Welcome! Please <a href="/login" className="font-bold underline">login</a> to view your pets and reminders.
             </div>
           )}
 
           {/* --- My Pets Section --- */}
-          <section className="mb-10">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+          <section className="mb-8 sm:mb-10">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center space-x-2">
               <PawPrint size={18} className="text-green-700" />
               <span>My Pets</span>
             </h3>
 
             {loadingPets ? (
-              <p className="text-gray-500 px-3 py-2">Loading pets...</p>
+              <p className="text-gray-500 px-3 py-2 text-sm">Loading pets...</p>
             ) : !user ? (
-              <p className="text-gray-500 px-3 py-2">Login to see your pets.</p>
+              <p className="text-gray-500 px-3 py-2 text-sm">Login to see your pets.</p>
             ) : pets.length === 0 ? (
-              <p className="text-gray-500 px-3 py-2">No pets found.</p>
+              <p className="text-gray-500 px-3 py-2 text-sm">No pets found.</p>
             ) : (
-              <div className="flex space-x-10">
+              <div className="flex flex-col sm:flex-row sm:space-x-6 lg:space-x-10 space-y-4 sm:space-y-0">
                 {pets.slice(0, 2).map((pet, i) => (
-                  <div key={i} className="flex flex-col items-center text-center">
+                  <div key={i} className="flex sm:flex-col items-center sm:text-center space-x-4 sm:space-x-0">
                     <img
                       src={
                         pet.photo_url
@@ -176,18 +176,20 @@ const PetOwnerDashboard = () => {
                           : "https://via.placeholder.com/100?text=No+Image"
                       }
                       alt={pet.name}
-                      className="w-24 h-24 rounded-full object-cover mb-2 shadow-sm border border-gray-100"
+                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover mb-0 sm:mb-2 shadow-sm border border-gray-100"
                       onError={(e) =>
                         (e.target.src =
                           "https://via.placeholder.com/100?text=No+Image")
                       }/>
-                    <p className="font-medium text-gray-800">{pet.name}</p>
-                    <p className="text-green-600 text-sm">{pet.species}</p>
+                    <div>
+                      <p className="font-medium text-gray-800 text-sm sm:text-base">{pet.name}</p>
+                      <p className="text-green-600 text-xs sm:text-sm">{pet.species}</p>
+                    </div>
                   </div>
                 ))}
                 <button
                   onClick={() => navigate("/mypets")}
-                  className="self-center ml-auto text-sm text-green-600 hover:text-green-800">
+                  className="self-start sm:self-center sm:ml-auto text-xs sm:text-sm text-green-600 hover:text-green-800 mt-2 sm:mt-0">
                   View All
                 </button>
               </div>
@@ -262,12 +264,12 @@ const PetOwnerDashboard = () => {
            </section>
 
            {/* --- Shop Section (Giữ nguyên) --- */}
-           <section className="mb-10">
-             <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center space-x-2">
+           <section className="mb-8 sm:mb-10">
+             <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 flex items-center space-x-2">
                  <ShoppingBag size={18} className="text-green-700"/>
                  <span>Shop Recommendations</span>
              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {shops.map((item, idx) => ( <div key={idx} className="bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"> <img src={item.img} alt={item.name} className="h-32 w-full object-cover"/> <div className="p-3"> <p className="font-medium text-gray-800 text-sm truncate">{item.name}</p> <p className="text-gray-500 text-xs">{item.desc}</p> </div> </div> ))}
               </div>
                <div className="text-right mt-2">
@@ -285,7 +287,12 @@ const PetOwnerDashboard = () => {
                 {clinics.map((clinic, i) => ( <div key={i} className="flex items-center space-x-3 bg-green-50 p-3 rounded-lg"> <MapPin className="text-green-700" size={18} /> <div> <p className="font-medium text-gray-800">{clinic.name}</p> <p className="text-gray-500 text-sm">{clinic.distance}</p> </div> </div> ))}
               </div>
                <div className="text-right mt-2">
-                  <button className="text-sm text-green-600 hover:text-green-800 font-medium">View Map</button>
+                  <button 
+                    onClick={() => navigate('/vet-map')}
+                    className="text-sm text-green-600 hover:text-green-800 font-medium"
+                  >
+                    View Map
+                  </button>
                </div>
            </section>
     </CustomerLayout>

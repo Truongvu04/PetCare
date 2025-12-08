@@ -4,6 +4,7 @@ import { Star, ShoppingCart, ArrowLeft } from "lucide-react";
 import api from "../../api/axiosConfig.js";
 import { useCart } from "./CartContext.jsx";
 import CartIcon from "./CartIcon.jsx";
+import { showWarning, showToast } from "../../utils/notifications";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -12,7 +13,6 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -56,38 +56,38 @@ const ProductDetail = () => {
   };
 
   return (
-    <div className="max-w-[1280px] mx-auto p-8 bg-gray-50 min-h-screen relative">
+    <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 bg-gray-50 min-h-screen relative">
       {/* Floating Cart Button */}
       <CartIcon showFloating={true} />
 
       {/* Header with Back Button */}
-      <div className="flex items-center mb-6">
+      <div className="flex items-center mb-4 sm:mb-6">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-600 hover:text-green-700 transition-colors font-medium"
+          className="flex items-center gap-2 text-gray-600 hover:text-green-700 transition-colors font-medium text-sm sm:text-base"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
           Back
         </button>
       </div>
 
       {/* Product Info Section */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h1 className="text-2xl font-semibold mb-3 text-gray-900">{product.name}</h1>
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3 text-gray-900">{product.name}</h1>
         {product.description && (
-          <p className="text-gray-600 mb-6 leading-relaxed">
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 leading-relaxed">
             {product.description}
           </p>
         )}
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
         {/* Image Section */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
           {selectedImage ? (
             <>
-              <div className="w-full h-96 bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+              <div className="w-full h-64 sm:h-80 lg:h-96 bg-gray-100 rounded-lg mb-3 sm:mb-4 flex items-center justify-center overflow-hidden">
                 <img
                   src={getImageUrl(selectedImage.image_url)}
                   alt={product.name}
@@ -139,7 +139,7 @@ const ProductDetail = () => {
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="mb-6">
             <p className="text-3xl font-bold text-green-600 mb-4">
-              ${(product.price / 1000).toFixed(2)}
+              {product.price ? `${product.price.toLocaleString("vi-VN")} VND` : "0 VND"}
             </p>
             <div className="space-y-3">
               <div className="flex items-center justify-between py-2 border-b">
@@ -169,10 +169,9 @@ const ProductDetail = () => {
             onClick={() => {
               if (product.stock > 0) {
                 addToCart(product);
-                setShowToast(true);
-                setTimeout(() => setShowToast(false), 3000);
+                showToast("Đã thêm vào giỏ hàng!", "success");
               } else {
-                alert("Sản phẩm đã hết hàng!");
+                showWarning("Hết hàng", "Sản phẩm đã hết hàng!");
               }
             }}
             disabled={product.stock === 0}
@@ -187,20 +186,6 @@ const ProductDetail = () => {
         </div>
       </div>
 
-      {/* Toast Notification */}
-      {showToast && (
-        <div className="fixed bottom-8 right-8 bg-gray-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-bounce-in z-50">
-          <div className="bg-green-500 rounded-full p-1">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div>
-            <h4 className="font-semibold text-sm">Success</h4>
-            <p className="text-sm text-gray-300">Added to cart successfully!</p>
-          </div>
-        </div>
-      )}
 
       {/* Reviews Section */}
       <div className="bg-white rounded-lg shadow-sm p-6">

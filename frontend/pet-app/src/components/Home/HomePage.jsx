@@ -361,40 +361,69 @@ section p {
         display: none; 
     }
     .hero-card {
-        height: 350px;
+        height: 300px;
     }
     .hero-overlay h1 {
-        font-size: 2.5em;
+        font-size: 2em;
+        padding: 0 20px;
     }
     .hero-overlay p {
-        font-size: 1em;
+        font-size: 0.9em;
         max-width: 90%;
+        padding: 0 20px;
     }
     .content {
-        padding: 20px;
+        padding: 15px;
     }
     section {
-        padding: 30px 20px;
+        padding: 30px 15px;
     }
     .features-grid, .services-grid, .support-grid {
         flex-direction: column;
-        gap: 20px;
+        gap: 15px;
     }
     .feature-card, .service-card, .support-card {
         width: 100%;
         max-width: 100%;
     }
     .service-image {
-        height: 150px;
+        height: 180px;
     }
-    /* ⚠️ Đảm bảo các nút hiển thị tốt trên mobile */
-    .auth-buttons {
-      display: flex;
+    .btn {
+        padding: 8px 20px;
+        font-size: 16px;
     }
-    .btn-login, .btn-register {
-      padding: 8px 15px;
-      font-size: 12px;
-      border-radius: 20px;
+    h2 {
+        font-size: 1.5em;
+    }
+    h4 {
+        font-size: 1em;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-card {
+        height: 250px;
+        border-radius: 10px;
+    }
+    .hero-overlay h1 {
+        font-size: 1.5em;
+    }
+    .hero-overlay p {
+        font-size: 0.85em;
+    }
+    .content {
+        padding: 10px;
+    }
+    section {
+        padding: 20px 10px;
+    }
+    .btn {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+    h2 {
+        font-size: 1.3em;
     }
 }
 `;
@@ -491,10 +520,10 @@ const Header = ({ onLoginClick }) => {
                 : 'font-normal border-b-2 pb-[0] border-transparent' // INACTIVE (border trong suốt để giữ chiều cao)
             }`
           }>
-          Trang chủ
+          Home
         </NavLink>
         <NavLink to="/intropage" className="hover:text-[#29a980]">
-          Giới thiệu
+          About
         </NavLink>
         <NavLink to="/shops" className="hover:text-[#29a980]">
           Shop
@@ -509,7 +538,7 @@ const Header = ({ onLoginClick }) => {
           <i className="fa-solid fa-magnifying-glass text-[#29a980] mr-[2px] text-sm"></i>
           <input
             type="text"
-            placeholder="Tìm kiếm"
+            placeholder="Search"
             className="bg-transparent focus:outline-none text-xs md:text-sm w-[80px] md:w-[100px]"/>
         </div>
 
@@ -532,25 +561,33 @@ const Header = ({ onLoginClick }) => {
           <button
             onClick={onLoginClick}
             className="px-3 md:px-[15px] py-2 md:py-[9px] rounded-[12px] font-bold text-xs md:text-[14px] bg-[#29a980] text-white hover:bg-[#1d926d] flex-shrink-0 whitespace-nowrap">
-            Đăng nhập
+            Login
           </button>
         ) : (
           <div className="relative z-[60] flex-shrink-0" style={{ minWidth: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img
-              src={`https://api.dicebear.com/9.x/initials/svg?seed=${user.full_name || user.email?.split("@")[0] || "User"}`}
+              src={user.avatar_url || `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(user.full_name || user.email?.split("@")[0] || "User")}`}
               alt="User"
-              className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-green-500 cursor-pointer"
+              className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-green-500 cursor-pointer object-cover"
               onClick={() => setMenuOpen(!menuOpen)}
               style={{ display: 'block', visibility: 'visible', opacity: 1, minWidth: '32px', minHeight: '32px', flexShrink: 0 }}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(user.full_name || user.email?.split("@")[0] || "User")}`;
+              }}
             />
 
             {menuOpen && (
               <div className="absolute right-0 top-12 md:top-14 w-72 bg-white/90 backdrop-blur-md border border-gray-100 shadow-lg rounded-2xl p-3 z-[100]" style={{ display: 'block' }}>
                 <div className="flex items-center gap-3 border-b border-gray-100 pb-3 mb-3">
                   <img
-                    src={`https://api.dicebear.com/9.x/initials/svg?seed=${user.full_name || user.email?.split("@")[0] || "User"}`}
+                    src={user.avatar_url || `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(user.full_name || user.email?.split("@")[0] || "User")}`}
                     alt="Avatar"
-                    className="w-11 h-11 rounded-full border border-green-200"/>
+                    className="w-11 h-11 rounded-full border border-green-200 object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(user.full_name || user.email?.split("@")[0] || "User")}`;
+                    }}/>
                   <div>
                     <p className="text-[15px] font-semibold text-gray-800 truncate">
                       {user.full_name
@@ -571,7 +608,7 @@ const Header = ({ onLoginClick }) => {
                   }}
                   className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
                   <i className="fa-solid fa-chart-simple text-green-500"></i>
-                  <span>Bảng điều khiển</span>
+                  <span>Dashboard</span>
                 </button>
 
                 <button
@@ -581,14 +618,24 @@ const Header = ({ onLoginClick }) => {
                   }}
                   className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
                   <i className="fa-solid fa-receipt text-green-500"></i>
-                  <span>Đơn hàng của tôi</span>
+                  <span>My Orders</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    navigate("/account");
+                    setMenuOpen(false);
+                  }}
+                  className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-green-50 hover:text-green-600">
+                  <i className="fa-solid fa-user-gear text-green-500"></i>
+                  <span>Account Settings</span>
                 </button>
 
                 <button
                   onClick={logout}
                   className="flex items-center w-full gap-3 px-3 py-2 rounded-xl text-sm text-red-500 hover:bg-red-50 mt-2">
                   <i className="fa-solid fa-arrow-right-from-bracket"></i>
-                  <span>Đăng xuất</span>
+                  <span>Logout</span>
                 </button>
               </div>
             )}
@@ -671,24 +718,33 @@ const CareSection = () => (
   </section>
 );
 
-const SupportSection = () => (
-  <section className="support-section">
-    <h2>Get Instant Support</h2>
-    <p>Our AI chatbot is here to assist you with any questions or concerns you may have.</p>
-    <a href="#" className="btn btn-primary">Chat with AI</a>
+const SupportSection = () => {
+  const navigate = useNavigate();
+  
+  return (
+    <section className="support-section">
+      <h2>Get Instant Support</h2>
+      <p>Our AI chatbot is here to assist you with any questions or concerns you may have.</p>
+      <button 
+        onClick={() => navigate("/ai-chat")} 
+        className="btn btn-primary"
+      >
+        Chat with AI
+      </button>
 
-    <div className="support-grid">
-      <SupportCard
-        iconClass="fa-solid fa-robot"
-        title="AI Chatbot"
-        description="Get quick answers to your questions about pet care, products, and services."/>
-      <SupportCard
-        iconClass="fa-solid fa-circle-info"
-        title="Help Center"
-        description="Access our comprehensive help center for detailed information and guides."/>
-    </div>
-  </section>
-);
+      <div className="support-grid">
+        <SupportCard
+          iconClass="fa-solid fa-robot"
+          title="AI Chatbot"
+          description="Get quick answers to your questions about pet care, products, and services."/>
+        <SupportCard
+          iconClass="fa-solid fa-circle-info"
+          title="Help Center"
+          description="Access our comprehensive help center for detailed information and guides."/>
+      </div>
+    </section>
+  );
+};
 
 const Footer = () => (
   <footer className="footer">
@@ -710,9 +766,15 @@ const Footer = () => (
 
 // --- Main App Component ---
 
+// --- Main App Component ---
+
 const HomePage = () => {
+  const navigate = useNavigate(); 
   const [showLogin, setShowLogin] = useState(false);
 
+  const handleCloseModal = () => {
+    setShowLogin(false);
+  };
   return (
     <>
       <link
@@ -721,7 +783,7 @@ const HomePage = () => {
       <style>{CSS_STYLES}</style>
 
       <div className="container relative">
-        {/* Header truyền setShowLogin xuống để mở modal */}
+        {/* Header truyền hàm mở modal */}
         <Header onLoginClick={() => setShowLogin(true)} />
 
         <main className="content">
@@ -733,20 +795,12 @@ const HomePage = () => {
 
         <Footer />
 
-        {/* ✅ Modal Login */}
-        {showLogin && (
-          <div
-            // className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
-            onClick={() => setShowLogin(false)} // click ra ngoài để tắt
-          >
-            <div
-              onClick={(e) => e.stopPropagation()} // chặn tắt khi click trong modal
-            >
-              <LoginForm
-                onClose={() => setShowLogin(false)}/>
-            </div>
-          </div>
-        )}
+      
+
+{/* Login Modal - No role selection needed */}
+{showLogin && (
+  <LoginForm onClose={handleCloseModal} />
+)}
       </div>
     </>
   );

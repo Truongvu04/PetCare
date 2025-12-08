@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Star } from "lucide-react";
 import api from "../../api/axiosConfig.js";
 import { useAuth } from "../../hooks/useAuth.js";
+import { showSuccess, showError, showWarning } from "../../utils/notifications";
 
 const ReviewForm = () => {
   const navigate = useNavigate();
@@ -47,18 +48,18 @@ const ReviewForm = () => {
     e.preventDefault();
 
     if (!user) {
-      alert("Vui lòng đăng nhập để đánh giá");
+      showWarning("Yêu cầu đăng nhập", "Vui lòng đăng nhập để đánh giá");
       navigate("/login");
       return;
     }
 
     if (rating === 0) {
-      alert("Vui lòng chọn số sao");
+      showWarning("Thiếu thông tin", "Vui lòng chọn số sao");
       return;
     }
 
     if (!comment.trim()) {
-      alert("Vui lòng nhập nhận xét");
+      showWarning("Thiếu thông tin", "Vui lòng nhập nhận xét");
       return;
     }
 
@@ -71,11 +72,11 @@ const ReviewForm = () => {
         serviceId: serviceId || null,
       });
 
-      alert("Đánh giá thành công!");
+      showSuccess("Thành công", "Đánh giá thành công!");
       navigate(-1);
     } catch (error) {
       console.error("Error creating review:", error);
-      alert("Lỗi khi đánh giá: " + (error.response?.data?.message || error.message));
+      showError("Lỗi", "Lỗi khi đánh giá: " + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }

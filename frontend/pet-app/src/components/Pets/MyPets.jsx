@@ -7,6 +7,7 @@
     PawPrint,
     Trash2,
   } from "lucide-react";
+  import { showSuccess, showError, showConfirm } from "../../utils/notifications";
 
   const MyPets = () => {
     const navigate = useNavigate();
@@ -52,7 +53,8 @@
 
     // ✅ Xóa thú cưng
     const handleDeletePet = async (id) => {
-      if (!window.confirm("Are you sure you want to delete this pet?")) return;
+      const result = await showConfirm("Delete Pet", "Are you sure you want to delete this pet?");
+      if (!result.isConfirmed) return;
 
       try {
         // 👈 Dùng api.delete
@@ -60,27 +62,27 @@
 
         // Xóa khỏi danh sách UI
         setPets((prev) => prev.filter((pet) => pet.id !== id));
-        alert("✅ Pet deleted successfully!");
+        showSuccess("Success", "Pet deleted successfully!");
       } catch (err) {
         console.error("❌ Error deleting pet:", err);
-        const errorMsg = err.response?.data?.message || "Failed to delete pet. Please try again.";
-        alert(`❌ ${errorMsg}`);
+        const errorMsg = err.response?.data?.message || "Unable to delete pet. Please try again.";
+        showError("Lỗi", errorMsg);
       }
     };
 
     return (
       <CustomerLayout currentPage="mypets">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-extrabold text-gray-900 mb-2">My Pets</h2>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-6 sm:mb-8">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">My Pets</h2>
               <button
                 onClick={() => navigate("/addnewpets")}
-                className="bg-[#29a980] hover:bg-[#1d926d] text-white px-4 py-2 rounded-md transition-all">
+                className="w-full sm:w-auto bg-[#29a980] hover:bg-[#1d926d] text-white px-4 py-2 rounded-md transition-all text-sm sm:text-base">
                 Add a Pet
               </button>
             </div>
 
             {/* Pet List */}
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* 👈 Cập nhật logic loading và user */}
               {loading ? (
                 <p className="text-gray-500 text-center">Loading pets...</p>
@@ -94,7 +96,7 @@
                 pets.map((pet) => (
                 <div
                   key={pet.id}
-                  className="flex items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md p-5 transition-all duration-300 hover:-translate-y-1">
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white border border-gray-100 rounded-xl sm:rounded-2xl shadow-sm hover:shadow-md p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1 gap-4 sm:gap-0">
                   {/* Bên trái: ảnh + thông tin */}
                   <div className="flex items-center gap-5">
                     {/* Ảnh thú cưng */}

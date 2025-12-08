@@ -14,3 +14,32 @@ VNPAY_RETURN_URL=https://1e89be571856.ngrok-free.app/api/payments/vnpay_return #
 #Tên chủ thẻ	NGUYEN VAN A
 #Ngày phát hành	07/15
 #Mật khẩu OTP	123456
+
+#Map
+Vào link: https://account.goong.io/ đăng ký tài khoản
+Vào mục tạo key, tạo 2 key lần lược là API Key và Maptiles Keys
+Dán vào file env backend: API KEY dán vào GOONG_API_KEY, Maptiles Keys dán vào GOONG_MAP_TILES_KEY
+GOONG_API_KEY=
+GOONG_MAP_TILES_KEY=
+Dán vào file env frontend:Maptiles Keys dán vào VITE_GOONG_MAPTILES_KEY
+VITE_GOONG_MAPTILES_KEY=
+
+TẠO FILE .env
+backend: 
+
+cd backend
+
+# Cài đặt dependencies
+npm install
+
+# Tạo file .env từ .env.example
+cp .env.example .env
+
+frontend:
+cd frontend/pet-app
+
+# Cài đặt dependencies
+npm install
+
+# Tạo file .env từ .env.example
+cp .env.example .env

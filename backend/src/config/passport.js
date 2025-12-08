@@ -16,7 +16,6 @@ passport.deserializeUser(async (id, done) => {
     }
 });
 
-// --- GOOGLE OAUTH ---
 passport.use(
     new GoogleStrategy(
         {
@@ -60,7 +59,6 @@ passport.use(
     )
 );
 
-// --- FACEBOOK OAUTH ---
 passport.use(
     new FacebookStrategy(
         {

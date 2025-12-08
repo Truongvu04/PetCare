@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import LocationFeedbackModal from './LocationFeedbackModal';
+import MapMarkerCluster from './MapMarkerCluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import 'leaflet-routing-machine';
@@ -194,105 +195,29 @@ const VeterinaryMapView = ({
           );
         })()}
 
-        {/* Clinic Markers */}
-        {clinics.map((clinic, index) => {
-          const validatedClinicPos = validateCoordinates(clinic.coordinates?.lat, clinic.coordinates?.lng);
-          if (!validatedClinicPos) {
-            console.warn(`Invalid coordinates for clinic: ${clinic.name}`, clinic.coordinates);
-            return null;
-          }
-          const isSelected = selectedClinic && selectedClinic.id === clinic.id;
-          const markerIcon = isSelected ? selectedVetIcon : vetIcon;
-
-          return (
-            <Marker
-              key={clinic.id || index}
-              position={[validatedClinicPos.latitude, validatedClinicPos.longitude]}
-              icon={markerIcon}
-              eventHandlers={{
-                click: () => {
-                  if (!mapInstance || !mapInstance._mapPane) return;
-                  if (onMarkerClick) onMarkerClick(clinic);
-                  if (userLocation) addRouting(
+        {/* Clinic Markers with Clustering */}
+        {clinics.length > 0 && (
+          <MapMarkerCluster
+            clinics={clinics}
+            selectedClinic={selectedClinic}
+            onMarkerClick={(clinic) => {
+              if (!mapInstance || !mapInstance._mapPane) return;
+              if (onMarkerClick) onMarkerClick(clinic);
+              if (userLocation) {
+                const clinicPos = validateCoordinates(clinic.coordinates?.lat, clinic.coordinates?.lng);
+                if (clinicPos) {
+                  addRouting(
                     [userLocation.latitude, userLocation.longitude],
-                    [validatedClinicPos.latitude, validatedClinicPos.longitude]
+                    [clinicPos.latitude, clinicPos.longitude]
                   );
                 }
-              }}>
-              <Popup maxWidth={320} maxHeight={400} autoPan keepInView>
-                <div className="p-3 max-w-sm">
-                  <h3 className="font-bold text-base mb-2 text-gray-900">{clinic.name}</h3>
-                  <p className="text-sm text-gray-600 mb-3 leading-relaxed">{clinic.address}</p>
-
-                  {clinic.rating > 0 && (
-                    <div className="flex items-center gap-2 mb-3 p-2 bg-yellow-50 rounded-lg">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <span
-                            key={i}
-                            className={`text-sm ${i < Math.floor(clinic.rating) ? 'text-yellow-500' : 'text-gray-300'}`}
-                          >★</span>
-                        ))}
-                      </div>
-                      <span className="font-semibold text-gray-800">{clinic.rating}</span>
-                      <span className="text-sm text-gray-500">({clinic.reviews} đánh giá)</span>
-                    </div>
-                  )}
-
-                  {clinic.phone && clinic.phone !== 'Chưa có thông tin' && (
-                    <div className="mb-3 p-2 bg-blue-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-blue-600 text-lg">phone</span>
-                        <span className="text-sm text-gray-800">{clinic.phone}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {clinic.openingHours && (
-                    <div className="mb-3 p-2 bg-green-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-green-600 text-lg">schedule</span>
-                        <span className="text-sm text-gray-800">{clinic.openingHours}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {clinic.services && clinic.services.length > 0 && (
-                    <div className="mb-3 p-2 bg-purple-50 rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <span className="material-symbols-outlined text-purple-600 text-lg">medical_services</span>
-                        <div>
-                          <div className="text-sm font-medium text-purple-800 mb-1">Dịch vụ:</div>
-                          <div className="flex flex-wrap gap-1">
-                            {clinic.services.slice(0, 3).map((service, idx) => (
-                              <span key={idx} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">{service}</span>
-                            ))}
-                            {clinic.services.length > 3 && (
-                              <span className="text-xs text-purple-600">+{clinic.services.length - 3} khác</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="pt-3 border-t border-gray-200">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleReportLocation(clinic); }}
-                      className="w-full px-3 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 text-sm rounded-lg transition-colors border border-yellow-300">
-                      🚩 Báo cáo vị trí sai
-                    </button>
-                    {clinic.source && (
-                      <div className="text-xs text-gray-500 text-center mt-2">
-                        Nguồn: {clinic.source}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
+              }
+            }}
+            userLocation={userLocation}
+            vetIcon={vetIcon}
+            selectedVetIcon={selectedVetIcon}
+          />
+        )}
       </MapContainer>
 
       {/* Map Controls */}

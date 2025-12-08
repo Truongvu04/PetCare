@@ -97,7 +97,7 @@ async function vnpayReturn(req, res) {
     if (vnp_ResponseCode === '00') {
       await prisma.payments.update({
         where: { payment_id: payment.payment_id },
-        data: { status: 'success', vnp_transaction_no: vnp_TransactionNo, bank_code: vnp_BankCode, card_type: vnp_CardType }
+        data: { status: 'success', transaction_id: vnp_TransactionNo }
       });
       await prisma.orders.update({ where: { order_id: payment.order_id }, data: { status: 'paid' } });
       return res.redirect(`${FRONTEND_URL}/order-confirmation?orderId=${payment.order_id}&status=success`);
@@ -160,9 +160,7 @@ async function vnpayIpn(req, res) {
         where: { payment_id: payment.payment_id }, 
         data: { 
             status: 'success',
-            vnp_transaction_no: vnp_TransactionNo,
-            bank_code: vnp_BankCode,
-            card_type: vnp_CardType
+            transaction_id: vnp_TransactionNo
         } 
       });
 

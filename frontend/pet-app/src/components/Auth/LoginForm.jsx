@@ -1,17 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import api from "../../api/axiosConfig";
 import confetti from "canvas-confetti";
-
-// --- Toast notify ---
-const showToast = (msg, type = "info") => {
-  const div = document.createElement("div");
-  div.textContent = msg;
-  div.className = `fixed top-5 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-xl text-white font-semibold shadow-lg transition-all duration-300
-    ${type === "success" ? "bg-green-600" : type === "error" ? "bg-red-600" : "bg-gray-800"}`;
-  document.body.appendChild(div);
-  setTimeout(() => div.remove(), 2500);
-};
+import { showToast } from "../../utils/notifications";
 
 // --- SVG ICONS ---
 const EyeIcon = ({ className = "h-5 w-5" }) => (
@@ -42,8 +34,9 @@ const FacebookIcon = () => (
 const inputClass =
   "w-full bg-gray-50 border border-transparent px-5 py-3 rounded-2xl text-sm transition-all duration-300 focus:border-green-500 focus:ring-2 focus:ring-green-300 outline-none placeholder-gray-500";
 
-function LoginForm({ onClose }) {
+function LoginForm({ onClose, redirectTo = "/" }) {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [isRegister, setIsRegister] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -110,12 +103,49 @@ function LoginForm({ onClose }) {
 
       if (!token || !user) return showToast("Invalid server response", "error");
 
-      login({ token });
+      // Save userInfo to localStorage immediately for VendorProtectedRouteWrapper fallback
+      localStorage.setItem("userInfo", JSON.stringify(user));
+      
+      // Log role for debugging
+      console.log("🔐 LoginForm: User role check:", {
+        email: user.email,
+        role: user.role,
+        full_name: user.full_name,
+        hasVendor: !!user.vendor
+      });
+      
+      login({ token, user });
 
-      showToast(`Welcome back, ${user.full_name || user.email}!`, "success");
+      // Determine role-based welcome message
+      const roleMessages = {
+        vendor: "Vendor",
+        admin: "Admin",
+        owner: "Customer"
+      };
+      const roleLabel = roleMessages[user.role] || "Customer";
+      
+      // Use vendor store name if available, otherwise use full_name or email
+      let displayName = user.vendor?.store_name || user.vendor?.shopName || user.full_name || user.email;
+      
+      // If full_name is "Admin" but role is vendor, use email or vendor store name instead
+      if (user.role === 'vendor' && user.full_name?.toLowerCase() === 'admin') {
+        displayName = user.vendor?.store_name || user.vendor?.shopName || user.email;
+        console.log("⚠️ Full name is 'Admin' but role is vendor, using:", displayName);
+      }
+      
+      // Show role-specific welcome message
+      showToast(`Welcome back, ${displayName}! (${roleLabel})`, "success");
       confetti({ particleCount: 120, spread: 90 });
 
-      setTimeout(() => (window.location.href = "/"), 800);
+      // Auto-redirect after successful login
+      setTimeout(() => {
+        if (onClose) {
+          onClose(); // Close modal if exists (will handle redirect)
+        } else {
+          // If no onClose handler, redirect to the target URL or home
+          navigate(redirectTo || "/", { replace: true });
+        }
+      }, 1000); // Increased from 800ms to 1000ms to ensure AuthProvider state is updated
     } catch (err) {
       if (err.response?.status === 401) {
         showToast(err.response?.data?.message || "Invalid email or password", "error");
@@ -150,14 +180,51 @@ function LoginForm({ onClose }) {
         .then((res) => {
           const user = res.data;
           localStorage.setItem("userInfo", JSON.stringify(user));
+          
+          // Log role for debugging
+          console.log("🔐 LoginForm (OAuth): User role check:", {
+            email: user.email,
+            role: user.role,
+            full_name: user.full_name,
+            hasVendor: !!user.vendor
+          });
+          
           login({ token, user });
-          showToast(`Welcome back, ${user.full_name || user.email}!`, "success");
+          
+          // Determine role-based welcome message
+          const roleMessages = {
+            vendor: "Vendor",
+            admin: "Admin",
+            owner: "Customer"
+          };
+          const roleLabel = roleMessages[user.role] || "Customer";
+          
+          // Use vendor store name if available, otherwise use full_name or email
+          let displayName = user.vendor?.store_name || user.vendor?.shopName || user.full_name || user.email;
+          
+          // If full_name is "Admin" but role is vendor, use email or vendor store name instead
+          if (user.role === 'vendor' && user.full_name?.toLowerCase() === 'admin') {
+            displayName = user.vendor?.store_name || user.vendor?.shopName || user.email;
+            console.log("⚠️ Full name is 'Admin' but role is vendor, using:", displayName);
+          }
+          
+          // Show role-specific welcome message
+          showToast(`Welcome back, ${displayName}! (${roleLabel})`, "success");
           confetti({ particleCount: 100, spread: 70 });
-          setTimeout(() => (window.location.href = "/"), 800);
+          
+          // Auto-redirect after successful login
+          setTimeout(() => {
+            if (onClose) {
+              onClose(); // Close modal if exists (will handle redirect)
+            } else {
+              // If no onClose handler, redirect to the target URL or home
+              navigate(redirectTo || "/", { replace: true });
+            }
+          }, 1000); // Increased from 800ms to 1000ms to ensure AuthProvider state is updated
         })
         .catch(() => showToast("Invalid Google login", "error"));
     }
-  }, [login]);
+  }, [login, navigate]);
 
   return (
     <div

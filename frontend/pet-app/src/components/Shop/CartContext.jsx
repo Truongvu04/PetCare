@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import api from "../../api/axiosConfig.js";
 import { useAuth } from "../../hooks/useAuth.js";
+import { showWarning, showError } from "../../utils/notifications";
 
 const CartContext = createContext();
 
@@ -32,8 +33,9 @@ export const CartProvider = ({ children }) => {
         stock: item.products.stock,
         description: item.products.description,
         category: item.products.category,
+        vendor_id: item.products.vendor_id, // Include vendor_id directly from products table
         product_images: item.products.product_images || [],
-        vendors: item.products.vendors,
+        vendors: item.products.vendors || null, // Can be null if vendor doesn't exist
       },
     }));
   };
@@ -96,7 +98,7 @@ export const CartProvider = ({ children }) => {
 
     // Check stock availability
     if (product.stock !== undefined && product.stock <= 0) {
-      alert("Sản phẩm đã hết hàng!");
+      showWarning("Hết hàng", "Sản phẩm đã hết hàng!");
       return;
     }
 
@@ -116,7 +118,7 @@ export const CartProvider = ({ children }) => {
       } catch (error) {
         console.error("Error adding to cart:", error);
         const errorMessage = error.response?.data?.message || "Lỗi khi thêm vào giỏ hàng";
-        alert(errorMessage);
+        showError("Lỗi", errorMessage);
       } finally {
         setSyncing(false);
       }
@@ -128,7 +130,7 @@ export const CartProvider = ({ children }) => {
         if (existing) {
           // Check if adding more would exceed stock
           if (product.stock !== undefined && existing.quantity + 1 > product.stock) {
-            alert(`Chỉ còn ${product.stock} sản phẩm trong kho!`);
+            showWarning("Hết hàng", `Chỉ còn ${product.stock} sản phẩm trong kho!`);
             return prev;
           }
           
@@ -163,7 +165,7 @@ export const CartProvider = ({ children }) => {
           setCartItems(backendItems);
         } catch (error) {
           console.error("Error removing from cart:", error);
-          alert("Lỗi khi xóa khỏi giỏ hàng");
+          showError("Lỗi", "Lỗi khi xóa khỏi giỏ hàng");
         } finally {
           setSyncing(false);
         }
@@ -195,7 +197,7 @@ export const CartProvider = ({ children }) => {
         } catch (error) {
           console.error("Error updating cart:", error);
           const errorMessage = error.response?.data?.message || "Lỗi khi cập nhật giỏ hàng";
-          alert(errorMessage);
+          showError("Lỗi", errorMessage);
         } finally {
           setSyncing(false);
         }
@@ -207,7 +209,7 @@ export const CartProvider = ({ children }) => {
         if (item && item.product) {
           // Check stock availability
           if (item.product.stock !== undefined && quantity > item.product.stock) {
-            alert(`Chỉ còn ${item.product.stock} sản phẩm trong kho!`);
+            showWarning("Hết hàng", `Chỉ còn ${item.product.stock} sản phẩm trong kho!`);
             return prev;
           }
         }
@@ -227,7 +229,7 @@ export const CartProvider = ({ children }) => {
         setCartItems([]);
       } catch (error) {
         console.error("Error clearing cart:", error);
-        alert("Lỗi khi xóa giỏ hàng");
+        showError("Lỗi", "Lỗi khi xóa giỏ hàng");
       } finally {
         setSyncing(false);
       }

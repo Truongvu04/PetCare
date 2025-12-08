@@ -44,6 +44,7 @@ export const useGeolocation = () => {
         };
         console.log('Setting location:', newLocation);
         setLocation(newLocation);
+        setError(null);
         setLoading(false);
       },
       (error) => {

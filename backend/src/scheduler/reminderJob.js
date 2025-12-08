@@ -4,9 +4,8 @@ import { prisma } from '../config/prisma.js';
 // Đảm bảo import từ file ESM mailer.js gốc của bạn
 import { sendReminderEmail } from '../utils/mailer.js'; 
 
-// 1. IMPORT ENUMS (Theo chuẩn project hiện tại)
 import pkg from '@prisma/client';
-const { ReminderFrequency, ReminderType, ReminderStatus } = pkg; 
+const { ReminderFrequency, reminders_type, ReminderStatus } = pkg; 
 
 // === FIX_7: Đặt múi giờ Việt Nam (GMT+7) ===
 const VIETNAM_OFFSET_HOURS = 7;
@@ -16,9 +15,11 @@ const VIETNAM_OFFSET_HOURS = 7;
 function humanizeType(dbType) {
      switch (dbType) {
         case 'vaccination': return 'Vaccination';
+        case 'vet_visit': return 'Vet Visit'; 
         case 'checkup': return 'Check-up';
         case 'feeding': return 'Feeding';
         case 'grooming': return 'Grooming';
+        case 'medication': return 'Medication';
         default: return dbType ? dbType.charAt(0).toUpperCase() + dbType.slice(1) : 'Reminder';
     }
 }
@@ -93,7 +94,7 @@ function generateFeedingEmailHtml(reminder, displayTime) {
 
 // --- 3. Cron Job Logic ---
 
-
+// (JOB 1: processNonFeedingReminders không thay đổi, nó đã đúng)
 async function processNonFeedingReminders() {
     const jobStartTime = new Date();
     const today = new Date();
@@ -187,9 +188,11 @@ async function processNonFeedingReminders() {
 
                 // (Step 4: Chống spam và Tạo instance)
                 if (shouldCreateInstance) {
+                    // (Logic này đã ĐÚNG: CSDL trước, Email sau)
                     console.log(`   -> [NonFeed Step 4] Attempting to create instance (Freq: ${base.frequency}) for Base ${base.reminder_id} (Date: ${dueDate.toISOString().slice(0, 10)})`);
                     
                     try {
+                        // 1. CSDL TRƯỚC
                         await prisma.reminder.create({
                             data: {
                                 pet_id: base.pet_id,
@@ -204,6 +207,7 @@ async function processNonFeedingReminders() {
                             }
                         });
 
+                        // 2. EMAIL SAU
                         console.log(`   -> [NonFeed Step 4] SUCCESS. Sending EMAIL.`);
                         const finalDueDateStr = dueDate.toISOString().slice(0, 10);
                         const subject = `PetCare+ Reminder: ${base.pet.name}'s ${humanizeType(base.type)}`;
@@ -234,7 +238,7 @@ async function processNonFeedingReminders() {
 
 /**
  * ===================================================================
- * JOB 2: Xử lý Feeding 
+ * JOB 2: Xử lý Feeding (Sửa logic V21)
  * ===================================================================
  */
 async function processFeedingReminders() {
@@ -292,13 +296,17 @@ async function processFeedingReminders() {
             for (const base of baseFeedings) {
                 if (!base.pet?.owner || !base.feeding_time) continue;
 
+                // === (SỬA LỖI CRASH V20) ===
+                // Khai báo biến *bên trong* vòng lặp
                 const reminderTime = base.feeding_time; 
                 const reminderTimeNum = reminderTime.getTime();
                 const fifteenMinutesBeforeNum = reminderTimeNum - (15 * 60 * 1000);
+                // ==========================
 
                 // (Step 3: Check cửa sổ 15 phút)
                 if (timeNowNum >= fifteenMinutesBeforeNum && timeNowNum <= reminderTimeNum) {
                     
+                    // === (SỬA LỖI SPAM V21: Quay lại "Check-then-Act") ===
                     
                     // 1. KIỂM TRA (Check)
                     const existingInstanceToday = await prisma.reminder.findFirst({
@@ -349,13 +357,17 @@ async function processFeedingReminders() {
                             } else {
                                 console.error(`   -> [Feed Step 5] FAILED to create instance for Base ${base.reminder_id}:`, err);
                             }
-
+                            
+                            // === (SỬA LỖI LOGIC V18) ===
+                            // Dùng 'continue' thay vì 'return'
+                            // để "Step 6" có thể chạy.
                             continue; 
-                         
+                            // ==========================
                         }
                     } else {
                         console.log(`   -> [Feed Step 4] Instance for Base ${base.reminder_id} already exists. Skipping.`);
                     }
+                    // === (HẾT SỬA LỖI V21) ===
                 } 
             } 
         }
@@ -378,10 +390,12 @@ async function processFeedingReminders() {
             for (const r of oneTimeFeedingsToday) {
                  if (!r.pet?.owner || !r.feeding_time) continue;
                  
+                 // === (SỬA LỖI CRASH V20) ===
                  // Khai báo biến *bên trong* vòng lặp
                  const reminderTime = r.feeding_time; 
                  const reminderTimeNum = reminderTime.getTime();
                  const fifteenMinutesBeforeNum = reminderTimeNum - (15 * 60 * 1000);
+                 // ==========================
                  
                  if (timeNowNum >= fifteenMinutesBeforeNum && timeNowNum <= reminderTimeNum) {
                      
@@ -452,7 +466,7 @@ async function processFeedingReminders() {
 
 
 // --- 4. Lên Lịch Cron Job ---
-cron.schedule('1 17 * * *', async () => { 
+cron.schedule('1 0 * * *', async () => { 
     try {
         await processNonFeedingReminders();
     } catch (e) {

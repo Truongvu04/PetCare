@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { sendOTPEmail } from "../utils/sendEmail.js";
+import { registerUser, loginUser } from '../controllers/userController.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -118,7 +119,37 @@ router.post("/login", async (req, res) => {
 
     const customer = vendor ? null : { customer_id: user.user_id };
 
-    console.log("✅ Login successful:", email);
+    // QUAN TRỌNG: LUÔN dùng role từ users table làm nguồn chính xác duy nhất
+    // KHÔNG override role dựa trên vendor record vì:
+    // - Admin có thể downgrade user từ vendor về owner
+    // - Role trong users table là nguồn chính xác nhất
+    // - Vendor record chỉ là metadata, không quyết định role
+    let finalRole = user.role;
+    
+    // Chỉ set default role nếu role là null/undefined (chưa được set)
+    if (!finalRole || finalRole === null || finalRole === undefined) {
+      // Nếu có vendor record và role chưa set, có thể set default là vendor
+      // Nhưng chỉ khi role thực sự là null/undefined
+      if (vendor) {
+        finalRole = 'vendor';
+        // Update database để sync
+        try {
+          await prisma.users.update({
+            where: { user_id: user.user_id },
+            data: { role: 'vendor' }
+          });
+          user.role = 'vendor';
+        } catch (err) {
+          console.warn("⚠️ Failed to update user.role in database:", err.message);
+        }
+      } else {
+        finalRole = 'owner'; // Default to owner if no vendor
+      }
+    }
+    // Nếu role đã được set (không phải null/undefined), LUÔN dùng role đó
+    // KHÔNG override dựa trên vendor record
+
+    console.log("✅ Login successful:", email, "Role:", finalRole, "Has vendor:", !!vendor);
 
     res.json({
       message: "Login successful",
@@ -128,8 +159,14 @@ router.post("/login", async (req, res) => {
         full_name: user.full_name,
         email: user.email,
         avatar_url: user.avatar_url,
+        role: finalRole, // Use corrected role for automatic redirect
         customer: customer,
-        vendor: vendor,
+        vendor: vendor ? {
+          vendor_id: vendor.vendor_id,
+          store_name: vendor.store_name,
+          logo_url: vendor.logo_url,
+          status: vendor.status
+        } : null, // Include vendor info if exists
       },
     });
   } catch (err) {
@@ -156,7 +193,8 @@ router.get("/me", async (req, res) => {
         full_name: true, 
         email: true, 
         phone: true,
-        avatar_url: true 
+        avatar_url: true,
+        role: true // Include role for frontend routing
       },
     });
 
@@ -171,9 +209,40 @@ router.get("/me", async (req, res) => {
 
     const customer = vendor ? null : { customer_id: user.user_id };
 
-    console.log("✅ Authenticated user:", user.email);
+    // QUAN TRỌNG: LUÔN dùng role từ users table làm nguồn chính xác duy nhất
+    // KHÔNG override role dựa trên vendor record vì:
+    // - Admin có thể downgrade user từ vendor về owner
+    // - Role trong users table là nguồn chính xác nhất
+    // - Vendor record chỉ là metadata, không quyết định role
+    let finalRole = user.role;
+    
+    // Chỉ set default role nếu role là null/undefined (chưa được set)
+    if (!finalRole || finalRole === null || finalRole === undefined) {
+      // Nếu có vendor record và role chưa set, có thể set default là vendor
+      // Nhưng chỉ khi role thực sự là null/undefined
+      if (vendor) {
+        finalRole = 'vendor';
+        // Update database để sync
+        try {
+          await prisma.users.update({
+            where: { user_id: user.user_id },
+            data: { role: 'vendor' }
+          });
+          user.role = 'vendor';
+        } catch (err) {
+          console.warn("⚠️ /me: Failed to update user.role in database:", err.message);
+        }
+      } else {
+        finalRole = 'owner'; // Default to owner if no vendor
+      }
+    }
+    // Nếu role đã được set (không phải null/undefined), LUÔN dùng role đó
+    // KHÔNG override dựa trên vendor record
+
+    console.log("✅ Authenticated user:", user.email, "Role:", finalRole, "Has vendor:", !!vendor);
     res.json({
       ...user,
+      role: finalRole, // Use corrected role
       customer: customer || null,
       vendor: vendor || null,
     });
@@ -190,5 +259,7 @@ router.post("/logout", (req, res) => {
   console.log("🚪 User logged out");
   res.json({ message: "Logged out successfully" });
 });
+
+router.post('/register', registerUser);
 
 export default router;
