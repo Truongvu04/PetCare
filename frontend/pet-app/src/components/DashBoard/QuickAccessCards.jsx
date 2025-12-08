@@ -7,9 +7,16 @@ import {
   User,
 } from "lucide-react";
 
-const QuickAccessCards = () => {
+const QuickAccessCards = ({ hasNewOrders = false, hasNewCartItems = false, hasNewPets = false }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const markAsRead = (type) => {
+    if (!user) return;
+    const today = new Date().toISOString().split('T')[0];
+    const key = `read_${type}_${user.user_id}_${today}`;
+    localStorage.setItem(key, 'true');
+  };
 
   if (!user) return null;
 
@@ -21,6 +28,7 @@ const QuickAccessCards = () => {
       path: "/orders",
       color: "bg-blue-50 hover:bg-blue-100",
       iconColor: "text-blue-600",
+      hasNew: hasNewOrders,
     },
     {
       title: "Shopping Cart",
@@ -29,6 +37,7 @@ const QuickAccessCards = () => {
       path: "/cart",
       color: "bg-green-50 hover:bg-green-100",
       iconColor: "text-green-600",
+      hasNew: hasNewCartItems,
     },
     {
       title: "My Pets",
@@ -37,6 +46,7 @@ const QuickAccessCards = () => {
       path: "/mypets",
       color: "bg-purple-50 hover:bg-purple-100",
       iconColor: "text-purple-600",
+      hasNew: hasNewPets,
     },
   ];
 
@@ -50,11 +60,21 @@ const QuickAccessCards = () => {
           <div
             key={index}
             className={`${card.color} rounded-lg p-4 sm:p-6 cursor-pointer transition-all border border-transparent hover:border-green-200 hover:shadow-md`}
-            onClick={() => navigate(card.path)}
+            onClick={() => {
+              if (card.hasNew) {
+                const type = card.title === "My Orders" ? "orders" : 
+                             card.title === "Shopping Cart" ? "cart" : "pets";
+                markAsRead(type);
+              }
+              navigate(card.path);
+            }}
           >
             <div className="flex items-start justify-between mb-2 sm:mb-3">
-              <div className={`${card.iconColor} p-2 rounded-lg bg-white`}>
+              <div className={`${card.iconColor} p-2 rounded-lg bg-white relative`}>
                 {card.icon}
+                {card.hasNew && (
+                  <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse border-2 border-white"></span>
+                )}
               </div>
             </div>
             <h4 className="font-semibold text-sm sm:text-base text-gray-900 mb-1">{card.title}</h4>
