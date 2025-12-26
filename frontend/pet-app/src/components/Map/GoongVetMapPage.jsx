@@ -181,7 +181,7 @@ const GoongVetMapPage = () => {
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 to-green-50">
-      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 text-white p-4 shadow-lg">
+      <div className="bg-green-500 text-white p-4 shadow-lg">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-3">
             <button

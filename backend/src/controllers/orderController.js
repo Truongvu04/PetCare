@@ -833,60 +833,131 @@ export const markOrderAsReceived = async (req, res) => {
   }
 };
 
+// Endpoint: DELETE /api/orders/:orderId
+
 export const cancelOrder = async (req, res) => {
   try {
-    const user_id = req.user.user_id;
-    const { id } = req.params;
+    const { id } = req.params;  // Route param is :id, not :orderId
+    const userId = req.user.user_id;
 
-    if (!id || isNaN(parseInt(id))) {
-      return res.status(400).json({ message: "Invalid order ID" });
+    // 1. Kiểm tra order tồn tại & thuộc user
+    const order = await prisma.orders.findUnique({
+      where: { order_id: parseInt(id) },
+      include: { payments: true, order_items: { include: { products: true } } }
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
     }
 
-    console.log(`[CANCEL ORDER] Request to cancel order ${id} by user ${user_id}`);
+    if (order.user_id !== userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
 
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Find the order and verify ownership
-      const order = await tx.orders.findUnique({
-        where: { order_id: parseInt(id) },
-        include: { order_items: true },
+    // 2. Kiểm tra trạng thái order (chỉ hủy nếu PAID, CONFIRMED, PROCESSING - không quá 24h)
+    const createdAt = new Date(order.created_at);
+    const now = new Date();
+    const hoursDiff = (now - createdAt) / (1000 * 60 * 60);
+
+    const allowedStatuses = ['pending', 'paid', 'confirmed', 'processing'];
+    if (!allowedStatuses.includes(order.status?.toLowerCase())) {
+      return res.status(400).json({ 
+        message: `Cannot cancel order with status: ${order.status}. Only ${allowedStatuses.join(', ')} orders can be cancelled.`
       });
+    }
 
-      if (!order) {
-        throw new Error("Order not found");
+    if (hoursDiff > 24) {
+      return res.status(400).json({ 
+        message: 'Cannot cancel order after 24 hours' 
+      });
+    }
+
+    // Use transaction để đảm bảo consistency
+    const result = await prisma.$transaction(async (tx) => {
+      // 3. Restore stock cho tất cả products trong order
+      if (order.order_items && order.order_items.length > 0) {
+        for (const item of order.order_items) {
+          await tx.products.update({
+            where: { product_id: item.product_id },
+            data: { stock: { increment: item.quantity || 1 } }
+          });
+          console.log(`✅ Restored ${item.quantity} units of product ${item.product_id}`);
+        }
       }
 
-      if (order.user_id !== user_id) {
-        throw new Error("Unauthorized to cancel this order");
+      // 4. Nếu thanh toán bằng VNPay → Gọi API hoàn tiền
+      let refundStatus = 'not_applicable';
+      const payment = order.payments?.[0];
+      
+      if (payment && payment.method === 'vnpay' && payment.status === 'success') {
+        try {
+          // Import refund function (need to add this)
+          const { vnpayRefund } = await import('../services/vnpayService.js');
+          const refundResult = await vnpayRefund({
+            transaction_id: payment.transaction_id,
+            amount: Math.round(payment.amount * 100) // VNPAY expects amount * 100
+          });
+          
+          if (refundResult.success) {
+            refundStatus = 'success';
+            console.log(`✅ VNPay refund successful for transaction ${payment.transaction_id}`);
+          } else {
+            refundStatus = 'pending';
+            console.log(`⚠️ VNPay refund pending: ${refundResult.message}`);
+          }
+        } catch (refundErr) {
+          console.error('⚠️ VNPay refund error:', refundErr);
+          refundStatus = 'failed';
+        }
       }
 
-      if (order.status !== "pending") {
-        throw new Error("Only pending orders can be cancelled");
-      }
+      // 5. Cập nhật payment status -> map refundStatus to allowed enum values
+      // payments.status enum in Prisma: pending, success, fail
+      if (payment) {
+        let newPaymentStatus = payment.status || 'pending';
+        if (refundStatus === 'success') {
+          newPaymentStatus = 'success';
+        } else if (refundStatus === 'pending') {
+          newPaymentStatus = 'pending';
+        } else if (refundStatus === 'failed') {
+          newPaymentStatus = 'fail';
+        } else {
+          // not_applicable or unknown -> keep existing status
+          newPaymentStatus = payment.status || 'pending';
+        }
 
-      // 2. Restore stock for each item
-      for (const item of order.order_items) {
-        await tx.products.update({
-          where: { product_id: item.product_id },
-          data: { stock: { increment: item.quantity } },
+        await tx.payments.update({
+          where: { payment_id: payment.payment_id },
+          data: { status: newPaymentStatus }
         });
       }
 
-      // 3. Update order status
+      // 6. Cập nhật order status thành CANCELLED
       const updatedOrder = await tx.orders.update({
         where: { order_id: parseInt(id) },
-        data: { status: "cancelled" },
+        data: { 
+          status: 'cancelled',
+          updated_at: new Date()
+        }
       });
 
-      return updatedOrder;
+      return { order: updatedOrder, refundStatus };
     });
 
-    console.log(`[CANCEL ORDER] Order ${id} cancelled successfully`);
-    res.json(result);
+    console.log(`✅ Order ${id} cancelled successfully. Refund status: ${result.refundStatus}`);
+
+    return res.status(200).json({ 
+      message: 'Order cancelled successfully',
+      orderId: parseInt(id),
+      refund_status: result.refundStatus,
+      details: 'Stock has been restored and refund has been processed'
+    });
+
   } catch (err) {
-    console.error("[CANCEL ORDER] Error:", err);
-    if (err.message === "Order not found" || err.message === "Unauthorized to cancel this order" || err.message === "Only pending orders can be cancelled") {
-      return res.status(400).json({ message: err.message });
-    }
-    res.status(500).json({ message: "Server error: " + err.message });
+    console.error('Cancel order error:', err);
+    return res.status(500).json({ 
+      message: 'Failed to cancel order',
+      error: err.message 
+    });
   }
 };

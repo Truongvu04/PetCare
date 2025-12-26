@@ -219,7 +219,7 @@ const AddNewPet = () => {
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Description
+                  Physical Description
                 </label>
                 <textarea
                   name="description"

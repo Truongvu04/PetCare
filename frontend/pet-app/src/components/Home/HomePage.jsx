@@ -601,7 +601,7 @@ const Header = ({ onLoginClick }) => {
       </div>
 
       {/* Navbar */}
-      <nav className="hidden md:flex space-x-6 text-gray-700 text-[18px] flex-1 justify-center max-w-lg mx-4">
+      <nav className="flex space-x-6 text-gray-700 text-[18px] absolute ml-[210px]">
         <NavLink
           to="/"
           className={({ isActive }) =>
@@ -638,8 +638,7 @@ const Header = ({ onLoginClick }) => {
         {/* Notification */}
         <div 
           className="relative cursor-pointer z-10 flex-shrink-0" 
-          onClick={() => navigate("/dashboard")}
-        >
+          onClick={() => navigate("/dashboard")}>
           <i
             className="fa-regular fa-bell text-[#29a980] bg-[#e8f7f0] p-2 md:p-3 rounded-[10px] transition duration-300 ease hover:bg-[#d8f5e7] text-sm md:text-base"
           ></i>
@@ -652,7 +651,7 @@ const Header = ({ onLoginClick }) => {
         {!user ? (
           <button
             onClick={onLoginClick}
-            className="px-3 md:px-[15px] py-2 md:py-[9px] rounded-[12px] font-bold text-xs md:text-[14px] bg-[#29a980] text-white hover:bg-[#1d926d] flex-shrink-0 whitespace-nowrap">
+            className="px-3 md:px-[20px] py-2 md:py-[11px] rounded-[12px] font-bold text-xs md:text-[14px] bg-[#29a980] text-white hover:bg-[#1d926d] flex-shrink-0 whitespace-nowrap">
             Login
           </button>
         ) : (
@@ -666,8 +665,7 @@ const Header = ({ onLoginClick }) => {
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.src = `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(user.full_name || user.email?.split("@")[0] || "User")}`;
-              }}
-            />
+              }}/>
 
             {menuOpen && (
               <div className="absolute right-0 top-12 md:top-14 w-72 bg-white/90 backdrop-blur-md border border-gray-100 shadow-lg rounded-2xl p-3 z-[100]" style={{ display: 'block' }}>
@@ -765,7 +763,7 @@ const ExploreSection = () => (
   <section className="explore-section">
     <h2>Explore PetCare+</h2>
     <p>Discover the features that make PetCare+ the ultimate platform for pet owners.</p>
-    <a href="#" className="btn btn-secondary">Learn More</a>
+    <a href="/dashboard" className="btn btn-secondary">Learn More</a>
 
     <div className="features-grid">
       <FeatureCard
@@ -788,7 +786,7 @@ const CareSection = () => (
   <section className="care-section">
     <h2>Find the Best Care for Your Pet</h2>
     <p>Connect with top-rated services to keep your pet happy and healthy.</p>
-    <a href="#" className="btn btn-primary">Find Services</a>
+    <a href="/vet-map" className="btn btn-primary">Find Services</a>
 
     <div className="services-grid">
       <ServiceCard

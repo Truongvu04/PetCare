@@ -210,8 +210,8 @@ const EditProfile = () => {
 
               {/* Buttons */}
               <div className="flex justify-end space-x-4">
-                <button type="button" onClick={handleCancel} className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition">Thoát</button>
-                <button type="submit" className="px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition">Cập nhật</button>
+                <button type="button" onClick={handleCancel} className="px-6 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition">Cancel</button>
+                <button type="submit" className="px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition">Update</button>
               </div>
             </form>
           </div>
