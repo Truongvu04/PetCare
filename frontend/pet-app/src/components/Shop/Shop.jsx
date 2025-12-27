@@ -92,22 +92,118 @@ const Shop = () => {
 
   // Bilingual Search Dictionary
   const SEARCH_DICTIONARY = {
-    "dog": ["chó", "cún"],
-    "chó": ["dog", "puppy"],
-    "cat": ["mèo", "miu"],
-    "mèo": ["cat", "kitten"],
-    "bird": ["chim", "vẹt"],
-    "chim": ["bird", "parrot"],
-    "fish": ["cá"],
-    "cá": ["fish"],
-    "reptile": ["bò sát", "rùa", "trăn"],
-    "bò sát": ["reptile", "turtle", "snake"],
-    "food": ["thức ăn", "đồ ăn"],
-    "thức ăn": ["food", "meal"],
-    "toy": ["đồ chơi"],
-    "đồ chơi": ["toy"],
-    "accessory": ["phụ kiện"],
-    "phụ kiện": ["accessory"]
+     "chó": ["dog", "puppy", "cún"],
+     "cún": ["dog", "puppy", "chó"],
+     "chó con": ["puppy", "dog"],
+     "dog": ["chó", "cún", "puppy"],
+     "puppy": ["chó con", "cún", "dog"],
+
+     // --- Cats (Mèo) ---
+     "mèo": ["cat", "kitten", "miu"],
+     "miu": ["cat", "kitten", "mèo"],
+     "mèo con": ["kitten", "cat"],
+     "cat": ["mèo", "miu", "kitten"],
+     "kitten": ["mèo con", "miu", "cat"],
+
+     // --- Rodents & Small Mammals (Gặm nhấm & Thú nhỏ) ---
+     "hamster": ["chuột hamster", "chuột"],
+     "chuột": ["hamster", "mouse", "rat"],
+     "bọ ú": ["guinea pig", "chuột lang"],
+     "chuột lang": ["guinea pig", "bọ ú"],
+     "thỏ": ["rabbit", "bunny"],
+     "rabbit": ["thỏ", "bunny"],
+     "nhím": ["hedgehog"],
+     "hedgehog": ["nhím"],
+     "sóc": ["squirrel", "chinchilla"],
+     "chinchilla": ["sóc"],
+
+     // ===============================================
+     // BIRDS - CHIM CẢNH
+     // ===============================================
+     "chim": ["bird", "parrot", "vẹt"],
+     "bird": ["chim", "vẹt", "parrot"],
+     "vẹt": ["parrot", "chim", "bird"],
+     "parrot": ["vẹt", "chim", "bird"],
+
+     // ===============================================
+     // REPTILES & AMPHIBIANS - BÒ SÁT & LƯỠNG CƯ
+     // ===============================================
+     "bò sát": ["reptile", "turtle", "snake", "lizard"],
+     "reptile": ["bò sát", "rùa", "rắn", "thằn lằn"],
+     "rùa": ["turtle", "tortoise"],
+     "turtle": ["rùa"],
+     "rắn": ["snake"],
+     "snake": ["rắn", "trăn"],
+
+     // ===============================================
+     // FISH - CÁ CẢNH
+     // ===============================================
+     "cá": ["fish"],
+     "fish": ["cá"],
+
+     // ===============================================
+     // PRODUCT & SERVICE CATEGORIES
+     // ===============================================
+
+     // --- Food (Thức ăn) ---
+     "food": ["thức ăn", "hạt", "pate", "đồ ăn", "dinh dưỡng"],
+     "thức ăn": ["food", "hạt", "pate", "đồ ăn"],
+     "hạt": ["food", "kibble", "thức ăn khô"],
+     "pate": ["food", "wet food", "thức ăn ướt"],
+
+     // --- Toys (Đồ chơi) ---
+     "toy": ["đồ chơi"],
+     "đồ chơi": ["toy"],
+
+     // --- Accessories (Phụ kiện) ---
+     "accessories": ["phụ kiện", "vòng cổ", "dây dắt", "bát ăn"],
+     "phụ kiện": ["accessories"],
+     "vòng cổ": ["collar", "accessories"],
+     "collar": ["vòng cổ"],
+     "dây dắt": ["leash", "accessories"],
+     "leash": ["dây dắt"],
+
+     // --- Housing (Chuồng, Nệm) ---
+     "bed": ["giường", "nệm", "chuồng", "lồng"],
+     "giường": ["bed", "nệm"],
+     "nệm": ["bed", "giường"],
+     "chuồng": ["cage", "crate", "bed"],
+     "lồng": ["cage", "chuồng"],
+     "cage": ["lồng", "chuồng"],
+
+     // --- Clothing (Quần áo) ---
+     "clothes": ["quần áo", "áo", "váy", "trang phục"],
+     "quần áo": ["clothes"],
+     "áo": ["shirt", "clothes"],
+
+     // --- Grooming (Chăm sóc lông) ---
+     "grooming": ["tắm", "cắt tỉa", "làm đẹp", "spa", "dầu gội", "sữa tắm"],
+     "tắm": ["grooming", "shampoo", "sữa tắm"],
+     "cắt tỉa": ["grooming"],
+     "spa": ["grooming"],
+     "dầu gội": ["shampoo", "grooming"],
+     "sữa tắm": ["shampoo", "grooming"],
+
+     // --- Health & Wellness (Sức khỏe) ---
+     "health": ["sức khỏe", "y tế", "thuốc", "vitamin", "thực phẩm chức năng"],
+     "sức khỏe": ["health"],
+     "y tế": ["health", "medicine"],
+     "thuốc": ["medicine", "health"],
+     "medicine": ["thuốc", "y tế"],
+     "vitamin": ["vitamin"],
+     "vaccine": ["vắc-xin", "tiêm phòng"],
+     "tiêm phòng": ["vaccine"],
+
+     // ===============================================
+     // GENERAL MODIFIERS - TÍNH TỪ CHUNG
+     // ===============================================
+     "con": ["puppy", "kitten", "nhỏ", "baby"], // e.g., "chó con"
+     "nhỏ": ["small", "con", "mini"],
+     "lớn": ["big", "large", "adult"],
+     "trưởng thành": ["adult", "lớn"],
+     "già": ["senior", "old"],
+     "senior": ["già", "lớn tuổi"],
+     "cho": ["for"], // "cho chó", "for dogs"
   };
 
   // Helper to get expanded search terms
