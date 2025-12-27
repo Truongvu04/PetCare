@@ -4,16 +4,38 @@ import api from "../../api/axiosConfig.js";
 
 // Bilingual Search Dictionary (same as Shop.jsx)
 const SEARCH_DICTIONARY = {
-  "dog": ["chó", "cún"],
-  "chó": ["dog", "puppy"],
-  "cat": ["mèo", "miu"],
-  "mèo": ["cat", "kitten"],
-  "bird": ["chim", "vẹt"],
-  "chim": ["bird", "parrot"],
-  "fish": ["cá"],
-  "cá": ["fish"],
-  "reptile": ["bò sát", "rùa", "trăn"],
-  "bò sát": ["reptile", "turtle", "snake"],
+  "chó": ["dog", "puppy", "cún"],
+     "cún": ["dog", "puppy", "chó"],
+     "chó con": ["puppy", "dog"],
+     "cún con": ["puppy", "dog"],
+     "dog": ["chó", "cún", "puppy"],
+     "puppy": ["chó con", "cún", "dog"],
+
+     // --- Cats (Mèo) ---
+     "mèo": ["cat", "kitten", "miu"],
+     "miu": ["cat", "kitten", "mèo"],
+     "mèo con": ["kitten", "cat"],
+     "cat": ["mèo", "miu", "kitten"],
+     "kitten": ["mèo con", "miu", "cat"],
+
+     // --- Birds (Chim) ---
+     "chim": ["bird", "parrot", "vẹt"],
+     "bird": ["chim", "vẹt", "parrot"],
+     "vẹt": ["parrot", "bird", "chim"],
+     "parrot": ["vẹt", "chim", "bird"],
+
+     // --- Fish (Cá) ---
+     "cá": ["fish"],
+     "fish": ["cá"],
+
+     // --- Reptiles (Bò sát) ---
+     "bò sát": ["reptile", "turtle", "snake", "rùa", "trăn"],
+     "reptile": ["bò sát", "rùa", "trăn", "snake", "turtle"],
+     "rùa": ["turtle", "reptile", "bò sát"],
+     "trăn": ["snake", "python", "reptile", "bò sát"],
+     "rắn": ["snake", "reptile", "bò sát"],
+     "snake": ["rắn", "trăn", "bò sát", "reptile"],
+     "turtle": ["rùa", "bò sát", "reptile"],
 };
 
 /**
